@@ -108,16 +108,43 @@ dd($booking->status);
         Storage::disk('public')->put($relativePath, $qrPng);
     }
 
+    // ✅ 1) حدّث الحجز الأول
+$booking->update([
+    'status' => 'approved',
+]);
+
+$time->decrement('available_tickets', $booking->tickets_count);
+
+// ✅ 2) بعد كده حاول توليد QR
+try {
+
+    $qrText = $booking->reference_code;
+    $relativePath = "tickets/{$booking->reference_code}.png";
+
+    if ($booking->qr_code_path) {
+        Storage::disk('public')->delete($booking->qr_code_path);
+    }
+
+    $qrPng = QrCode::format('png')
+        ->size(300)
+        ->margin(0)
+        ->generate($qrText);
+
+    Storage::disk('public')->put($relativePath, $qrPng);
+
     $booking->update([
-        'status' => 'approved',
         'qr_code_path' => $relativePath
     ]);
 
-    $time->decrement('available_tickets', $booking->tickets_count);
+} catch (\Throwable $e) {
+    // ❗ حتى لو QR فشل – الحجز اتقبل خلاص
+    logger()->error('QR failed: ' . $e->getMessage());
+}
 
-    return redirect()
+// ✅ 3) redirect جديد
+return redirect()
     ->route('admin.bookings.show', $booking->id)
-    ->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
+    ->with('status', 'تم اعتماد الحجز بنجاح');
 }
 
 
