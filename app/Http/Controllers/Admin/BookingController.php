@@ -35,7 +35,8 @@ class BookingController extends Controller
 }
 
     public function approve(Booking $booking)
-{
+{ dd('HIT APPROVE', $booking->id, $booking->status);
+
     if ($booking->status !== 'pending') {
         return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
     }
