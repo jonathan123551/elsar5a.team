@@ -7,21 +7,33 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     protected $fillable = [
-        'show_time_id',
-        'full_name',
-        'phone',
-        'tickets_count',
-        'total_price',
-        'payment_method',
-        'payment_status',
-        'transfer_screenshot_path',
-        'reference_code',
-        'paid_at',
-        'approved_by_admin_id',
-        'approved_at',
-        'whatsapp_sent',
-        'whatsapp_sent_at',
-    ];
+    'show_time_id',
+    'full_name',
+    'phone',
+    'tickets_count',
+    'total_price',
+
+    // الدفع
+    'payment_method',
+    'payment_status',
+    'transfer_screenshot_path',
+    'paid_at',
+
+    // الحجز
+    'status',              // ✅ ده سبب المشكلة
+    'reference_code',
+    'qr_code_path',        // ✅ ده سبب المشكلة
+    'admin_notes',         // ✅ للرفض
+
+    // الإدارة
+    'approved_by_admin_id',
+    'approved_at',
+
+    // واتساب
+    'whatsapp_sent',
+    'whatsapp_sent_at',
+];
+
 
     protected $casts = [
         'paid_at' => 'datetime',
