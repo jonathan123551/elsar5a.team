@@ -115,7 +115,9 @@ dd($booking->status);
 
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    return back()->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
+    return redirect()
+    ->route('admin.bookings.show', $booking->id)
+    ->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
 }
 
 
@@ -126,6 +128,8 @@ dd($booking->status);
             'admin_notes' => $request->admin_notes
         ]);
 
-        return back()->with('status', 'تم رفض الحجز');
-    }
+        return redirect()
+    ->route('admin.bookings.show', $booking->id)
+    ->with('status', 'تم رفض الحجز');
+}
 }
