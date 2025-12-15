@@ -34,7 +34,7 @@ class BookingController extends Controller
     return view('admin.bookings.show', compact('booking'));
 }
 
-   public function approve(Booking $booking)
+  public function approve(Booking $booking)
 {
     $booking->refresh();
 
@@ -48,10 +48,10 @@ class BookingController extends Controller
         return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    // 1️⃣ خصم التذاكر
+    // خصم التذاكر
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    // 2️⃣ توليد QR (Base64)
+    // توليد QR بـ GD (Base64)
     $qrPng = QrCode::format('png')
         ->size(300)
         ->margin(0)
@@ -59,17 +59,18 @@ class BookingController extends Controller
 
     $qrBase64 = 'data:image/png;base64,' . base64_encode($qrPng);
 
-    // 3️⃣ تحديث الحجز
+    // تحديث الحجز
     $booking->update([
-        'status'           => 'approved',
-        'qr_code_base64'   => $qrBase64,
-        'approved_at'      => now(),
+        'status'         => 'approved',
+        'qr_code_base64' => $qrBase64,
+        'approved_at'    => now(),
     ]);
 
     return redirect()
         ->route('admin.bookings.show', $booking->id)
         ->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
 }
+
 
 
 
