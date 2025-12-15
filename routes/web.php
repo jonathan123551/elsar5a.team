@@ -1,10 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AuthController;
+
 use App\Http\Controllers\Admin\ShowController as AdminShowController;
 use App\Http\Controllers\Admin\ShowTimeController as AdminShowTimeController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
@@ -16,7 +18,7 @@ use App\Http\Controllers\Admin\ArchiveController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (User)
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
@@ -27,20 +29,18 @@ Route::get('/', [SiteController::class, 'home'])->name('home');
 Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
 Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');
 
-// About
+// About & Archive
 Route::get('/about', [SiteController::class, 'about'])->name('about');
-
-// Archive
 Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
 
-// Booking
+// Booking (User)
 Route::get('/book/{showTime}', [BookingController::class, 'create'])->name('bookings.create');
 Route::post('/book/{showTime}', [BookingController::class, 'store'])->name('bookings.store');
 
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes
+| Authentication
 |--------------------------------------------------------------------------
 */
 
@@ -108,7 +108,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
 
-        // ✅ approve / reject لازم قبل show
+        // ✅ approve / reject قبل show
         Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])->name('approve');
         Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])->name('reject');
 
