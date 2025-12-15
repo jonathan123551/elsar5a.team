@@ -34,118 +34,62 @@ class BookingController extends Controller
     return view('admin.bookings.show', compact('booking'));
 }
 
-    public function approve(Booking $booking)
-{ $booking->refresh();
-dd($booking->status);
-
+   public function approve(Booking $booking)
+{
+    // 🔒 لو اتراجع قبل كده
     if ($booking->status !== 'pending') {
         return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
     }
 
-    $time = $booking->showTime()->with('show')->first();
-    $show = $time?->show;
+    $time = $booking->showTime;
 
     if (!$time || $time->available_tickets < $booking->tickets_count) {
         return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    $qrText = $booking->reference_code;
-    $relativePath = "tickets/{$booking->reference_code}.png";
+    /* =========================
+       1️⃣ UPDATE DB FIRST
+    ==========================*/
+    $booking->update([
+        'status' => 'approved',
+        'approved_at' => now(),
+    ]);
 
-    // امسح QR قديم
-    if ($booking->qr_code_path) {
-        Storage::disk('public')->delete($booking->qr_code_path);
-    }
+    $time->decrement('available_tickets', $booking->tickets_count);
 
-    /**
-     * 🟩 لو فيه Template تذكرة
-     */
-    if ($show && $show->ticket_template_path && extension_loaded('gd')) {
+    /* =========================
+       2️⃣ TRY QR (OPTIONAL)
+    ==========================*/
+    try {
+        $qrText = $booking->reference_code;
+        $relativePath = "tickets/{$qrText}.png";
 
-        $templatePath = storage_path('app/public/' . $show->ticket_template_path);
-
-        if (file_exists($templatePath)) {
-            $qrSize = $show->ticket_qr_size ?? 220;
-            $x = $show->ticket_qr_x ?? 0;
-            $y = $show->ticket_qr_y ?? 0;
-
-            // QR باستخدام GD فقط
-            $qrPng = QrCode::format('png')
-                ->size($qrSize)
-                ->margin(0)
-                ->generate($qrText);
-
-            $ticket = imagecreatefrompng($templatePath);
-            $qrImg  = imagecreatefromstring($qrPng);
-
-            imagecopy(
-                $ticket,
-                $qrImg,
-                $x,
-                $y,
-                0,
-                0,
-                imagesx($qrImg),
-                imagesy($qrImg)
-            );
-
-            $outputPath = storage_path('app/public/' . $relativePath);
-            imagepng($ticket, $outputPath);
-
-            imagedestroy($ticket);
-            imagedestroy($qrImg);
-        }
-
-    } else {
-        /**
-         * 🔁 fallback → QR لوحده
-         */
         $qrPng = QrCode::format('png')
-            ->size(600)
-            ->margin(1)
+            ->size(300)
+            ->margin(0)
             ->generate($qrText);
 
         Storage::disk('public')->put($relativePath, $qrPng);
+
+        $booking->update([
+            'qr_code_path' => $relativePath
+        ]);
+
+    } catch (\Throwable $e) {
+        logger()->error('QR generation failed', [
+            'booking_id' => $booking->id,
+            'error' => $e->getMessage(),
+        ]);
     }
 
-    // ✅ 1) حدّث الحجز الأول
-$booking->update([
-    'status' => 'approved',
-]);
-
-$time->decrement('available_tickets', $booking->tickets_count);
-
-// ✅ 2) بعد كده حاول توليد QR
-try {
-
-    $qrText = $booking->reference_code;
-    $relativePath = "tickets/{$booking->reference_code}.png";
-
-    if ($booking->qr_code_path) {
-        Storage::disk('public')->delete($booking->qr_code_path);
-    }
-
-    $qrPng = QrCode::format('png')
-        ->size(300)
-        ->margin(0)
-        ->generate($qrText);
-
-    Storage::disk('public')->put($relativePath, $qrPng);
-
-    $booking->update([
-        'qr_code_path' => $relativePath
-    ]);
-
-} catch (\Throwable $e) {
-    // ❗ حتى لو QR فشل – الحجز اتقبل خلاص
-    logger()->error('QR failed: ' . $e->getMessage());
+    /* =========================
+       3️⃣ REDIRECT
+    ==========================*/
+    return redirect()
+        ->route('admin.bookings.show', $booking->id)
+        ->with('status', 'تم اعتماد الحجز بنجاح');
 }
 
-// ✅ 3) redirect جديد
-return redirect()
-    ->route('admin.bookings.show', $booking->id)
-    ->with('status', 'تم اعتماد الحجز بنجاح');
-}
 
 
     public function reject(Request $request, Booking $booking)
