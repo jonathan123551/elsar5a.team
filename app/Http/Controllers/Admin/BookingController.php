@@ -36,7 +36,8 @@ class BookingController extends Controller
 
    public function approve(Booking $booking)
 {
-    // 🔒 لو اتراجع قبل كده
+    $booking->refresh();
+
     if ($booking->status !== 'pending') {
         return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
     }
@@ -47,50 +48,29 @@ class BookingController extends Controller
         return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    /* =========================
-       1️⃣ UPDATE DB FIRST
-    ==========================*/
-    $booking->update([
-        'status' => 'approved',
-        'approved_at' => now(),
-    ]);
-
+    // 1️⃣ خصم التذاكر
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    /* =========================
-       2️⃣ TRY QR (OPTIONAL)
-    ==========================*/
-    try {
-        $qrText = $booking->reference_code;
-        $relativePath = "tickets/{$qrText}.png";
+    // 2️⃣ توليد QR (Base64)
+    $qrPng = QrCode::format('png')
+        ->size(300)
+        ->margin(0)
+        ->generate($booking->reference_code);
 
-        $qrPng = QrCode::format('png')
-    ->size(300)
-    ->margin(0)
-    ->generate($booking->reference_code);
+    $qrBase64 = 'data:image/png;base64,' . base64_encode($qrPng);
 
-$relativePath = "tickets/{$booking->reference_code}.png";
+    // 3️⃣ تحديث الحجز
+    $booking->update([
+        'status'           => 'approved',
+        'qr_code_base64'   => $qrBase64,
+        'approved_at'      => now(),
+    ]);
 
-Storage::disk('public')->put($relativePath, $qrPng);
-
-$booking->update([
-    'qr_code_path' => $relativePath
-]);
-
-    } catch (\Throwable $e) {
-        logger()->error('QR generation failed', [
-            'booking_id' => $booking->id,
-            'error' => $e->getMessage(),
-        ]);
-    }
-
-    /* =========================
-       3️⃣ REDIRECT
-    ==========================*/
     return redirect()
         ->route('admin.bookings.show', $booking->id)
-        ->with('status', 'تم اعتماد الحجز بنجاح');
+        ->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
 }
+
 
 
 
