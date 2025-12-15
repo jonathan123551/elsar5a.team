@@ -20,57 +20,49 @@ use App\Http\Controllers\Admin\ArchiveController;
 |--------------------------------------------------------------------------
 */
 
-// صفحة الهوم / الداشبورد العام للموقع
+// Home
 Route::get('/', [SiteController::class, 'home'])->name('home');
 
-// صفحة قائمة العروض الحالية (زي ما كانت عندك)
+// Shows
 Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
-
-// صفحة About
-Route::get('/about', [SiteController::class, 'about'])->name('about');
-
-// صفحة العروض السابقة / الأرشيف
-Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
-
-// صفحة تفاصيل العرض
 Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');
 
-// صفحة إنشاء حجز
-Route::get('/book/{showTime}', [BookingController::class, 'create'])->name('bookings.create');
+// About
+Route::get('/about', [SiteController::class, 'about'])->name('about');
 
-// إرسال طلب الحجز
+// Archive
+Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
+
+// Booking
+Route::get('/book/{showTime}', [BookingController::class, 'create'])->name('bookings.create');
 Route::post('/book/{showTime}', [BookingController::class, 'store'])->name('bookings.store');
 
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes (Admin Login)
+| Authentication Routes
 |--------------------------------------------------------------------------
 */
 
-// صفحة الدخول
 Route::get('/login', [AuthController::class, 'show'])->name('login');
-
-// تنفيذ تسجيل الدخول
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-
-// تسجيل خروج الأدمن
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes (Protected)
+| Admin Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
-    // لوحة التحكم الرئيسية للأدمن
+    // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
-    | إدارة العروض
+    | Shows
     |--------------------------------------------------------------------------
     */
     Route::get('/shows', [AdminShowController::class, 'index'])->name('shows.index');
@@ -81,13 +73,18 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/shows/{show}', [AdminShowController::class, 'destroy'])->name('shows.destroy');
     Route::post('/shows/{show}/toggle', [AdminShowController::class, 'toggleActive'])->name('shows.toggle');
 
-    // إعداد صفحة "عن الفريق" من لوحة الأدمن
+    /*
+    |--------------------------------------------------------------------------
+    | About / Archive
+    |--------------------------------------------------------------------------
+    */
     Route::get('/about', [AboutController::class, 'edit'])->name('about.edit');
     Route::post('/about', [AboutController::class, 'update'])->name('about.update');
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+
     /*
     |--------------------------------------------------------------------------
-    | إدارة مواعيد العروض ShowTimes
+    | Show Times
     |--------------------------------------------------------------------------
     */
     Route::get('/shows/{show}/times', [AdminShowTimeController::class, 'index'])->name('shows.times.index');
@@ -97,25 +94,31 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::put('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'update'])->name('shows.times.update');
     Route::delete('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'destroy'])->name('shows.times.destroy');
 
-    // روت لتحديث عدد التذاكر من صفحة edit لكل ميعاد
-    Route::patch('/show-times/{showTime}/update-tickets', [AdminShowTimeController::class, 'updateTickets'])
-        ->name('show-times.update-tickets');
+    Route::patch(
+        '/show-times/{showTime}/update-tickets',
+        [AdminShowTimeController::class, 'updateTickets']
+    )->name('show-times.update-tickets');
 
     /*
     |--------------------------------------------------------------------------
-    | إدارة الحجوزات
+    | Bookings  ✅ (الترتيب الصح)
     |--------------------------------------------------------------------------
     */
     Route::prefix('bookings')->name('bookings.')->group(function () {
+
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
-        Route::get('/{booking}', [AdminBookingController::class, 'show'])->name('show');
+
+        // ✅ approve / reject لازم قبل show
         Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])->name('approve');
         Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])->name('reject');
+
+        // ❗ show في الآخر
+        Route::get('/{booking}', [AdminBookingController::class, 'show'])->name('show');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | صفحة سكان التذاكر (QR Scanner)
+    | Scanner
     |--------------------------------------------------------------------------
     */
     Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner');
@@ -123,7 +126,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | إعدادات التحويلات (محفظة / InstaPay)
+    | Payments Settings
     |--------------------------------------------------------------------------
     */
     Route::get('/settings/payments', [SettingsController::class, 'editPayments'])
