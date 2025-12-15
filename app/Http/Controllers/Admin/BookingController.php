@@ -65,15 +65,17 @@ class BookingController extends Controller
         $relativePath = "tickets/{$qrText}.png";
 
         $qrPng = QrCode::format('png')
-            ->size(300)
-            ->margin(0)
-            ->generate($qrText);
+    ->size(300)
+    ->margin(0)
+    ->generate($booking->reference_code);
 
-        Storage::disk('public')->put($relativePath, $qrPng);
+$relativePath = "tickets/{$booking->reference_code}.png";
 
-        $booking->update([
-            'qr_code_path' => $relativePath
-        ]);
+Storage::disk('public')->put($relativePath, $qrPng);
+
+$booking->update([
+    'qr_code_path' => $relativePath
+]);
 
     } catch (\Throwable $e) {
         logger()->error('QR generation failed', [
