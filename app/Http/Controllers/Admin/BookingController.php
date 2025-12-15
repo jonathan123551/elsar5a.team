@@ -34,19 +34,20 @@ class BookingController extends Controller
     return view('admin.bookings.show', compact('booking'));
 }
 
-  public function approve(Booking $booking)
+ public function approve(Booking $booking)
 {
-    // منع إعادة الاعتماد
     if ($booking->status !== 'pending') {
         return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
     }
 
     $time = $booking->showTime;
+    $show = $time?->show;
+
     if (!$time || $time->available_tickets < $booking->tickets_count) {
         return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    // 1️⃣ حدّث الحجز فورًا (حتى لو QR فشل)
+    // 1️⃣ اعتماد الحجز
     $booking->update([
         'status' => 'approved',
         'approved_at' => now(),
@@ -54,37 +55,45 @@ class BookingController extends Controller
 
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    // 2️⃣ توليد QR باستخدام GD فقط (بدون أي مكتبة)
+    // 2️⃣ توليد التذكرة
     try {
-        $qrText = $booking->reference_code;
-        $size = 300;
+        $templatePath = storage_path('app/public/ticket_template.png'); // 👈 صورة التذكرة
+        $outputPath   = "tickets/{$booking->reference_code}.png";
 
-        $im = imagecreatetruecolor($size, $size);
-        $white = imagecolorallocate($im, 255, 255, 255);
-        $black = imagecolorallocate($im, 0, 0, 0);
-        imagefill($im, 0, 0, $white);
+        $ticket = imagecreatefrompng($templatePath);
 
-        // QR بسيط (placeholder مضمون)
-        imagestring($im, 5, 20, 140, $qrText, $black);
+        // توليد QR بسيط بـ GD
+        $qrSize = 220;
+        $qr = imagecreatetruecolor($qrSize, $qrSize);
+        $white = imagecolorallocate($qr, 255, 255, 255);
+        $black = imagecolorallocate($qr, 0, 0, 0);
+        imagefill($qr, 0, 0, $white);
+        imagestring($qr, 5, 20, 100, $booking->reference_code, $black);
 
-        $relativePath = "tickets/{$qrText}.png";
-        $fullPath = storage_path('app/public/' . $relativePath);
+        // 👇 مكان الـ QR على التذكرة
+        $x = 800; // عدلها حسب التصميم
+        $y = 350;
 
-        imagepng($im, $fullPath);
-        imagedestroy($im);
+        imagecopy($ticket, $qr, $x, $y, 0, 0, $qrSize, $qrSize);
+
+        imagepng($ticket, storage_path('app/public/' . $outputPath));
+
+        imagedestroy($ticket);
+        imagedestroy($qr);
 
         $booking->update([
-            'qr_code_path' => $relativePath
+            'qr_code_path' => $outputPath
         ]);
 
     } catch (\Throwable $e) {
-        logger()->error('QR failed: ' . $e->getMessage());
+        logger()->error($e->getMessage());
     }
 
     return redirect()
         ->route('admin.bookings.show', $booking)
-        ->with('status', 'تم اعتماد الحجز بنجاح ✅');
+        ->with('status', 'تم اعتماد الحجز وتوليد التذكرة ✅');
 }
+
 
 
 
