@@ -6,7 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+
+/**
+ * Bacon QR Code (GD only)
+ */
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Renderer\Image\GdImageBackEnd;
+use BaconQrCode\Writer;
 
 class BookingController extends Controller
 {
@@ -16,116 +23,55 @@ class BookingController extends Controller
         $search = $request->query('search');
 
         $bookings = Booking::with('showTime.show')
-            ->when($status && in_array($status, ['pending', 'approved', 'rejected']), function ($query) use ($status) {
-                $query->where('status', $status);
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($search, function ($q) use ($search) {
+                $q->where('full_name', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%")
+                  ->orWhere('reference_code', 'like', "%$search%");
             })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('reference_code', 'like', "%{$search}%");
-                });
-            })
-            ->orderByDesc('created_at')
+            ->latest()
             ->get();
 
         return view('admin.bookings.index', compact('bookings', 'status', 'search'));
     }
 
-    public function show(Booking $booking)
-    {
-        $booking->load('showTime.show');
-        return view('admin.bookings.show', compact('booking'));
-    }
-
     public function approve(Booking $booking)
     {
         if ($booking->status !== 'pending') {
-            return back()->with('status', 'تم التعامل مع هذا الحجز من قبل.');
+            return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
         }
 
-        $time = $booking->showTime()->with('show')->first();
-        $show = $time?->show;
-
+        $time = $booking->showTime;
         if (!$time || $time->available_tickets < $booking->tickets_count) {
-            return back()->with('status', 'عدد التذاكر المتاحة أقل من المطلوب.');
+            return back()->with('status', 'عدد التذاكر غير كافٍ');
         }
 
+        /** 🟢 QR Text */
         $qrText = $booking->reference_code;
 
-        // حذف QR القديم لو موجود
-        if ($booking->qr_code_path) {
-            Storage::disk('public')->delete($booking->qr_code_path);
-        }
+        /** 🟢 QR Renderer (GD فقط) */
+        $renderer = new ImageRenderer(
+            new RendererStyle(600),
+            new GdImageBackEnd()
+        );
 
-        $relativePath = null;
+        $writer = new Writer($renderer);
 
-        /**
-         * 1️⃣ محاولة دمج QR مع Template (GD فقط)
-         */
-        if ($show && $show->ticket_template_path && extension_loaded('gd')) {
+        /** 🟢 Generate QR PNG */
+        $qrPng = $writer->writeString($qrText);
 
-            $templateFullPath = storage_path('app/public/' . $show->ticket_template_path);
+        /** 🟢 Save QR */
+        $relativePath = "tickets/{$booking->reference_code}.png";
+        Storage::disk('public')->put($relativePath, $qrPng);
 
-            if (file_exists($templateFullPath)) {
-                try {
-                    $qrSize = $show->ticket_qr_size ?? 220;
-                    $x      = $show->ticket_qr_x ?? 0;
-                    $y      = $show->ticket_qr_y ?? 0;
+        /** 🟢 Update booking */
+        $booking->update([
+            'status'       => 'approved',
+            'qr_code_path' => $relativePath,
+        ]);
 
-                    $qrPng = QrCode::format('png')
-                        ->size($qrSize)
-                        ->margin(0)
-                        ->generate($qrText);
-
-                    $ticket = imagecreatefrompng($templateFullPath);
-                    $qrImg  = imagecreatefromstring($qrPng);
-
-                    imagecopy(
-                        $ticket,
-                        $qrImg,
-                        $x,
-                        $y,
-                        0,
-                        0,
-                        imagesx($qrImg),
-                        imagesy($qrImg)
-                    );
-
-                    $relativePath = "tickets/{$booking->reference_code}.png";
-                    $outputFull   = storage_path('app/public/' . $relativePath);
-
-                    imagepng($ticket, $outputFull);
-
-                    imagedestroy($ticket);
-                    imagedestroy($qrImg);
-                } catch (\Throwable $e) {
-                    $relativePath = null;
-                }
-            }
-        }
-
-        /**
-         * 2️⃣ fallback → QR لوحده
-         */
-        if (!$relativePath) {
-            $qrPng = QrCode::format('png')
-                ->size(600)
-                ->margin(1)
-                ->generate($qrText);
-
-            $relativePath = "tickets/{$booking->reference_code}.png";
-            Storage::disk('public')->put($relativePath, $qrPng);
-        }
-
-        // تحديث الحجز
-        $booking->status       = 'approved';
-        $booking->qr_code_path = $relativePath;
-        $booking->save();
-
-        // تقليل عدد التذاكر
-        $time->available_tickets -= $booking->tickets_count;
-        $time->save();
+        /** 🟢 Update tickets */
+        $time->decrement('available_tickets', $booking->tickets_count);
 
         return back()->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
     }
@@ -133,13 +79,14 @@ class BookingController extends Controller
     public function reject(Request $request, Booking $booking)
     {
         if ($booking->status !== 'pending') {
-            return back()->with('status', 'تم التعامل مع هذا الحجز من قبل.');
+            return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
         }
 
-        $booking->status      = 'rejected';
-        $booking->admin_notes = $request->input('admin_notes');
-        $booking->save();
+        $booking->update([
+            'status' => 'rejected',
+            'admin_notes' => $request->admin_notes,
+        ]);
 
-        return back()->with('status', 'تم رفض الحجز.');
+        return back()->with('status', 'تم رفض الحجز');
     }
 }
