@@ -28,17 +28,15 @@
                 {{ optional($booking->showTime->date)->format('Y-m-d') }}
                 •
                 الساعة:
-                @if($booking->showTime)
-                    {{ \Carbon\Carbon::parse($booking->showTime->time)->format('g:i A') }}
-                @else
-                    -
-                @endif
+                {{ $booking->showTime
+                    ? \Carbon\Carbon::parse($booking->showTime->time)->format('g:i A')
+                    : '-' }}
             </p>
         </div>
 
         <a href="{{ route('admin.bookings.index') }}"
            class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-            ← رجوع لقائمة الحجوزات
+            ← رجوع
         </a>
     </div>
 
@@ -47,7 +45,7 @@
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
             <h2 class="text-sm font-semibold mb-1">بيانات العميل</h2>
             <p><span class="text-gray-400 text-xs">الاسم:</span> {{ $booking->full_name }}</p>
-            <p><span class="text-gray-400 text-xs">رقم الموبايل / واتساب:</span> {{ $booking->phone }}</p>
+            <p><span class="text-gray-400 text-xs">رقم الموبايل:</span> {{ $booking->phone }}</p>
         </div>
 
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
@@ -59,10 +57,10 @@
             </p>
 
             <p>
-                <span class="text-gray-400 text-xs">الحالة الحالية:</span>
+                <span class="text-gray-400 text-xs">الحالة:</span>
                 @if($booking->status === 'approved')
                     <span class="px-2 py-1 text-[11px] rounded-full bg-emerald-500/15 text-emerald-200 border border-emerald-500/40">
-                        مقبول / تم الاعتماد
+                        مقبول
                     </span>
                 @elseif($booking->status === 'rejected')
                     <span class="px-2 py-1 text-[11px] rounded-full bg-red-500/15 text-red-200 border border-red-500/40">
@@ -77,7 +75,7 @@
 
             @if($booking->admin_notes)
                 <p class="text-xs text-gray-400">
-                    <span class="text-gray-300">ملاحظات الأدمن:</span>
+                    <span class="text-gray-300">ملاحظات:</span>
                     {{ $booking->admin_notes }}
                 </p>
             @endif
@@ -96,74 +94,54 @@
             </a>
 
             <div class="border border-white/10 rounded-xl overflow-hidden bg-black">
-                <img src="{{ asset('storage/' . $booking->transfer_screenshot_path) }}"
-                     class="w-full object-contain">
+                <img
+                    src="{{ asset('storage/' . $booking->transfer_screenshot_path) }}"
+                    class="w-full h-auto object-contain"
+                    alt="Transfer Screenshot"
+                >
             </div>
         </div>
     @endif
 
-    {{-- 🎟️ QR Ticket --}}
+    {{-- 🎫 التذكرة + QR (بالمقاس الطبيعي) --}}
     @if($booking->qr_code_path)
-        <div class="flex justify-center mt-6">
-            <div class="qr-card">
+        <div class="mt-8 flex flex-col items-center gap-3">
+            <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
                 <img
                     src="{{ asset('storage/' . $booking->qr_code_path) }}"
-                    alt="QR Ticket"
-                    class="qr-img"
+                    alt="Ticket QR"
+                    class="max-w-full h-auto object-contain rounded-lg"
                 >
-
-                <div class="qr-ref">
-                    Reference: {{ $booking->reference_code }}
-                </div>
             </div>
+
+            <p class="text-xs text-gray-400">
+                Reference: {{ $booking->reference_code }}
+            </p>
         </div>
     @endif
 
     {{-- أزرار اعتماد / رفض --}}
-    <div class="flex gap-3 text-sm">
+    <div class="flex gap-3">
         @if($booking->status === 'pending')
-            <form method="POST" action="{{ route('admin.bookings.approve', $booking) }}">
+            <form action="{{ route('admin.bookings.approve', $booking) }}" method="POST">
                 @csrf
-                <button class="px-4 py-2 rounded-full bg-emerald-500 text-black font-medium">
-                    ✅ اعتماد الحجز
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-full bg-emerald-500 text-black font-medium hover:bg-emerald-400">
+                    ✅ اعتماد
                 </button>
             </form>
 
-            <form method="POST" action="{{ route('admin.bookings.reject', $booking) }}">
+            <form action="{{ route('admin.bookings.reject', $booking) }}" method="POST">
                 @csrf
-                <button class="px-4 py-2 rounded-full bg-red-500 text-white font-medium">
-                    ❌ رفض الحجز
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-full bg-red-500/80 text-white hover:bg-red-500">
+                    ❌ رفض
                 </button>
             </form>
         @endif
     </div>
 
 </section>
-
-{{-- ستايل QR --}}
-<style>
-.qr-card {
-    background: linear-gradient(145deg, #020617, #0f172a);
-    padding: 16px;
-    border-radius: 16px;
-    box-shadow: 0 12px 30px rgba(0,0,0,.5);
-    border: 1px solid rgba(255,255,255,.08);
-    text-align: center;
-}
-
-.qr-img {
-    width: 180px;
-    height: 180px;
-    background: white;
-    padding: 8px;
-    border-radius: 12px;
-}
-
-.qr-ref {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #cbd5f5;
-    letter-spacing: .4px;
-}
-</style>
 @endsection
