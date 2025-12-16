@@ -114,13 +114,19 @@
         @endif
 
         {{-- تذكرة QR لو موجودة --}}
-       @if($booking->qr_code_base64)
-    <div class="flex justify-center">
-        <div class="bg-white p-4 rounded-xl">
-            {!! base64_decode($booking->qr_code_base64) !!}
-        </div>
+       @if($booking->qr_code_path)
+    <div class="mt-4 text-center">
+        <img
+            src="{{ asset('storage/' . $booking->qr_code_path) }}"
+            alt="QR Code"
+            style="width:220px"
+        >
+        <p class="mt-2 text-sm text-gray-400">
+            Reference: {{ $booking->reference_code }}
+        </p>
     </div>
 @endif
+
 
 
         {{-- أزرار اعتماد / رفض الحجز --}}
