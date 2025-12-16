@@ -2,11 +2,16 @@
 
 return [
 
-    'renderer' => [
-        'image' => [
-            'backend' => 'gd',
-        ],
+    'renderer' => 'gd',
+
+    'gd' => [
+        'extension' => 'gd',
+    ],
+
+    'imagick' => [
+        'extension' => 'imagick',
     ],
 
 ];
+
 
