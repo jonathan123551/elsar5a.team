@@ -34,47 +34,81 @@ class BookingController extends Controller
         return view('admin.bookings.show', compact('booking'));
     }
 
-    public function approve(Booking $booking)
+   public function approve(Booking $booking)
 {
     if ($booking->status === 'approved') {
         return back()->with('status', 'الحجز معتمد بالفعل');
     }
 
-    // 1️⃣ حدّث حالة الحجز
+    // حمّل العرض ووقت العرض
+    $booking->load('showTime.show');
+    $show = $booking->showTime?->show;
+
+    if (!$show || !$show->ticket_template_path) {
+        return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
+    }
+
+    // 1️⃣ اعتماد الحجز
     $booking->update([
         'status' => 'approved',
         'approved_at' => now(),
     ]);
 
-    // 2️⃣ تأكد إن فولدر tickets موجود
+    // 2️⃣ إعداد المسارات
+    $templatePath = storage_path('app/public/' . $show->ticket_template_path);
+    $outputPath   = "tickets/{$booking->reference_code}.png";
+
+    if (!file_exists($templatePath)) {
+        return back()->with('status', 'ملف قالب التذكرة غير موجود');
+    }
+
     if (!Storage::disk('public')->exists('tickets')) {
         Storage::disk('public')->makeDirectory('tickets');
     }
 
-    // 3️⃣ توليد QR باستخدام Endroid (بدون imagick)
-    $result = Builder::create()
-        ->writer(new PngWriter())
+    // 3️⃣ إحداثيات و حجم QR من الداتابيز
+    $qrSize = $show->ticket_qr_size ?? 220;
+    $x = $show->ticket_qr_x ?? 0;
+    $y = $show->ticket_qr_y ?? 0;
+
+    // 4️⃣ توليد QR (Endroid بدون imagick)
+    $qrResult = \Endroid\QrCode\Builder\Builder::create()
+        ->writer(new \Endroid\QrCode\Writer\PngWriter())
         ->data($booking->reference_code)
-        ->size(300)
-        ->margin(10)
+        ->size($qrSize)
+        ->margin(0)
         ->build();
 
-    $path = "tickets/{$booking->reference_code}.png";
+    // 5️⃣ دمج QR فوق التذكرة (GD)
+    $ticketImg = imagecreatefrompng($templatePath);
+    $qrImg = imagecreatefromstring($qrResult->getString());
 
-    Storage::disk('public')->put(
-        $path,
-        $result->getString()
+    imagecopy(
+        $ticketImg,
+        $qrImg,
+        $x,
+        $y,
+        0,
+        0,
+        imagesx($qrImg),
+        imagesy($qrImg)
     );
 
-    // 4️⃣ خزّن مسار الـ QR في الداتابيز
+    imagepng($ticketImg, storage_path("app/public/{$outputPath}"));
+
+    imagedestroy($ticketImg);
+    imagedestroy($qrImg);
+
+    // 6️⃣ حفظ المسار في الحجز
     $booking->update([
-        'qr_code_path' => $path,
+        'qr_code_path' => $outputPath,
     ]);
 
     return redirect()
         ->route('admin.bookings.show', $booking->id)
-        ->with('status', 'تم اعتماد الحجز وتوليد QR بنجاح');
+        ->with('status', 'تم اعتماد الحجز وإنشاء التذكرة بنجاح 🎟️');
 }
+
 
 
     public function reject(Request $request, Booking $booking)
