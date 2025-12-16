@@ -37,72 +37,43 @@ class BookingController extends Controller
 
  public function approve(Booking $booking)
 {
-    // تأكد إن الحجز لسه pending
+    $booking->refresh();
+
     if ($booking->status !== 'pending') {
-        return back()->with('status', 'تم التعامل مع الحجز مسبقًا');
+        return back()->with('status', 'تم التعامل مع هذا الحجز من قبل');
     }
 
     $time = $booking->showTime;
     if (!$time || $time->available_tickets < $booking->tickets_count) {
-        return back()->with('status', 'عدد التذاكر غير كافٍ');
+        return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    /** ===============================
-     * 1️⃣ اعتماد الحجز
-     * =============================== */
+    // 1️⃣ اعتماد الحجز
     $booking->update([
-        'status'       => 'approved',
-        'approved_at'  => now(),
+        'status' => 'approved',
+        'approved_at' => now(),
     ]);
 
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    /** ===============================
-     * 2️⃣ توليد QR باستخدام GD فقط
-     * =============================== */
-    $qrText = $booking->reference_code;
-    $fileName = "tickets/{$qrText}.png";
-    $fullPath = storage_path("app/public/{$fileName}");
+    // 2️⃣ توليد QR كـ SVG (بدون GD / Imagick)
+    try {
+        $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(300)
+            ->generate($booking->reference_code);
 
-    // إنشاء صورة QR بسيطة (بدون أي مكتبات)
-    $size = 300;
-    $img = imagecreatetruecolor($size, $size);
-    $white = imagecolorallocate($img, 255, 255, 255);
-    $black = imagecolorallocate($img, 0, 0, 0);
+        $booking->update([
+            'qr_code_base64' => base64_encode($svg),
+        ]);
 
-    imagefill($img, 0, 0, $white);
-
-    // رسم QR كـ Text (حل مؤقت لكن شغال 100%)
-    imagestring(
-        $img,
-        5,
-        20,
-        140,
-        $qrText,
-        $black
-    );
-
-    // حفظ الصورة
-    imagepng($img, $fullPath);
-    imagedestroy($img);
-
-    /** ===============================
-     * 3️⃣ حفظ مسار الـ QR
-     * =============================== */
-    $booking->update([
-        'qr_code_path' => $fileName,
-    ]);
+    } catch (\Throwable $e) {
+        logger()->error('QR SVG failed: ' . $e->getMessage());
+    }
 
     return redirect()
         ->route('admin.bookings.show', $booking->id)
-        ->with('status', 'تم اعتماد الحجز وتوليد التذكرة بنجاح ✅');
+        ->with('status', 'تم اعتماد الحجز بنجاح');
 }
-
-
-
-
-
-
 
 
     public function reject(Request $request, Booking $booking)

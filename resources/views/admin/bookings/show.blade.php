@@ -114,30 +114,14 @@
         @endif
 
         {{-- تذكرة QR لو موجودة --}}
-        @if($booking->qr_code_base64)
-            <div class="bg-black/40 border border-emerald-400/40 rounded-xl p-4 text-sm space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                    <h2 class="text-sm font-semibold text-emerald-300">تذكرة QR المعتمدة</h2>
-                    <a href="{{ asset('storage/'.$booking->qr_code_path) }}"
-                       download
-                       class="text-[11px] px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/25 transition">
-                        ⬇ تحميل الكود
-                    </a>
-                </div>
+       @if($booking->qr_code_base64)
+    <div class="flex justify-center">
+        <div class="bg-white p-4 rounded-xl">
+            {!! base64_decode($booking->qr_code_base64) !!}
+        </div>
+    </div>
+@endif
 
-                <p class="text-xs text-gray-400">
-                    امسح الكود من على موبايل الضيف على باب المسرح للتأكد من صحة التذكرة.
-                </p>
-
-                <div class="flex justify-center">
-                    <div class="bg-white rounded-xl p-3 shadow-[0_0_25px_rgba(250,250,250,0.25)]">
-                        <img src="{{ asset('storage/'.$booking->qr_code_path) }}"
-                             alt="QR ticket"
-                             class="w-48 h-48 object-contain">
-                    </div>
-                </div>
-            </div>
-        @endif
 
         {{-- أزرار اعتماد / رفض الحجز --}}
         <div class="flex flex-wrap items-center gap-3 text-sm">
