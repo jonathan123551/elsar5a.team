@@ -61,16 +61,21 @@ public function approve(Booking $booking)
     try {
         $relativePath = "tickets/{$booking->reference_code}.png";
 
-        $qrPng = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-            ->size(300)
-            ->margin(1)
-            ->generate($booking->reference_code);
+// ✅ تأكد إن الفولدر موجود
+if (!Storage::disk('public')->exists('tickets')) {
+    Storage::disk('public')->makeDirectory('tickets');
+}
 
-        \Storage::disk('public')->put($relativePath, $qrPng);
+$qrPng = QrCode::format('png')
+    ->size(300)
+    ->margin(1)
+    ->generate($booking->reference_code);
 
-        $booking->update([
-            'qr_code_path' => $relativePath,
-        ]);
+Storage::disk('public')->put($relativePath, $qrPng);
+
+$booking->update([
+    'qr_code_path' => $relativePath,
+]);
     } catch (\Throwable $e) {
         \Log::error('QR generation failed: '.$e->getMessage());
     }
