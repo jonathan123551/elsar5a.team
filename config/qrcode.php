@@ -4,11 +4,9 @@ return [
 
     'renderer' => [
         'image' => [
-            'driver' => 'gd', // ✅ أهم سطر
+            'backend' => 'gd',
         ],
     ],
 
-    'size' => 300,
-    'margin' => 0,
-
 ];
+

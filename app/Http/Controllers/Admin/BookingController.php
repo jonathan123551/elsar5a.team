@@ -35,7 +35,7 @@ class BookingController extends Controller
     return view('admin.bookings.show', compact('booking'));
 }
 
- public function approve(Booking $booking)
+public function approve(Booking $booking)
 {
     $booking->refresh();
 
@@ -44,11 +44,12 @@ class BookingController extends Controller
     }
 
     $time = $booking->showTime;
+
     if (!$time || $time->available_tickets < $booking->tickets_count) {
         return back()->with('status', 'عدد التذاكر المتاحة غير كافٍ');
     }
 
-    // 1️⃣ اعتماد الحجز
+    // 1️⃣ اعتمد الحجز
     $booking->update([
         'status' => 'approved',
         'approved_at' => now(),
@@ -56,24 +57,29 @@ class BookingController extends Controller
 
     $time->decrement('available_tickets', $booking->tickets_count);
 
-    // 2️⃣ توليد QR كـ SVG (بدون GD / Imagick)
+    // 2️⃣ ولّد QR باستخدام GD فقط
     try {
-        $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+        $relativePath = "tickets/{$booking->reference_code}.png";
+
+        $qrPng = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
             ->size(300)
+            ->margin(1)
             ->generate($booking->reference_code);
 
-        $booking->update([
-            'qr_code_base64' => base64_encode($svg),
-        ]);
+        \Storage::disk('public')->put($relativePath, $qrPng);
 
+        $booking->update([
+            'qr_code_path' => $relativePath,
+        ]);
     } catch (\Throwable $e) {
-        logger()->error('QR SVG failed: ' . $e->getMessage());
+        \Log::error('QR generation failed: '.$e->getMessage());
     }
 
     return redirect()
         ->route('admin.bookings.show', $booking->id)
         ->with('status', 'تم اعتماد الحجز بنجاح');
 }
+
 
 
     public function reject(Request $request, Booking $booking)
