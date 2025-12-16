@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>@yield('title', 'فريق الصرخة المسرحي')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ asset('images/sarkha-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/sarkha-logo.png') }}">
 
     {{-- Tailwind CSS CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
