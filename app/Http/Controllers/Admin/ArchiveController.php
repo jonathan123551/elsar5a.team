@@ -3,18 +3,42 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Show;
+use App\Models\Archive;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ArchiveController extends Controller
 {
-    // صفحة إدارة العروض السابقة
     public function index()
     {
-        // هنا باعتبار إن العروض اللي is_active = 0 هي العروض السابقة
-        $archivedShows = Show::where('is_active', false)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $archives = Archive::latest()->get();
+        return view('admin.archive.index', compact('archives'));
+    }
 
-        return view('admin.archive.index', compact('archivedShows'));
+    public function create()
+    {
+        return view('admin.archive.create');
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'poster' => 'nullable|image|max:4096',
+            'video_url' => 'nullable|string|max:255',
+            'show_date' => 'nullable|date',
+        ]);
+
+        if ($request->hasFile('poster')) {
+            $data['poster_path'] = $request->file('poster')
+                ->store('archives', 'public');
+        }
+
+        Archive::create($data);
+
+        return redirect()
+            ->route('admin.archive.index')
+            ->with('status', 'تم إضافة العرض للأرشيف ✅');
     }
 }

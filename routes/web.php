@@ -18,20 +18,24 @@ use App\Http\Controllers\Admin\ArchiveController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Routes (User)
 |--------------------------------------------------------------------------
 */
 
 // Home
 Route::get('/', [SiteController::class, 'home'])->name('home');
 
-// Shows
+// Current Shows
 Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
 Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');
 
-// About & Archive
+// About
 Route::get('/about', [SiteController::class, 'about'])->name('about');
+
+// Archive (Past Shows)
 Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
+// (اختياري مستقبلاً)
+// Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])->name('archive.show');
 
 // Booking (User)
 Route::get('/book/{showTime}', [BookingController::class, 'create'])->name('bookings.create');
@@ -55,14 +59,21 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware('admin')
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-    // Dashboard
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
-    | Shows
+    | Shows (Current)
     |--------------------------------------------------------------------------
     */
     Route::get('/shows', [AdminShowController::class, 'index'])->name('shows.index');
@@ -72,15 +83,6 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::put('/shows/{show}', [AdminShowController::class, 'update'])->name('shows.update');
     Route::delete('/shows/{show}', [AdminShowController::class, 'destroy'])->name('shows.destroy');
     Route::post('/shows/{show}/toggle', [AdminShowController::class, 'toggleActive'])->name('shows.toggle');
-
-    /*
-    |--------------------------------------------------------------------------
-    | About / Archive
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/about', [AboutController::class, 'edit'])->name('about.edit');
-    Route::post('/about', [AboutController::class, 'update'])->name('about.update');
-    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -101,20 +103,40 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Bookings  ✅ (الترتيب الصح)
+    | Bookings
     |--------------------------------------------------------------------------
     */
     Route::prefix('bookings')->name('bookings.')->group(function () {
 
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
 
-        // ✅ approve / reject قبل show
+        // approve / reject لازم قبل show
         Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])->name('approve');
         Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])->name('reject');
 
-        // ❗ show في الآخر
+        // show في الآخر
         Route::get('/{booking}', [AdminBookingController::class, 'show'])->name('show');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Archive (Past Shows) - Admin
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+    Route::get('/archive/create', [ArchiveController::class, 'create'])->name('archive.create');
+    Route::post('/archive', [ArchiveController::class, 'store'])->name('archive.store');
+    Route::get('/archive/{archive}/edit', [ArchiveController::class, 'edit'])->name('archive.edit');
+    Route::put('/archive/{archive}', [ArchiveController::class, 'update'])->name('archive.update');
+    Route::delete('/archive/{archive}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | About
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/about', [AboutController::class, 'edit'])->name('about.edit');
+    Route::post('/about', [AboutController::class, 'update'])->name('about.update');
 
     /*
     |--------------------------------------------------------------------------
