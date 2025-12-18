@@ -4,62 +4,71 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Archive;
+use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ArchiveController extends Controller
 {
-    // عرض كل العروض السابقة
     public function index()
     {
         $archives = Archive::latest()->get();
         return view('admin.archive.index', compact('archives'));
     }
 
-    // فورم الإضافة
     public function create()
     {
         return view('admin.archive.create');
     }
 
-    // حفظ عرض جديد
     public function store(Request $request)
     {
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'video_url'   => 'nullable|string|max:255',
-            'year'   => 'nullable|intger',
+            'year'        => 'nullable|integer|min:1900|max:2100',
             'poster'      => 'nullable|image|max:2048',
+            'images.*'    => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('poster')) {
             $data['poster_path'] =
-                $request->file('poster')->store('archives', 'public');
+                $request->file('poster')->store('archives/posters', 'public');
         }
 
-        Archive::create($data);
+        $archive = Archive::create($data);
+
+        // صور الجاليري
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                ArchiveImage::create([
+                    'archive_id' => $archive->id,
+                    'image_path' => $image->store('archives/gallery', 'public'),
+                ]);
+            }
+        }
 
         return redirect()
             ->route('admin.archive.index')
             ->with('status', 'تم إضافة العرض بنجاح ✅');
     }
 
-    // فورم التعديل
     public function edit(Archive $archive)
     {
+        $archive->load('images');
         return view('admin.archive.edit', compact('archive'));
     }
 
-    // حفظ التعديل
     public function update(Request $request, Archive $archive)
     {
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'video_url'   => 'nullable|string|max:255',
-            'year'   => 'nullable|intger',
+            'year'        => 'nullable|integer|min:1900|max:2100',
             'poster'      => 'nullable|image|max:2048',
+            'images.*'    => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('poster')) {
@@ -68,13 +77,23 @@ class ArchiveController extends Controller
             }
 
             $data['poster_path'] =
-                $request->file('poster')->store('archives', 'public');
+                $request->file('poster')->store('archives/posters', 'public');
         }
 
         $archive->update($data);
 
+        // إضافة صور جديدة للجاليري
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                ArchiveImage::create([
+                    'archive_id' => $archive->id,
+                    'image_path' => $image->store('archives/gallery', 'public'),
+                ]);
+            }
+        }
+
         return redirect()
             ->route('admin.archive.index')
-            ->with('status', 'تم تحديث العرض بنجاح ✨');
+            ->with('status', 'تم التعديل بنجاح ✏️');
     }
 }

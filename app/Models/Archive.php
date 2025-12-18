@@ -15,7 +15,8 @@ class Archive extends Model
         'year',         // سنة العرض
     ];
 
-    protected $casts = [
-        'images' => 'array', // مهم جدًا عشان الصور
-    ];
+    public function images()
+    {
+        return $this->hasMany(ArchiveImage::class);
+    }
 }

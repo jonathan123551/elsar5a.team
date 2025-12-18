@@ -5,38 +5,48 @@
 @section('content')
 <section class="max-w-xl mx-auto space-y-6">
 
-    <h1 class="text-2xl font-bold">✏️ تعديل عرض</h1>
+<h1 class="text-2xl font-bold">✏️ تعديل عرض</h1>
 
-    <form method="POST" enctype="multipart/form-data"
-          class="space-y-4 bg-black/40 p-5 rounded-xl border border-white/10">
-        @csrf
-        @method('PUT')
+<form method="POST"
+ action="{{ route('admin.archive.update', $archive) }}"
+ enctype="multipart/form-data"
+ class="space-y-4 bg-black/40 p-5 rounded-xl border border-white/10">
+@csrf
+@method('PUT')
 
-        <input name="title" value="{{ $archive->title }}"
-               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
+<input name="title" value="{{ $archive->title }}"
+ class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        <textarea name="description" rows="4"
-                  class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">{{ $archive->description }}</textarea>
+<textarea name="description" rows="4"
+ class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">{{ $archive->description }}</textarea>
 
-        <input name="video_url" value="{{ $archive->video_url }}"
-               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
+<input name="video_url" value="{{ $archive->video_url }}"
+ class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        <input type="intger" name="year"
-               value="{{ $archive->show_date }}"
-               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
+<input type="number" name="year" value="{{ $archive->year }}"
+ class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        @if($archive->poster_path)
-            <img src="{{ asset('storage/'.$archive->poster_path) }}"
-                 class="w-full h-48 object-cover rounded-lg">
-        @endif
+@if($archive->poster_path)
+<img src="{{ asset('storage/'.$archive->poster_path) }}"
+ class="h-48 w-full object-cover rounded">
+@endif
 
-        <input type="file" name="poster" accept="image/*"
-               class="w-full text-xs text-gray-300">
+<input type="file" name="poster">
 
-        <button class="px-4 py-2 bg-amber-400 text-black rounded-full">
-            حفظ التعديلات
-        </button>
-    </form>
+<h3 class="text-sm font-semibold mt-3">صور الجاليري</h3>
+<div class="grid grid-cols-3 gap-2">
+@foreach($archive->images as $img)
+<img src="{{ asset('storage/'.$img->image_path) }}"
+ class="h-24 object-cover rounded">
+@endforeach
+</div>
 
+<input type="file" name="images[]" multiple>
+
+<button class="px-4 py-2 bg-amber-400 text-black rounded-full">
+ حفظ التعديلات
+</button>
+
+</form>
 </section>
 @endsection
