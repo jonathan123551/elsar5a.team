@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Show;
 use App\Models\About;
-
+use App\Models\Archive;
 class SiteController extends Controller
 {
     // الصفحة الرئيسية (Dashboard العام)
@@ -22,9 +22,12 @@ class SiteController extends Controller
 }
 
     // صفحة العروض السابقة
-    public function archive()
-    {
-        $shows = Show::where('is_active', false)->latest()->get();
-        return view('site.archive', compact('shows'));
-    }
+    
+
+public function archive()
+{
+    $archives = Archive::latest()->get();
+    return view('archive', compact('archives'));
+}
+
 }

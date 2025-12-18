@@ -3,62 +3,34 @@
 @section('title', 'إضافة عرض سابق')
 
 @section('content')
-<section class="max-w-3xl mx-auto space-y-6">
+<section class="max-w-xl mx-auto space-y-6">
 
     <h1 class="text-2xl font-bold">➕ إضافة عرض سابق</h1>
 
-    <form action="{{ route('admin.archive.store') }}" method="POST" enctype="multipart/form-data"
-          class="space-y-5 bg-black/40 border border-white/10 rounded-2xl p-6">
+    <form method="POST" enctype="multipart/form-data"
+          class="space-y-4 bg-black/40 p-5 rounded-xl border border-white/10">
         @csrf
 
-        {{-- اسم العرض --}}
-        <div>
-            <label class="text-sm text-gray-300">اسم العرض</label>
-            <input type="text" name="title" required
-                   class="w-full mt-1 rounded-xl bg-black/60 border border-white/10 px-4 py-2">
-        </div>
+        <input name="title" placeholder="اسم العرض"
+               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        {{-- السنة --}}
-        <div>
-            <label class="text-sm text-gray-300">سنة العرض</label>
-            <input type="number" name="year" min="1900" max="2100"
-                   class="w-full mt-1 rounded-xl bg-black/60 border border-white/10 px-4 py-2">
-        </div>
+        <textarea name="description" rows="4"
+                  placeholder="وصف العرض"
+                  class="w-full px-3 py-2 rounded bg-black/40 border border-white/10"></textarea>
 
-        {{-- الوصف --}}
-        <div>
-            <label class="text-sm text-gray-300">وصف العرض</label>
-            <textarea name="description" rows="4"
-                      class="w-full mt-1 rounded-xl bg-black/60 border border-white/10 px-4 py-2"></textarea>
-        </div>
+        <input name="video_url" placeholder="لينك فيديو يوتيوب"
+               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        {{-- لينك الفيديو --}}
-        <div>
-            <label class="text-sm text-gray-300">لينك فيديو (YouTube)</label>
-            <input type="url" name="video_url"
-                   class="w-full mt-1 rounded-xl bg-black/60 border border-white/10 px-4 py-2">
-        </div>
+        <input type="intger" name="year"
+               class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-        {{-- صور العرض --}}
-        <div>
-            <label class="text-sm text-gray-300">صور من العرض</label>
-            <input type="file" name="images[]" multiple accept="image/*"
-                   class="w-full mt-1 text-sm text-gray-300">
-        </div>
+        <input type="file" name="poster" accept="image/*"
+               class="w-full text-xs text-gray-300">
 
-        {{-- أزرار --}}
-        <div class="flex gap-3 pt-4">
-            <button type="submit"
-                    class="px-5 py-2 rounded-full bg-emerald-500 text-black hover:bg-emerald-400">
-                حفظ العرض
-            </button>
-
-            <a href="{{ route('admin.archive.index') }}"
-               class="px-5 py-2 rounded-full bg-white/5 border border-white/10">
-                إلغاء
-            </a>
-        </div>
-
+        <button class="px-4 py-2 bg-amber-400 text-black rounded-full">
+            حفظ العرض
+        </button>
     </form>
+
 </section>
 @endsection
