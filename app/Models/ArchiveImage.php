@@ -10,4 +10,9 @@ class ArchiveImage extends Model
         'archive_id',
         'image_path',
     ];
+
+    public function archive()
+    {
+        return $this->belongsTo(Archive::class);
+    }
 }

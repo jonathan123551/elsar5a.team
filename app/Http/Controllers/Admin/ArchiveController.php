@@ -22,37 +22,36 @@ class ArchiveController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'video_url'   => 'nullable|string|max:255',
-            'year'        => 'nullable|integer|min:1900|max:2100',
-            'poster'      => 'nullable|image|max:2048',
-            'images.*'    => 'nullable|image|max:2048',
-        ]);
+{
+    $data = $request->validate([
+        'title' => 'required|string',
+        'description' => 'nullable|string',
+        'video_url' => 'nullable|string',
+        'year' => 'nullable|integer',
+        'poster' => 'nullable|image',
+        'images.*' => 'nullable|image',
+    ]);
 
-        if ($request->hasFile('poster')) {
-            $data['poster_path'] =
-                $request->file('poster')->store('archives/posters', 'public');
-        }
-
-        $archive = Archive::create($data);
-
-        // صور الجاليري
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                ArchiveImage::create([
-                    'archive_id' => $archive->id,
-                    'image_path' => $image->store('archives/gallery', 'public'),
-                ]);
-            }
-        }
-
-        return redirect()
-            ->route('admin.archive.index')
-            ->with('status', 'تم إضافة العرض بنجاح ✅');
+    // حفظ البوستر
+    if ($request->hasFile('poster')) {
+        $data['poster_path'] = $request->file('poster')->store('archives/posters', 'public');
     }
+
+    $archive = Archive::create($data);
+
+    // حفظ الصور المتعددة
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            ArchiveImage::create([
+                'archive_id' => $archive->id,
+                'image_path' => $image->store('archives/images', 'public'),
+            ]);
+        }
+    }
+
+    return redirect()->route('admin.archive.index')
+        ->with('status', 'تم إضافة العرض بنجاح');
+}
 
     public function edit(Archive $archive)
     {

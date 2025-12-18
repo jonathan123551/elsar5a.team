@@ -26,7 +26,7 @@ class SiteController extends Controller
 
 public function archive()
 {
-    $archives = Archive::latest()->get();
+    $archives = Archive::with('images')->latest()->get();
     return view('archive', compact('archives'));
 }
 
