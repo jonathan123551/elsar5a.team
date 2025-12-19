@@ -3,41 +3,49 @@
 @section('title', 'مواعيد العرض - ' . $show->title)
 
 @section('content')
-    <section class="space-y-6">
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold mb-1">مواعيد العرض</h1>
-                <p class="text-xs text-gray-400">
-                    {{ $show->title }}
-                </p>
-            </div>
+<section class="space-y-6">
 
-            <div class="flex items-center gap-2">
-                <a href="{{ route('admin.shows.index') }}"
-                   class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-                    ← رجوع لإدارة العروض
-                </a>
-
-                <a href="{{ route('admin.shows.times.create', $show) }}"
-                   class="inline-flex items-center px-4 py-2 rounded-full bg-amber-400 text-black text-sm font-medium hover:bg-amber-300 transition">
-                    + إضافة موعد جديد
-                </a>
-            </div>
+    {{-- Header --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold mb-1">مواعيد العرض</h1>
+            <p class="text-xs text-gray-400">
+                {{ $show->title }}
+            </p>
         </div>
 
-        @if(session('status'))
-            <div class="bg-emerald-500/10 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl p-3">
-                {{ session('status') }}
-            </div>
-        @endif
+        <div class="flex items-center gap-2">
+            <a href="{{ route('admin.shows.index') }}"
+               class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                ← رجوع لإدارة العروض
+            </a>
 
-        @if($times->isEmpty())
-            <div class="text-sm text-gray-400 bg-black/40 border border-white/10 rounded-2xl p-4">
-                لا توجد مواعيد لهذا العرض حتى الآن.
-            </div>
-        @else
-            <div class="bg-black/40 border border-white/10 rounded-2xl overflow-hidden">
-                <table class="w-full text-sm text-gray-200">
+            <a href="{{ route('admin.shows.times.create', $show) }}"
+               class="inline-flex items-center px-4 py-2 rounded-full bg-amber-400 text-black text-sm font-medium hover:bg-amber-300 transition">
+                + إضافة موعد جديد
+            </a>
+        </div>
+    </div>
+
+    {{-- Success Message --}}
+    @if(session('status'))
+        <div class="bg-emerald-500/10 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl p-3">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    {{-- No Times --}}
+    @if($times->isEmpty())
+        <div class="text-sm text-gray-400 bg-black/40 border border-white/10 rounded-2xl p-4">
+            لا توجد مواعيد لهذا العرض حتى الآن.
+        </div>
+    @else
+
+        {{-- ✅ Scrollable Table Wrapper --}}
+        <div class="bg-black/40 border border-white/10 rounded-2xl">
+            <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
+                <table class="min-w-[720px] w-full text-sm text-gray-200">
+
                     <thead class="bg-white/5 text-xs uppercase text-gray-400">
                         <tr>
                             <th class="px-3 py-2 text-right">التاريخ</th>
@@ -48,31 +56,37 @@
                             <th class="px-3 py-2 text-right">إجراءات</th>
                         </tr>
                     </thead>
+
                     <tbody>
                     @foreach($times as $time)
                         @php
                             $fewTickets = $time->available_tickets > 0 && $time->available_tickets <= 10;
                         @endphp
+
                         <tr class="border-t border-white/5">
-                            {{-- التاريخ بصيغة d/m/Y --}}
-                            <td class="px-3 py-2 text-xs">
+
+                            {{-- التاريخ --}}
+                            <td class="px-3 py-2 text-xs whitespace-nowrap">
                                 {{ $time->date->format('d/m/Y') }}
                             </td>
 
-                            {{-- الوقت بصيغة 12 ساعة g:i A --}}
-                            <td class="px-3 py-2 text-xs">
+                            {{-- الوقت --}}
+                            <td class="px-3 py-2 text-xs whitespace-nowrap">
                                 {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
                             </td>
 
-                            <td class="px-3 py-2 text-xs text-amber-300 font-semibold">
+                            {{-- السعر --}}
+                            <td class="px-3 py-2 text-xs text-amber-300 font-semibold whitespace-nowrap">
                                 {{ $time->ticket_price }} ج
                             </td>
 
-                            <td class="px-3 py-2 text-xs">
+                            {{-- التذاكر --}}
+                            <td class="px-3 py-2 text-xs whitespace-nowrap">
                                 {{ $time->available_tickets }} / {{ $time->total_tickets }}
                             </td>
 
-                            <td class="px-3 py-2 text-xs">
+                            {{-- الحالة --}}
+                            <td class="px-3 py-2 text-xs whitespace-nowrap">
                                 @if($time->is_sold_out || $time->available_tickets <= 0)
                                     <span class="px-2 py-1 rounded-full bg-red-500/20 text-red-200 border border-red-500/40">
                                         Sold Out
@@ -88,7 +102,8 @@
                                 @endif
                             </td>
 
-                            <td class="px-3 py-2 text-xs">
+                            {{-- إجراءات --}}
+                            <td class="px-3 py-2 text-xs whitespace-nowrap">
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('admin.shows.times.edit', [$show, $time]) }}"
                                        class="px-2 py-1 rounded-full bg-white/10 hover:bg-white/20">
@@ -107,11 +122,15 @@
                                     </form>
                                 </div>
                             </td>
+
                         </tr>
                     @endforeach
                     </tbody>
+
                 </table>
             </div>
-        @endif
-    </section>
+        </div>
+    @endif
+
+</section>
 @endsection

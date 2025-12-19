@@ -25,26 +25,39 @@
 <input type="number" name="year" value="{{ $archive->year }}"
        class="w-full px-3 py-2 rounded bg-black/40 border border-white/10">
 
-{{-- Poster --}}
-@if($archive->poster_path)
-<img src="{{ asset('storage/'.$archive->poster_path) }}"
-     class="w-full h-40 object-cover rounded">
-@endif
+{{-- بوستر العرض --}}
+<div class="space-y-1">
+    <label class="text-xs text-gray-300">
+        🖼️ بوستر العرض (الصورة الأساسية)
+    </label>
 
-<input type="file" name="poster">
+    @if($archive->poster_path)
+        <img src="{{ asset('storage/'.$archive->poster_path) }}"
+             class="w-full h-48 object-cover rounded-lg border border-white/10 mb-2">
+    @endif
 
-{{-- Images --}}
-@if($archive->images && $archive->images->count())
-<div class="grid grid-cols-3 gap-2">
-@foreach($archive->images as $img)
-<img src="{{ asset('storage/'.$img->image_path) }}"
-     class="h-24 object-cover rounded">
-@endforeach
+    <input type="file" name="poster" accept="image/*"
+           class="w-full text-xs text-gray-300">
 </div>
-@endif
 
-<input type="file" name="images[]" multiple>
+{{-- صور الجاليري --}}
+<div class="space-y-2">
+    <label class="text-xs text-gray-300">
+        📸 صور من العرض (لقطات – مشاهد – بروفات)
+    </label>
 
+    @if($archive->images && $archive->images->count())
+        <div class="grid grid-cols-3 gap-2">
+            @foreach($archive->images as $img)
+                <img src="{{ asset('storage/'.$img->image_path) }}"
+                     class="h-24 w-full object-cover rounded border border-white/10">
+            @endforeach
+        </div>
+    @endif
+
+    <input type="file" name="images[]" multiple accept="image/*"
+           class="w-full text-xs text-gray-300">
+</div>
 <button class="px-4 py-2 bg-amber-400 text-black rounded-full">
     حفظ التعديلات
 </button>

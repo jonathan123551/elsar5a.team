@@ -149,6 +149,8 @@ Route::middleware('admin')
     Route::get('/archive/{archive}/edit', [ArchiveController::class, 'edit'])->name('archive.edit');
     Route::put('/archive/{archive}', [ArchiveController::class, 'update'])->name('archive.update');
     Route::delete('/archive/{archive}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
+    Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
+    ->name('archive.show');
 
     /*
     |--------------------------------------------------------------------------
