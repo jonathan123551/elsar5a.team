@@ -12,7 +12,7 @@ class ArchiveController extends Controller
 {
     public function index()
     {
-        $archives = Archive::latest()->get();
+        $archives = Archive::with('images')->latest()->get();
         return view('admin.archive.index', compact('archives'));
     }
 
@@ -22,36 +22,38 @@ class ArchiveController extends Controller
     }
 
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'title' => 'required|string',
-        'description' => 'nullable|string',
-        'video_url' => 'nullable|string',
-        'year' => 'nullable|integer',
-        'poster' => 'nullable|image',
-        'images.*' => 'nullable|image',
-    ]);
+    {
+        $data = $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'video_url'   => 'nullable|string|max:255',
+            'year'        => 'nullable|integer|min:1900|max:2100',
+            'poster'      => 'nullable|image|max:2048',
+            'images.*'    => 'nullable|image|max:2048',
+        ]);
 
-    // حفظ البوستر
-    if ($request->hasFile('poster')) {
-        $data['poster_path'] = $request->file('poster')->store('archives/posters', 'public');
-    }
-
-    $archive = Archive::create($data);
-
-    // حفظ الصور المتعددة
-    if ($request->hasFile('images')) {
-        foreach ($request->file('images') as $image) {
-            ArchiveImage::create([
-                'archive_id' => $archive->id,
-                'image_path' => $image->store('archives/images', 'public'),
-            ]);
+        // حفظ البوستر
+        if ($request->hasFile('poster')) {
+            $data['poster_path'] =
+                $request->file('poster')->store('archives/posters', 'public');
         }
-    }
 
-    return redirect()->route('admin.archive.index')
-        ->with('status', 'تم إضافة العرض بنجاح');
-}
+        $archive = Archive::create($data);
+
+        // حفظ صور الجاليري
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                ArchiveImage::create([
+                    'archive_id' => $archive->id,
+                    'image_path' => $image->store('archives/gallery', 'public'),
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('admin.archive.index')
+            ->with('status', 'تم إضافة العرض بنجاح ✅');
+    }
 
     public function edit(Archive $archive)
     {
@@ -70,6 +72,7 @@ class ArchiveController extends Controller
             'images.*'    => 'nullable|image|max:2048',
         ]);
 
+        // تحديث البوستر
         if ($request->hasFile('poster')) {
             if ($archive->poster_path) {
                 Storage::disk('public')->delete($archive->poster_path);
@@ -81,7 +84,7 @@ class ArchiveController extends Controller
 
         $archive->update($data);
 
-        // إضافة صور جديدة للجاليري
+        // إضافة صور جديدة
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 ArchiveImage::create([
@@ -94,5 +97,26 @@ class ArchiveController extends Controller
         return redirect()
             ->route('admin.archive.index')
             ->with('status', 'تم التعديل بنجاح ✏️');
+    }
+
+    public function destroy(Archive $archive)
+    {
+        // حذف البوستر
+        if ($archive->poster_path) {
+            Storage::disk('public')->delete($archive->poster_path);
+        }
+
+        // حذف صور الجاليري
+        foreach ($archive->images as $img) {
+            Storage::disk('public')->delete($img->image_path);
+            $img->delete();
+        }
+
+        // حذف العرض
+        $archive->delete();
+
+        return redirect()
+            ->route('admin.archive.index')
+            ->with('status', 'تم حذف العرض بنجاح 🗑️');
     }
 }

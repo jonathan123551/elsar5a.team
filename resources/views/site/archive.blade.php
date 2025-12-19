@@ -53,7 +53,7 @@
                             <a href="{{ $archive->video_url }}"
                                target="_blank"
                                class="inline-block text-xs text-amber-300 hover:underline mt-1">
-                                ▶️ مشاهدة الفيديو
+                                ▶️ مشاهدة العرض
                             </a>
                         @endif
 
