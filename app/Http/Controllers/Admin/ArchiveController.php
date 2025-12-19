@@ -100,23 +100,26 @@ class ArchiveController extends Controller
     }
 
     public function destroy(Archive $archive)
-    {
-        // حذف البوستر
-        if ($archive->poster_path) {
-            Storage::disk('public')->delete($archive->poster_path);
-        }
+{
+    // حذف البوستر
+    if ($archive->poster_path) {
+        Storage::disk('public')->delete($archive->poster_path);
+    }
 
-        // حذف صور الجاليري
+    // حذف صور الجاليري (بأمان)
+    if ($archive->images && $archive->images->count()) {
         foreach ($archive->images as $img) {
             Storage::disk('public')->delete($img->image_path);
             $img->delete();
         }
-
-        // حذف العرض
-        $archive->delete();
-
-        return redirect()
-            ->route('admin.archive.index')
-            ->with('status', 'تم حذف العرض بنجاح 🗑️');
     }
+
+    // حذف العرض
+    $archive->delete();
+
+    return redirect()
+        ->route('admin.archive.index')
+        ->with('status', 'تم حذف العرض بنجاح 🗑️');
+}
+
 }
