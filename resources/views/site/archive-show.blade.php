@@ -3,8 +3,8 @@
 @section('title', $archive->title)
 
 @section('content')
-<section class="space-y-10">
-{{-- ================= Hero ================= --}}
+<section class="space-y-10 max-w-5xl mx-auto px-4">
+    {{-- ================= Hero ================= --}}
 <div class="relative rounded-3xl overflow-hidden border border-white/10">
 
     @if(!empty($archive->poster_path))
@@ -67,23 +67,22 @@
 
 
 {{-- ================= Gallery ================= --}}
-@if($archive->images?->count())
-<section class="space-y-4">
-    <h2 class="text-lg font-semibold">📸 صور العرض</h2>
+ @if($archive->images && $archive->images->count())
+    <div class="bg-black/40 border border-white/10 rounded-2xl p-6">
+        <h2 class="font-semibold mb-4">📸 صور من العرض</h2>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        @foreach($archive->images as $img)
-            <img
-                src="{{ asset('storage/' . $img->image_path) }}"
-                alt="صورة من عرض {{ $archive->title }}"
-                class="rounded-xl object-cover h-40 w-full
-                       hover:scale-105 hover:shadow-xl hover:shadow-amber-400/20
-                       transition duration-300 cursor-pointer"
-                loading="lazy">
-        @endforeach
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            @foreach($archive->images as $img)
+                <img
+                    src="{{ asset('storage/' . $img->image_path) }}"
+                    class="rounded-xl object-cover h-40 w-full
+                           hover:scale-105 hover:shadow-xl hover:shadow-amber-400/20
+                           transition duration-300 cursor-pointer"
+                    loading="lazy">
+            @endforeach
+        </div>
     </div>
-</section>
-@endif
+    @endif
 
 
 {{-- ================= Back ================= --}}
