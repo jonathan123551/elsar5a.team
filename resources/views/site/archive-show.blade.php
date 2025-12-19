@@ -41,29 +41,31 @@
 
 {{-- ================= Video ================= --}}
 @php
-    $videoId = null;
-
-    if (!empty($archive->video_url)) {
-        parse_str(parse_url($archive->video_url, PHP_URL_QUERY), $vars);
-        $videoId = $vars['v'] ?? null;
+    function youtubeEmbed($url) {
+        if (preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/))([^&]+)~', $url, $m)) {
+            return $m[1];
+        }
+        return null;
     }
+
+    $videoId = $archive->video_url ? youtubeEmbed($archive->video_url) : null;
 @endphp
 
 @if($videoId)
 <div class="bg-black/40 border border-white/10 rounded-2xl p-6">
     <h2 class="font-semibold mb-4">🎥 مشاهدة العرض</h2>
 
-    <div class="relative aspect-video rounded-xl overflow-hidden border border-white/10">
+    <div class="aspect-video rounded-xl overflow-hidden border border-white/10">
         <iframe
             class="w-full h-full"
             src="https://www.youtube.com/embed/{{ $videoId }}"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen>
+            allowfullscreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
         </iframe>
     </div>
 </div>
 @endif
+
 
 {{-- ================= Gallery ================= --}}
 @if($archive->images && $archive->images->count())

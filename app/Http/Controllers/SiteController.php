@@ -29,8 +29,10 @@ class SiteController extends Controller
 
     // صفحة تفاصيل عرض سابق
     public function archiveShow(Archive $archive)
-    {
-        $archive->load('images');
-        return view('site.archive-show', compact('archive'));
-    }
+{
+    $archive->load('images');
+
+    return view('site.archive-show', compact('archive'));
+}
+
 }

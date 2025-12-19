@@ -9,12 +9,11 @@ class Archive extends Model
     protected $fillable = [
         'title',
         'description',
-        'poster_path',
         'video_url',
         'year',
+        'poster_path',
     ];
 
-    // ✅ علاقة الصور المتعددة
     public function images()
     {
         return $this->hasMany(ArchiveImage::class);
