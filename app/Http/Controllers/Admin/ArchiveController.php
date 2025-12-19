@@ -45,7 +45,7 @@ class ArchiveController extends Controller
             foreach ($request->file('images') as $image) {
                 ArchiveImage::create([
                     'archive_id' => $archive->id,
-                    'image_path' => $image->store('archives/gallery', 'public'),
+                    'image_path' => $image->store('posters', 'public'),
                 ]);
             }
         }
