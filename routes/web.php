@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Controllers (Site)
+|--------------------------------------------------------------------------
+*/
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\BookingController;
@@ -9,7 +14,7 @@ use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
-| Admin Controllers
+| Controllers (Admin)
 |--------------------------------------------------------------------------
 */
 use App\Http\Controllers\Admin\ShowController as AdminShowController;
@@ -39,14 +44,15 @@ Route::get('/about', [SiteController::class, 'about'])->name('about');
 
 // Archive (Past Shows)
 Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
+Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
+    ->name('archive.show');
 
-// Booking (User)
+// Booking
 Route::get('/book/{showTime}', [BookingController::class, 'create'])
     ->name('bookings.create');
 
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->name('bookings.store');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -56,7 +62,6 @@ Route::post('/book/{showTime}', [BookingController::class, 'store'])
 Route::get('/login', [AuthController::class, 'show'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -126,14 +131,12 @@ Route::middleware('admin')
 
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
 
-        // approve / reject لازم قبل show
         Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])
             ->name('approve');
 
         Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])
             ->name('reject');
 
-        // show في الآخر
         Route::get('/{booking}', [AdminBookingController::class, 'show'])
             ->name('show');
     });
@@ -149,8 +152,6 @@ Route::middleware('admin')
     Route::get('/archive/{archive}/edit', [ArchiveController::class, 'edit'])->name('archive.edit');
     Route::put('/archive/{archive}', [ArchiveController::class, 'update'])->name('archive.update');
     Route::delete('/archive/{archive}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
-    Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
-    ->name('archive.show');
 
     /*
     |--------------------------------------------------------------------------
