@@ -3,38 +3,78 @@
 @section('title', 'العروض السابقة')
 
 @section('content')
-<section class="grid md:grid-cols-3 gap-6">
+<section class="space-y-6">
 
-@foreach($archives as $archive)
-<div class="bg-black/40 border border-white/10 rounded-xl overflow-hidden">
+    <h1 class="text-2xl font-bold mb-4">🎭 العروض السابقة</h1>
 
-@if($archive->poster_path)
-<img src="{{ asset('storage/'.$archive->poster_path) }}"
- class="h-56 w-full object-cover">
-@endif
+    @if($archives->isEmpty())
+        <div class="bg-black/40 border border-white/10 rounded-xl p-6 text-center text-sm text-gray-400">
+            لا توجد عروض سابقة مضافة حتى الآن.
+        </div>
+    @else
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
 
-<div class="p-4 space-y-2">
-<h3 class="font-semibold">{{ $archive->title }}</h3>
+            @foreach($archives as $archive)
+                <div
+                    class="bg-black/40 border border-white/10 rounded-xl overflow-hidden
+                           hover:scale-[1.02] transition duration-300">
 
-<p class="text-xs text-gray-400">{{ $archive->description }}</p>
+                    {{-- Poster --}}
+                    @if(!empty($archive->poster_path))
+                        <img
+                            src="{{ asset('storage/' . $archive->poster_path) }}"
+                            alt="{{ $archive->title }}"
+                            class="h-56 w-full object-cover">
+                    @endif
 
-@if($archive->video_url)
-<a href="{{ $archive->video_url }}" target="_blank"
- class="text-xs text-amber-300">▶️ مشاهدة الفيديو</a>
-@endif
+                    <div class="p-4 space-y-2">
 
-@if($archive->images->count())
-<div class="grid grid-cols-3 gap-2 mt-2">
-@foreach($archive->images as $img)
-<img src="{{ asset('storage/'.$img->image_path) }}"
- class="h-20 object-cover rounded">
-@endforeach
-</div>
-@endif
+                        {{-- Title --}}
+                        <h3 class="font-semibold text-base">
+                            {{ $archive->title }}
+                        </h3>
 
-</div>
-</div>
-@endforeach
+                        {{-- Year --}}
+                        @if(!empty($archive->year))
+                            <p class="text-[11px] text-gray-400">
+                                سنة العرض: {{ $archive->year }}
+                            </p>
+                        @endif
+
+                        {{-- Description --}}
+                        @if(!empty($archive->description))
+                            <p class="text-xs text-gray-400 line-clamp-4">
+                                {{ $archive->description }}
+                            </p>
+                        @endif
+
+                        {{-- Video --}}
+                        @if(!empty($archive->video_url))
+                            <a href="{{ $archive->video_url }}"
+                               target="_blank"
+                               class="inline-block text-xs text-amber-300 hover:underline mt-1">
+                                ▶️ مشاهدة الفيديو
+                            </a>
+                        @endif
+
+                        {{-- Gallery Images --}}
+                        @if(method_exists($archive, 'images') && $archive->images->count())
+                            <div class="grid grid-cols-3 gap-2 mt-3">
+                                @foreach($archive->images as $img)
+                                    <img
+                                        src="{{ asset('storage/' . $img->image_path) }}"
+                                        class="h-20 w-full object-cover rounded-lg border border-white/10"
+                                        loading="lazy">
+                                @endforeach
+                            </div>
+                        @endif
+
+                    </div>
+                </div>
+            @endforeach
+
+        </div>
+    @endif
 
 </section>
 @endsection
