@@ -58,7 +58,7 @@
                         @endif
 
                         {{-- Gallery Images --}}
-                        @if(method_exists($archive, 'images') && $archive->images->count())
+                        @if($archive->images?->count())
                             <div class="grid grid-cols-3 gap-2 mt-3">
                                 @foreach($archive->images as $img)
                                     <img
