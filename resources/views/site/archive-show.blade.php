@@ -68,7 +68,7 @@
 
 
 {{-- ================= Gallery ================= --}}
-@if($archive->images && $archive->images->count())
+@if($archive->images?->count())
 <section class="space-y-4">
     <h2 class="text-lg font-semibold">📸 صور العرض</h2>
 
@@ -76,6 +76,7 @@
         @foreach($archive->images as $img)
             <img
                 src="{{ asset('storage/' . $img->image_path) }}"
+                alt="صورة من عرض {{ $archive->title }}"
                 class="rounded-xl object-cover h-40 w-full
                        hover:scale-105 hover:shadow-xl hover:shadow-amber-400/20
                        transition duration-300 cursor-pointer"
@@ -84,6 +85,7 @@
     </div>
 </section>
 @endif
+
 
 {{-- ================= Back ================= --}}
 <a href="{{ route('archive') }}"
