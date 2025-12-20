@@ -48,7 +48,7 @@
                        class="px-4 py-2 rounded-full text-xs font-medium
                               bg-red-500/10 border border-red-500/40 text-red-200
                               hover:bg-red-500/20 hover:scale-105 transition">
-                        ▶ YouTube
+                        YouTube
                     </a>
                 @endif
 
