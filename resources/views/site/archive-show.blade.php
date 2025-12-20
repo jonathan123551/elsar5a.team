@@ -68,21 +68,62 @@
 
 {{-- ================= Gallery ================= --}}
  @if($archive->images && $archive->images->count())
-    <div class="bg-black/40 border border-white/10 rounded-2xl p-6">
-        <h2 class="font-semibold mb-4">📸 صور من العرض</h2>
+<div class="bg-black/40 border border-white/10 rounded-2xl p-6 space-y-4">
+    <h2 class="font-semibold text-lg">📸 صور من العرض</h2>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            @foreach($archive->images as $img)
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        @foreach($archive->images as $img)
+            <div
+                class="relative group cursor-pointer overflow-hidden rounded-xl"
+                onclick="openLightbox('{{ asset('storage/' . $img->image_path) }}')">
+
                 <img
                     src="{{ asset('storage/' . $img->image_path) }}"
-                    class="rounded-xl object-cover h-40 w-full
-                           hover:scale-105 hover:shadow-xl hover:shadow-amber-400/20
-                           transition duration-300 cursor-pointer"
+                    class="h-40 w-full object-cover
+                           transition duration-500
+                           group-hover:scale-110
+                           group-hover:brightness-110"
                     loading="lazy">
-            @endforeach
-        </div>
+
+                {{-- Overlay --}}
+                <div
+                    class="absolute inset-0 bg-black/40 opacity-0
+                           group-hover:opacity-100
+                           transition duration-300
+                           flex items-center justify-center">
+
+                    <span class="text-white text-3xl">🔍</span>
+                </div>
+            </div>
+        @endforeach
     </div>
-    @endif
+</div>
+@endif
+<div
+    id="lightbox"
+    class="fixed inset-0 bg-black/80 hidden z-50
+           flex items-center justify-center"
+    onclick="closeLightbox()">
+
+    <img
+        id="lightbox-img"
+        class="max-h-[90vh] max-w-[90vw]
+               rounded-2xl shadow-2xl">
+</div>
+<script>
+    function openLightbox(src) {
+        const lightbox = document.getElementById('lightbox');
+        const img = document.getElementById('lightbox-img');
+
+        img.src = src;
+        lightbox.classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.add('hidden');
+    }
+</script>
+
 
 
 {{-- ================= Back ================= --}}
