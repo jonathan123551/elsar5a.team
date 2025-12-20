@@ -74,57 +74,59 @@
 
     {{-- Navbar --}}
     <header class="border-b border-white/10 bg-black/40 backdrop-blur sticky top-0 z-40">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
 
-            {{-- اللوجو + الاسم --}}
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <img src="{{ asset('images/sarkha-logo.png') }}"
-                     class="w-12 h-12 sm:w-16 sm:h-16 object-contain invert brightness-125 drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]"
-                     alt="فريق الصرخة المسرحي">
-                <div class="min-w-0">
-                    <div class="text-base sm:text-lg font-semibold tracking-wide truncate">
-                        فريق الصرخة المسرحي
-                    </div>
-                    <div class="text-[11px] sm:text-xs text-gray-400">
-                        حجز تذاكر العروض
-                    </div>
+        {{-- اللوجو + الاسم --}}
+        <div class="flex items-center gap-2">
+            <img src="{{ asset('images/sarkha-logo.png') }}"
+                 class="w-10 h-10 object-contain invert brightness-125
+                        drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                 alt="فريق الصرخة المسرحي">
+
+            <div class="leading-tight">
+                <div class="text-sm font-semibold">
+                    فريق الصرخة المسرحي
+                </div>
+                <div class="text-[10px] text-gray-400">
+                    حجز تذاكر العروض
                 </div>
             </div>
-
-            {{-- الناف بار --}}
-            <nav class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-medium
-                        bg-black/40 backdrop-blur px-3 py-2 rounded-full border border-white/10
-                        self-stretch md:self-auto justify-center md:justify-start">
-
-                {{-- Home --}}
-                <a href="{{ route('shows.index') }}"
-                   class="px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200
-                          hover:bg-amber-400 hover:text-black
-                          {{ request()->routeIs('shows.index') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                    Home
-                </a>
-
-                
-
-                {{-- العروض السابقة --}}
-                <a href="{{ route('archive') }}"
-                   class="px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200
-                          hover:bg-amber-400 hover:text-black
-                          {{ request()->routeIs('archive') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                    العروض السابقة
-                </a>
-
-                {{-- About --}}
-                <a href="{{ route('about') }}"
-                   class="px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200
-                          hover:bg-amber-400 hover:text-black
-                          {{ request()->routeIs('about') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                    About
-                </a>
-            </nav>
-
         </div>
-    </header>
+
+        {{-- الناف بار --}}
+        <nav
+            class="flex items-center gap-1 text-[11px] sm:text-sm font-medium
+                   bg-black/50 backdrop-blur px-2 py-1
+                   rounded-full border border-white/10">
+
+            {{-- Home --}}
+            <a href="{{ route('shows.index') }}"
+               class="px-2 py-1 rounded-full transition
+                      hover:bg-amber-400 hover:text-black
+                      {{ request()->routeIs('shows.index') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
+                Home
+            </a>
+
+            {{-- العروض السابقة --}}
+            <a href="{{ route('archive') }}"
+               class="px-2 py-1 rounded-full transition
+                      hover:bg-amber-400 hover:text-black
+                      {{ request()->routeIs('archive') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
+                السابقة
+            </a>
+
+            {{-- About --}}
+            <a href="{{ route('about') }}"
+               class="px-2 py-1 rounded-full transition
+                      hover:bg-amber-400 hover:text-black
+                      {{ request()->routeIs('about') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
+                About
+            </a>
+        </nav>
+
+    </div>
+</header>
+
 
     {{-- المحتوى الرئيسي --}}
     <main class="max-w-5xl mx-auto px-4 py-6 md:py-10">
