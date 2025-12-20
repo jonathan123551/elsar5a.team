@@ -4,8 +4,6 @@
 
 @section('content')
 <section class="space-y-10 max-w-5xl mx-auto px-4">
-    <pre>{{ dd($archive->images) }}</pre>
-
     {{-- ================= Hero ================= --}}
 <div class="relative rounded-3xl overflow-hidden border border-white/10">
 
