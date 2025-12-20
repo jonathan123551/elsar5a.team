@@ -112,7 +112,7 @@
                class="px-2 py-1 rounded-full transition
                       hover:bg-amber-400 hover:text-black
                       {{ request()->routeIs('archive') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                السابقة
+                العروض السابقة
             </a>
 
             {{-- About --}}
