@@ -104,7 +104,7 @@
                class="px-2 py-1 rounded-full transition
                       hover:bg-amber-400 hover:text-black
                       {{ request()->routeIs('shows.index') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                Home
+               الرئيسية
             </a>
 
             {{-- العروض السابقة --}}
@@ -120,7 +120,7 @@
                class="px-2 py-1 rounded-full transition
                       hover:bg-amber-400 hover:text-black
                       {{ request()->routeIs('about') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
-                About
+                عن الفريق
             </a>
         </nav>
 
