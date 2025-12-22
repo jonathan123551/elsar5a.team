@@ -7,6 +7,7 @@ use App\Models\Archive;
 use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+dd(config('cloudinary.cloud_url'));
 
 class ArchiveController extends Controller
 {
