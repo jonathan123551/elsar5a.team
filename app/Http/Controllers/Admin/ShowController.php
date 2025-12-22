@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Show;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ShowController extends Controller
 {
@@ -35,19 +34,21 @@ class ShowController extends Controller
 
         // 🎭 Poster
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $poster = cloudinary()->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'shows/posters']
             );
+
             $data['poster_path'] = $poster->getSecurePath();
         }
 
         // 🎟️ Ticket template
         if ($request->hasFile('ticket_template')) {
-            $ticket = Cloudinary::upload(
+            $ticket = cloudinary()->upload(
                 $request->file('ticket_template')->getRealPath(),
                 ['folder' => 'tickets/templates']
             );
+
             $data['ticket_template_path'] = $ticket->getSecurePath();
         }
 
@@ -86,18 +87,20 @@ class ShowController extends Controller
         ]);
 
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $poster = cloudinary()->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'shows/posters']
             );
+
             $show->poster_path = $poster->getSecurePath();
         }
 
         if ($request->hasFile('ticket_template')) {
-            $ticket = Cloudinary::upload(
+            $ticket = cloudinary()->upload(
                 $request->file('ticket_template')->getRealPath(),
                 ['folder' => 'tickets/templates']
             );
+
             $show->ticket_template_path = $ticket->getSecurePath();
         }
 

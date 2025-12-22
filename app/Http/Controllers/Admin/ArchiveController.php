@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Archive;
 use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ArchiveController extends Controller
 {
@@ -32,21 +31,22 @@ class ArchiveController extends Controller
             'images.*'    => 'nullable|image|max:4096',
         ]);
 
-        // 📌 Poster (URL)
+        // 🖼️ Poster
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $poster = cloudinary()->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
+
             $data['poster_path'] = $poster->getSecurePath();
         }
 
         $archive = Archive::create($data);
 
-        // 📸 Gallery images (URLs)
+        // 📸 Gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = Cloudinary::upload(
+                $uploaded = cloudinary()->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
@@ -82,10 +82,11 @@ class ArchiveController extends Controller
 
         // 🖼️ Update poster
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $poster = cloudinary()->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
+
             $data['poster_path'] = $poster->getSecurePath();
         }
 
@@ -94,7 +95,7 @@ class ArchiveController extends Controller
         // ➕ Add new gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = Cloudinary::upload(
+                $uploaded = cloudinary()->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
@@ -113,14 +114,13 @@ class ArchiveController extends Controller
 
     public function destroy(Archive $archive)
     {
-        // ❌ Delete gallery images (DB only – URLs)
-        if ($archive->images && $archive->images->count()) {
+        // حذف الصور من الداتا بيز فقط (Cloudinary URLs)
+        if ($archive->images) {
             foreach ($archive->images as $img) {
                 $img->delete();
             }
         }
 
-        // ❌ Delete archive
         $archive->delete();
 
         return redirect()
