@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Archive;
 use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ArchiveController extends Controller
 {
@@ -28,31 +28,39 @@ class ArchiveController extends Controller
             'description' => 'nullable|string',
             'video_url'   => 'nullable|string|max:255',
             'year'        => 'nullable|integer|min:1900|max:2100',
-            'poster'      => 'nullable|image|max:2048',
-            'images.*'    => 'nullable|image|max:2048',
+            'poster'      => 'nullable|image|max:4096',
+            'images.*'    => 'nullable|image|max:4096',
         ]);
 
-        // حفظ البوستر
+        // 📌 Poster (URL)
         if ($request->hasFile('poster')) {
-            $data['poster_path'] =
-                $request->file('poster')->store('archives/posters', 'public');
+            $poster = Cloudinary::upload(
+                $request->file('poster')->getRealPath(),
+                ['folder' => 'archives/posters']
+            );
+            $data['poster_path'] = $poster->getSecurePath();
         }
 
         $archive = Archive::create($data);
 
-        // حفظ صور الجاليري
+        // 📸 Gallery images (URLs)
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
+                $uploaded = Cloudinary::upload(
+                    $image->getRealPath(),
+                    ['folder' => 'archives/gallery']
+                );
+
                 ArchiveImage::create([
                     'archive_id' => $archive->id,
-                    'image_path' => $image->store('posters', 'public'),
+                    'image_path' => $uploaded->getSecurePath(),
                 ]);
             }
         }
 
         return redirect()
             ->route('admin.archive.index')
-            ->with('status', 'تم إضافة العرض بنجاح ✅');
+            ->with('status', 'تم إضافة العرض السابق بنجاح ✅');
     }
 
     public function edit(Archive $archive)
@@ -68,58 +76,55 @@ class ArchiveController extends Controller
             'description' => 'nullable|string',
             'video_url'   => 'nullable|string|max:255',
             'year'        => 'nullable|integer|min:1900|max:2100',
-            'poster'      => 'nullable|image|max:2048',
-            'images.*'    => 'nullable|image|max:2048',
+            'poster'      => 'nullable|image|max:4096',
+            'images.*'    => 'nullable|image|max:4096',
         ]);
 
-        // تحديث البوستر
+        // 🖼️ Update poster
         if ($request->hasFile('poster')) {
-            if ($archive->poster_path) {
-                Storage::disk('public')->delete($archive->poster_path);
-            }
-
-            $data['poster_path'] =
-                $request->file('poster')->store('archives/posters', 'public');
+            $poster = Cloudinary::upload(
+                $request->file('poster')->getRealPath(),
+                ['folder' => 'archives/posters']
+            );
+            $data['poster_path'] = $poster->getSecurePath();
         }
 
         $archive->update($data);
 
-        // إضافة صور جديدة
+        // ➕ Add new gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
+                $uploaded = Cloudinary::upload(
+                    $image->getRealPath(),
+                    ['folder' => 'archives/gallery']
+                );
+
                 ArchiveImage::create([
                     'archive_id' => $archive->id,
-                    'image_path' => $image->store('archives/gallery', 'public'),
+                    'image_path' => $uploaded->getSecurePath(),
                 ]);
             }
         }
 
         return redirect()
             ->route('admin.archive.index')
-            ->with('status', 'تم التعديل بنجاح ✏️');
+            ->with('status', 'تم تحديث العرض بنجاح ✏️');
     }
 
     public function destroy(Archive $archive)
-{
-    // حذف البوستر
-    if ($archive->poster_path) {
-        Storage::disk('public')->delete($archive->poster_path);
-    }
-
-    // حذف صور الجاليري (بأمان)
-    if ($archive->images && $archive->images->count()) {
-        foreach ($archive->images as $img) {
-            Storage::disk('public')->delete($img->image_path);
-            $img->delete();
+    {
+        // ❌ Delete gallery images (DB only – URLs)
+        if ($archive->images && $archive->images->count()) {
+            foreach ($archive->images as $img) {
+                $img->delete();
+            }
         }
+
+        // ❌ Delete archive
+        $archive->delete();
+
+        return redirect()
+            ->route('admin.archive.index')
+            ->with('status', 'تم حذف العرض السابق 🗑️');
     }
-
-    // حذف العرض
-    $archive->delete();
-
-    return redirect()
-        ->route('admin.archive.index')
-        ->with('status', 'تم حذف العرض بنجاح 🗑️');
-}
-
 }

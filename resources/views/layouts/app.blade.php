@@ -69,6 +69,11 @@
             filter: drop-shadow(0 0 25px rgba(255,255,255,0.7));
         }
     </style>
+    <style>
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+
 </head>
 <body class="stage-bg min-h-screen text-gray-100">
 
@@ -88,7 +93,6 @@
                     فريق الصرخة المسرحي
                 </div>
                 <div class="text-[10px] text-gray-400">
-                    حجز تذاكر العروض
                 </div>
             </div>
         </div>

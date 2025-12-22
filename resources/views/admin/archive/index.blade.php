@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold">العروض السابقة</h1>
 
         <div class="flex items-center gap-2">
-            {{-- زر إضافة عرض سابق --}}
+            {{-- إضافة عرض --}}
             <a href="{{ route('admin.archive.create') }}"
                class="text-xs px-4 py-2 rounded-full bg-emerald-500 text-black hover:bg-emerald-400 transition">
                 ➕ إضافة عرض سابق
@@ -32,6 +32,7 @@
             <table class="min-w-full text-gray-100">
                 <thead class="bg-white/5 text-xs uppercase text-gray-400">
                     <tr>
+                        <th class="px-3 py-2 text-right">البوستر</th>
                         <th class="px-3 py-2 text-right">اسم العرض</th>
                         <th class="px-3 py-2 text-right">الوصف</th>
                         <th class="px-3 py-2 text-right">السنة</th>
@@ -40,16 +41,32 @@
                 </thead>
                 <tbody>
                 @foreach($archives as $archive)
-                    <tr class="border-t border-white/5 hover:bg-white/5">
+                    <tr class="border-t border-white/5 hover:bg-white/5 align-middle">
+
+                        {{-- Poster (Cloudinary URL مباشر) --}}
+                        <td class="px-3 py-2">
+                            @if($archive->poster_path)
+                                <img
+                                    src="{{ $archive->poster_path }}"
+                                    alt="{{ $archive->title }}"
+                                    class="w-14 h-20 object-cover rounded-lg border border-white/10">
+                            @else
+                                <span class="text-xs text-gray-500">—</span>
+                            @endif
+                        </td>
+
                         <td class="px-3 py-2 font-medium">
                             {{ $archive->title }}
                         </td>
+
                         <td class="px-3 py-2 text-xs text-gray-400 max-w-xs truncate">
                             {{ $archive->description }}
                         </td>
+
                         <td class="px-3 py-2 text-xs text-gray-300">
-                            {{ $archive->year }}
+                            {{ $archive->year ?? '—' }}
                         </td>
+
                         <td class="px-3 py-2 text-center space-x-1 space-x-reverse">
                             <a href="{{ route('admin.archive.edit', $archive) }}"
                                class="text-xs px-3 py-1 rounded-full bg-amber-400 text-black hover:bg-amber-300 transition">

@@ -51,6 +51,7 @@
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
             <h2 class="text-sm font-semibold mb-1">بيانات الحجز</h2>
             <p><span class="text-gray-400 text-xs">عدد التذاكر:</span> {{ $booking->tickets_count }}</p>
+
             <p>
                 <span class="text-gray-400 text-xs">إجمالي السعر:</span>
                 <span class="text-amber-300 font-semibold">{{ $booking->total_price }} جنيه</span>
@@ -84,10 +85,16 @@
 
     {{-- Screenshot التحويل --}}
     @if($booking->transfer_screenshot_path)
+        @php
+            $screenshot = str_starts_with($booking->transfer_screenshot_path, 'http')
+                ? $booking->transfer_screenshot_path
+                : asset('storage/' . $booking->transfer_screenshot_path);
+        @endphp
+
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
             <h2 class="text-sm font-semibold">Screenshot التحويل</h2>
 
-            <a href="{{ asset('storage/' . $booking->transfer_screenshot_path) }}"
+            <a href="{{ $screenshot }}"
                target="_blank"
                class="inline-flex text-[11px] px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10">
                 فتح الصورة في تبويب جديد 🔍
@@ -95,23 +102,27 @@
 
             <div class="border border-white/10 rounded-xl overflow-hidden bg-black">
                 <img
-                    src="{{ asset('storage/' . $booking->transfer_screenshot_path) }}"
+                    src="{{ $screenshot }}"
                     class="w-full h-auto object-contain"
-                    alt="Transfer Screenshot"
-                >
+                    alt="Transfer Screenshot">
             </div>
         </div>
     @endif
 
-    {{-- 🎫 التذكرة + QR (بالمقاس الطبيعي) --}}
+    {{-- 🎫 التذكرة + QR --}}
     @if($booking->qr_code_path)
+        @php
+            $qr = str_starts_with($booking->qr_code_path, 'http')
+                ? $booking->qr_code_path
+                : asset('storage/' . $booking->qr_code_path);
+        @endphp
+
         <div class="mt-8 flex flex-col items-center gap-3">
             <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
                 <img
-                    src="{{ asset('storage/' . $booking->qr_code_path) }}"
+                    src="{{ $qr }}"
                     alt="Ticket QR"
-                    class="max-w-full h-auto object-contain rounded-lg"
-                >
+                    class="max-w-full h-auto object-contain rounded-lg">
             </div>
 
             <p class="text-xs text-gray-400">

@@ -48,12 +48,19 @@
             <div>
                 <label class="block text-xs mb-1">بوستر العرض (اختياري)</label>
                 @if($show->poster_path)
-                    <div class="mb-2">
-                        <img src="{{ asset('storage/' . $show->poster_path) }}"
-                             class="w-24 h-24 object-cover rounded"
-                             alt="بوستر العرض">
-                    </div>
-                @endif
+    @php
+        $posterUrl = str_starts_with($show->poster_path, 'http')
+            ? $show->poster_path
+            : asset('storage/' . $show->poster_path);
+    @endphp
+
+    <div class="mb-2">
+        <img src="{{ $posterUrl }}"
+             class="w-24 h-24 object-cover rounded"
+             alt="بوستر العرض">
+    </div>
+@endif
+
                 <input type="file" name="poster" accept="image/*"
                        class="w-full text-xs text-gray-300">
             </div>
