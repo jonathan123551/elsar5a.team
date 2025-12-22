@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "ext-gd": "*",
+        "cloudinary-labs/cloudinary-laravel": "^3.0",
         "endroid/qr-code": "^5.0",
         "intervention/image": "3.0",
         "laravel/framework": "^12.0",
