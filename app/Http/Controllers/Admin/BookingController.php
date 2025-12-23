@@ -64,17 +64,18 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // 1️⃣ اعتماد الحجز
+        // ✅ اعتماد الحجز
         $booking->update([
-            'status' => 'approved',
+            'status'      => 'approved',
             'approved_at' => now(),
         ]);
 
-        // 2️⃣ توليد QR
+        // 🎯 QR Settings
         $qrSize = $show->ticket_qr_size ?? 220;
         $x = $show->ticket_qr_x ?? 0;
         $y = $show->ticket_qr_y ?? 0;
 
+        // 🧾 Generate QR
         $qr = Builder::create()
             ->writer(new PngWriter())
             ->data($booking->reference_code)
@@ -82,7 +83,7 @@ class BookingController extends Controller
             ->margin(0)
             ->build();
 
-        // 3️⃣ تحميل قالب التذكرة من Cloudinary
+        // 🖼️ Load ticket template from Cloudinary
         $templateImage = imagecreatefromstring(
             file_get_contents($show->ticket_template_path)
         );
@@ -100,23 +101,24 @@ class BookingController extends Controller
             imagesy($qrImage)
         );
 
-        // 4️⃣ حفظ مؤقت
+        // 💾 Save temp file
         $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
         imagepng($templateImage, $tempPath);
 
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        // 5️⃣ رفع التذكرة النهائية على Cloudinary
-        $uploaded = (new UploadApi())->upload($tempPath, [
+        // ☁️ Upload final ticket to Cloudinary
+        $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
 
         unlink($tempPath);
 
-        // 6️⃣ حفظ URL في DB
+        // ✅ Save URL + public_id
         $booking->update([
-            'qr_code_path' => $uploaded['secure_url'],
+            'qr_code_path'      => $upload['secure_url'],
+            'qr_code_public_id' => $upload['public_id'],
         ]);
 
         return redirect()
@@ -126,13 +128,26 @@ class BookingController extends Controller
 
     public function reject(Request $request, Booking $booking)
     {
+        $uploader = new UploadApi();
+
+        // 🗑️ حذف Screenshot التحويل
+        if ($booking->transfer_screenshot_public_id) {
+            $uploader->destroy($booking->transfer_screenshot_public_id);
+        }
+
+        // 🗑️ حذف التذكرة لو كانت اتعملت
+        if ($booking->qr_code_public_id) {
+            $uploader->destroy($booking->qr_code_public_id);
+        }
+
+        // ❌ تحديث الحالة
         $booking->update([
-            'status' => 'rejected',
+            'status'      => 'rejected',
             'admin_notes' => $request->admin_notes,
         ]);
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم رفض الحجز ❌');
+            ->with('status', 'تم رفض الحجز وحذف الملفات ❌');
     }
 }

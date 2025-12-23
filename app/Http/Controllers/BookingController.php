@@ -62,28 +62,34 @@ class BookingController extends Controller
         }
 
         // 💳 رفع Screenshot على Cloudinary
-        $uploaded = (new UploadApi())->upload(
+        $upload = (new UploadApi())->upload(
             $request->file('payment_screenshot')->getRealPath(),
             [
                 'folder' => 'payments/screenshots',
             ]
         );
 
-        $screenshotUrl = $uploaded['secure_url'];
+        // 🔥 مهم جدًا
+        $screenshotUrl      = $upload['secure_url'];
+        $screenshotPublicId = $upload['public_id'];
 
         // 💰 السعر
         $ticketPrice = $showTime->ticket_price;
         $totalPrice  = $ticketPrice * $ticketsCount;
 
         $booking = Booking::create([
-            'show_time_id'             => $showTime->id,
-            'full_name'                => $request->full_name,
-            'phone'                    => $request->phone,
-            'tickets_count'            => $ticketsCount,
-            'total_price'              => $totalPrice,
-            'transfer_screenshot_path' => $screenshotUrl, // 🔥 URL مباشر
-            'status'                   => 'pending',
-            'reference_code'           => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
+            'show_time_id'                  => $showTime->id,
+            'full_name'                     => $request->full_name,
+            'phone'                         => $request->phone,
+            'tickets_count'                 => $ticketsCount,
+            'total_price'                   => $totalPrice,
+
+            // ✅ Cloudinary
+            'transfer_screenshot_path'      => $screenshotUrl,
+            'transfer_screenshot_public_id' => $screenshotPublicId,
+
+            'status'                        => 'pending',
+            'reference_code'                => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
         ]);
 
         return view('bookings.thankyou', compact('booking'));
