@@ -17,7 +17,7 @@
             {{-- بوستر العرض --}}
             @if($show->poster_path)
                 <div class="relative w-full md:w-72 overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(250,204,21,0.25)]">
-                    <img src="{{ asset('storage/' . $show->poster_path) }}"
+                    <img src="{{ $show->poster_path }}"
                         alt="{{ $show->title }}"
                         class="w-full h-96 object-cover transform hover:scale-[1.03] transition-transform duration-500">
 

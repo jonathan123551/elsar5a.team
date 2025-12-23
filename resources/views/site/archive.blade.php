@@ -22,7 +22,7 @@
                     {{-- Poster --}}
                     @if(!empty($archive->poster_path))
                         <img
-                            src="{{ asset('storage/' . $archive->poster_path) }}"
+                            src="{{ $archive->poster_path) }}"
                             alt="{{ $archive->title }}"
                             class="h-72 w-full object-cover
                                    group-hover:scale-105 transition duration-500">

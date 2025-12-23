@@ -77,7 +77,7 @@
                         @if($show->poster_path)
                             <div class="relative mb-4 rounded-xl overflow-hidden">
                                 <div class="overflow-hidden rounded-xl">
-                                    <img src="{{ asset('storage/' . $show->poster_path) }}"
+                                   <img src="{{ $show->poster_path }}"
                                         alt="{{ $show->title }}"
                                         class="w-full h-56 object-cover rounded-xl border border-white/10
                                                transform group-hover:scale-[1.03] transition-transform duration-500">
