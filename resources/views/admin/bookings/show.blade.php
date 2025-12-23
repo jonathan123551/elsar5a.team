@@ -50,15 +50,22 @@
 
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
             <h2 class="text-sm font-semibold mb-1">بيانات الحجز</h2>
-            <p><span class="text-gray-400 text-xs">عدد التذاكر:</span> {{ $booking->tickets_count }}</p>
+
+            <p>
+                <span class="text-gray-400 text-xs">عدد التذاكر:</span>
+                {{ $booking->tickets_count }}
+            </p>
 
             <p>
                 <span class="text-gray-400 text-xs">إجمالي السعر:</span>
-                <span class="text-amber-300 font-semibold">{{ $booking->total_price }} جنيه</span>
+                <span class="text-amber-300 font-semibold">
+                    {{ $booking->total_price }} جنيه
+                </span>
             </p>
 
             <p>
                 <span class="text-gray-400 text-xs">الحالة:</span>
+
                 @if($booking->status === 'approved')
                     <span class="px-2 py-1 text-[11px] rounded-full bg-emerald-500/15 text-emerald-200 border border-emerald-500/40">
                         مقبول
