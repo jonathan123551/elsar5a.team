@@ -6,7 +6,7 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.1",
         "ext-gd": "*",
         "cloudinary-labs/cloudinary-laravel": "^3.0",
         "endroid/qr-code": "^5.0",
