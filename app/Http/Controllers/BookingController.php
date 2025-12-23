@@ -7,43 +7,71 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Setting;
+use Cloudinary\Configuration\Configuration;
+use Cloudinary\Api\Upload\UploadApi;
 
 class BookingController extends Controller
 {
+    public function __construct()
+    {
+        // 🔥 Cloudinary config (مرة واحدة)
+        Configuration::instance([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_secret' => env('CLOUDINARY_API_SECRET'),
+            ],
+            'url' => [
+                'secure' => true,
+            ],
+        ]);
+    }
+
     public function create(ShowTime $showTime)
     {
-        // لو الميعاد خلص أو مفيش تذاكر متاحة
-        abort_if($showTime->is_sold_out || $showTime->available_tickets <= 0, 404);
+        abort_if(
+            $showTime->is_sold_out || $showTime->available_tickets <= 0,
+            404
+        );
 
-       $transferWallet = Setting::get('transfer_wallet', '');
-$transferInsta  = Setting::get('transfer_insta', '');
-        return view('bookings.create', compact('showTime', 'transferWallet', 'transferInsta'));
+        $transferWallet = Setting::get('transfer_wallet', '');
+        $transferInsta  = Setting::get('transfer_insta', '');
+
+        return view('bookings.create', compact(
+            'showTime',
+            'transferWallet',
+            'transferInsta'
+        ));
     }
 
     public function store(Request $request, ShowTime $showTime)
     {
-        // عدد التذاكر ثابت = 1 بغض النظر عن اللي جاي من الفورم
+        // 🎟️ عدد التذاكر ثابت = 1
         $ticketsCount = 1;
 
         $request->validate([
             'full_name'          => 'required|string|max:255',
             'phone'              => 'required|string|max:20',
-            // مش محتاجين نثق في قيمة جاية من اليوزر
-            // 'tickets_count'   => 'required|integer|min:1|max:10',
             'payment_screenshot' => 'required|image|max:4096',
         ]);
 
-        // تأكد تاني إن في تذاكر كفاية
         if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {
             return back()
                 ->withErrors(['tickets_count' => 'عدد التذاكر غير متاح.'])
                 ->withInput();
         }
 
-        // حفظ صورة التحويل في storage/app/public/payments
-        $path = $request->file('payment_screenshot')->store('payments', 'public');
+        // 💳 رفع Screenshot على Cloudinary
+        $uploaded = (new UploadApi())->upload(
+            $request->file('payment_screenshot')->getRealPath(),
+            [
+                'folder' => 'payments/screenshots',
+            ]
+        );
 
-        // السعر من الميعاد نفسه
+        $screenshotUrl = $uploaded['secure_url'];
+
+        // 💰 السعر
         $ticketPrice = $showTime->ticket_price;
         $totalPrice  = $ticketPrice * $ticketsCount;
 
@@ -51,10 +79,10 @@ $transferInsta  = Setting::get('transfer_insta', '');
             'show_time_id'             => $showTime->id,
             'full_name'                => $request->full_name,
             'phone'                    => $request->phone,
-            'tickets_count'            => $ticketsCount,              // دايمًا 1
+            'tickets_count'            => $ticketsCount,
             'total_price'              => $totalPrice,
-            'transfer_screenshot_path' => $path,                      // نفس الاسم اللي الأدمن بيستخدمه
-            'status'                   => 'pending',                  // عشان لوحة التحكم
+            'transfer_screenshot_path' => $screenshotUrl, // 🔥 URL مباشر
+            'status'                   => 'pending',
             'reference_code'           => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
         ]);
 

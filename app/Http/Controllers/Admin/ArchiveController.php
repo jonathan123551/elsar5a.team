@@ -142,12 +142,33 @@ class ArchiveController extends Controller
     }
 
     public function destroy(Archive $archive)
-    {
-        $archive->images()?->delete();
-        $archive->delete();
+{
+    $uploader = new UploadApi();
 
-        return redirect()
-            ->route('admin.archive.index')
-            ->with('status', 'تم حذف العرض السابق 🗑️');
+    // 🖼️ حذف بوستر العرض
+    if ($archive->poster_path) {
+        $publicId = $this->getCloudinaryPublicId($archive->poster_path);
+        if ($publicId) {
+            $uploader->destroy($publicId);
+        }
     }
+
+    // 📸 حذف صور الجاليري
+    if ($archive->images && $archive->images->count()) {
+        foreach ($archive->images as $img) {
+            $publicId = $this->getCloudinaryPublicId($img->image_path);
+            if ($publicId) {
+                $uploader->destroy($publicId);
+            }
+            $img->delete(); // حذف من DB
+        }
+    }
+
+    // ❌ حذف الأرشيف نفسه
+    $archive->delete();
+
+    return redirect()
+        ->route('admin.archive.index')
+        ->with('status', 'تم حذف العرض والصور من Cloudinary 🗑️');
+}
 }
