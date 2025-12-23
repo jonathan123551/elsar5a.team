@@ -9,8 +9,4 @@ return [
         'secure'     => true,
     ],
 
-    'url' => [
-        'secure' => true,
-    ],
-
 ];
