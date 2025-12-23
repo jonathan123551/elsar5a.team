@@ -62,45 +62,26 @@ class BookingController extends Controller
         }
 
         /*
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
         | 📞 Normalize phone number (Egypt → WhatsApp E.164)
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
         */
-        $phone = $request->phone;
-
-        // شيل أي رموز أو مسافات
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-
-        // 01xxxxxxxxx
-        if (preg_match('/^01[0-9]{9}$/', $phone)) {
-            $phone = '20' . substr($phone, 1);
-        }
-        // 1xxxxxxxxx
-        elseif (preg_match('/^1[0-9]{9}$/', $phone)) {
-            $phone = '20' . $phone;
-        }
-        // 20xxxxxxxxxx (تمام)
-        elseif (preg_match('/^20[0-9]{10}$/', $phone)) {
-            // valid
-        }
-        else {
+        try {
+            $phone = $this->normalizeEgyptPhone($request->phone);
+        } catch (\Exception $e) {
             return back()
-                ->withErrors([
-                    'phone' => 'رقم الموبايل غير صالح، من فضلك تأكد من كتابته بشكل صحيح'
-                ])
+                ->withErrors(['phone' => $e->getMessage()])
                 ->withInput();
         }
 
         /*
-        |--------------------------------------------------------------------------
-        | 💳 رفع Screenshot على Cloudinary
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
+        | 💳 Upload payment screenshot (Cloudinary)
+        |------------------------------------------------------------------
         */
         $upload = (new UploadApi())->upload(
             $request->file('payment_screenshot')->getRealPath(),
-            [
-                'folder' => 'payments/screenshots',
-            ]
+            ['folder' => 'payments/screenshots']
         );
 
         $screenshotUrl      = $upload['secure_url'];
@@ -111,14 +92,14 @@ class BookingController extends Controller
         $totalPrice  = $ticketPrice * $ticketsCount;
 
         /*
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
         | 🧾 Create booking
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
         */
         $booking = Booking::create([
             'show_time_id'                  => $showTime->id,
             'full_name'                     => $request->full_name,
-            'phone'                         => $phone, // ✅ رقم مظبوط للـ WhatsApp
+            'phone'                         => $phone, // ✅ رقم مضبوط للواتساب
             'tickets_count'                 => $ticketsCount,
             'total_price'                   => $totalPrice,
 
@@ -131,5 +112,33 @@ class BookingController extends Controller
         ]);
 
         return view('bookings.thankyou', compact('booking'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔧 Helpers
+    |--------------------------------------------------------------------------
+    */
+    private function normalizeEgyptPhone(string $phone): string
+    {
+        // شيل أي حاجة غير أرقام
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        // 01xxxxxxxxx
+        if (preg_match('/^01[0-9]{9}$/', $phone)) {
+            return '20' . substr($phone, 1);
+        }
+
+        // 1xxxxxxxxx
+        if (preg_match('/^1[0-9]{9}$/', $phone)) {
+            return '20' . $phone;
+        }
+
+        // 20xxxxxxxxxx
+        if (preg_match('/^20[0-9]{10}$/', $phone)) {
+            return $phone;
+        }
+
+        throw new \Exception('رقم الموبايل غير صالح، من فضلك تأكد من كتابته بشكل صحيح');
     }
 }
