@@ -19,9 +19,7 @@ class ArchiveController extends Controller
                 'api_key'    => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
-            'url' => [
-                'secure' => true,
-            ],
+            'url' => ['secure' => true],
         ]);
     }
 
@@ -39,16 +37,16 @@ class ArchiveController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'video_url' => 'nullable|string|max:255',
+            'title'         => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'video_url'     => 'nullable|string|max:255',
             'facebook_reel' => 'nullable|string|max:255',
-            'year' => 'nullable|integer|min:1900|max:2100',
-            'poster' => 'nullable|image|max:4096',
-            'images.*' => 'nullable|image|max:4096',
+            'year'          => 'nullable|integer|min:1900|max:2100',
+            'poster'        => 'nullable|image|max:4096',
+            'images.*'      => 'nullable|image|max:4096',
         ]);
 
-        // 🔁 Facebook Reel → Embed URL
+        // 🎬 Facebook Reel → Embed
         if (!empty($data['facebook_reel']) &&
             !str_contains($data['facebook_reel'], 'plugins/video.php')) {
             $data['facebook_reel'] =
@@ -57,26 +55,33 @@ class ArchiveController extends Controller
                 '&show_text=false';
         }
 
+        $uploader = new UploadApi();
+
+        // 🖼️ Poster
         if ($request->hasFile('poster')) {
-            $uploaded = (new UploadApi())->upload(
+            $poster = $uploader->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-            $data['poster_path'] = $uploaded['secure_url'];
+
+            $data['poster_path'] = $poster['secure_url'];
+            $data['poster_public_id'] = $poster['public_id'];
         }
 
         $archive = Archive::create($data);
 
+        // 📸 Gallery
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = (new UploadApi())->upload(
+                $uploaded = $uploader->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
 
                 ArchiveImage::create([
-                    'archive_id' => $archive->id,
-                    'image_path' => $uploaded['secure_url'],
+                    'archive_id'      => $archive->id,
+                    'image_path'      => $uploaded['secure_url'],
+                    'image_public_id' => $uploaded['public_id'],
                 ]);
             }
         }
@@ -95,13 +100,13 @@ class ArchiveController extends Controller
     public function update(Request $request, Archive $archive)
     {
         $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'video_url' => 'nullable|string|max:255',
+            'title'         => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'video_url'     => 'nullable|string|max:255',
             'facebook_reel' => 'nullable|string|max:255',
-            'year' => 'nullable|integer|min:1900|max:2100',
-            'poster' => 'nullable|image|max:4096',
-            'images.*' => 'nullable|image|max:4096',
+            'year'          => 'nullable|integer|min:1900|max:2100',
+            'poster'        => 'nullable|image|max:4096',
+            'images.*'      => 'nullable|image|max:4096',
         ]);
 
         if (!empty($data['facebook_reel']) &&
@@ -112,26 +117,37 @@ class ArchiveController extends Controller
                 '&show_text=false';
         }
 
+        $uploader = new UploadApi();
+
+        // 🔄 Update poster
         if ($request->hasFile('poster')) {
-            $uploaded = (new UploadApi())->upload(
+            if ($archive->poster_public_id) {
+                $uploader->destroy($archive->poster_public_id);
+            }
+
+            $poster = $uploader->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-            $data['poster_path'] = $uploaded['secure_url'];
+
+            $data['poster_path'] = $poster['secure_url'];
+            $data['poster_public_id'] = $poster['public_id'];
         }
 
         $archive->update($data);
 
+        // ➕ Add new gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = (new UploadApi())->upload(
+                $uploaded = $uploader->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
 
                 ArchiveImage::create([
-                    'archive_id' => $archive->id,
-                    'image_path' => $uploaded['secure_url'],
+                    'archive_id'      => $archive->id,
+                    'image_path'      => $uploaded['secure_url'],
+                    'image_public_id' => $uploaded['public_id'],
                 ]);
             }
         }
@@ -142,33 +158,26 @@ class ArchiveController extends Controller
     }
 
     public function destroy(Archive $archive)
-{
-    $uploader = new UploadApi();
+    {
+        $uploader = new UploadApi();
 
-    // 🖼️ حذف بوستر العرض
-    if ($archive->poster_path) {
-        $publicId = $this->getCloudinaryPublicId($archive->poster_path);
-        if ($publicId) {
-            $uploader->destroy($publicId);
+        // 🗑️ Poster
+        if ($archive->poster_public_id) {
+            $uploader->destroy($archive->poster_public_id);
         }
-    }
 
-    // 📸 حذف صور الجاليري
-    if ($archive->images && $archive->images->count()) {
+        // 🗑️ Gallery images
         foreach ($archive->images as $img) {
-            $publicId = $this->getCloudinaryPublicId($img->image_path);
-            if ($publicId) {
-                $uploader->destroy($publicId);
+            if ($img->image_public_id) {
+                $uploader->destroy($img->image_public_id);
             }
-            $img->delete(); // حذف من DB
+            $img->delete();
         }
+
+        $archive->delete();
+
+        return redirect()
+            ->route('admin.archive.index')
+            ->with('status', 'تم حذف العرض وكل صوره من Cloudinary 🗑️');
     }
-
-    // ❌ حذف الأرشيف نفسه
-    $archive->delete();
-
-    return redirect()
-        ->route('admin.archive.index')
-        ->with('status', 'تم حذف العرض والصور من Cloudinary 🗑️');
-}
 }
