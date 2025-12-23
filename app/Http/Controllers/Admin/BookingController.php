@@ -185,7 +185,7 @@ class BookingController extends Controller
                                     ."*ونزرع بدلًا منه ثمرا صالحًا ❤️*\n\n"
                                     . "يرجى إحضار هذه التذكرة عند الدخول‼️\n"
                                     ],
-                ]
+                ]dd
             );
     }
 }
