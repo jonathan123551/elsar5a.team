@@ -10,6 +10,7 @@ class Archive extends Model
         'title',
         'description',
         'video_url',
+        'facebook_reel',
         'year',
         'poster_path',
     ];

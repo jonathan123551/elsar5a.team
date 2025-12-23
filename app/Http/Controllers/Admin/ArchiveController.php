@@ -93,6 +93,7 @@ class ArchiveController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'video_url'   => 'nullable|string|max:255',
+            'facebook_reel' => 'nullable|string|max:255',
             'year'        => 'nullable|integer|min:1900|max:2100',
             'poster'      => 'nullable|image|max:4096',
             'images.*'    => 'nullable|image|max:4096',
