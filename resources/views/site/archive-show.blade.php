@@ -8,26 +8,28 @@
     {{-- ================= Hero ================= --}}
     <div class="relative rounded-3xl overflow-hidden border border-white/10">
 
-        @if($archive->poster_path)
-            <img
-                src="{{ $archive->poster_path }}"
-                class="w-full h-[60vh] object-cover cursor-pointer"
-                onclick="openViewer(0)">
-        @else
-            <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">
-                لا يوجد بوستر
-            </div>
-        @endif
-
-        <div class="absolute inset-0 bg-black/60"></div>
-
-        <div class="absolute bottom-6 right-6 left-6">
-            <h1 class="text-3xl font-bold mb-2">{{ $archive->title }}</h1>
-            @if($archive->year)
-                <p class="text-sm text-gray-300">سنة العرض: {{ $archive->year }}</p>
-            @endif
+    @if($archive->poster_path)
+        <img
+            src="{{ $archive->poster_path }}"
+            class="w-full h-[60vh] object-contain bg-black cursor-pointer"
+            onclick="openViewer('{{ $archive->poster_path }}')">
+    @else
+        <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">
+            لا يوجد بوستر
         </div>
+    @endif
+
+    <div class="absolute inset-0 bg-black/60 pointer-events-none"></div>
+
+    <div class="absolute bottom-6 right-6 left-6">
+        <h1 class="text-3xl font-bold mb-2">{{ $archive->title }}</h1>
+        @if($archive->year)
+            <p class="text-sm text-gray-300">سنة العرض: {{ $archive->year }}</p>
+        @endif
     </div>
+
+</div>
+
 
     {{-- ================= Facebook Reel ================= --}}
     @if($archive->facebook_reel)
