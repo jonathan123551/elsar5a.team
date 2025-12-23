@@ -9,6 +9,7 @@ class ArchiveImage extends Model
     protected $fillable = [
         'archive_id',
         'image_path',
+        'image_public_id',
     ];
 
     public function archive()

@@ -13,6 +13,7 @@ class Archive extends Model
         'facebook_reel',
         'year',
         'poster_path',
+        'poster_public_id',
     ];
 
     public function images()

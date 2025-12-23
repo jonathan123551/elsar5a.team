@@ -15,6 +15,8 @@ class Show extends Model
     'ticket_qr_x',
     'ticket_qr_y',
     'ticket_qr_size',
+    'poster_public_id',
+    'ticket_template_public_id',
 ];
 
 
