@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 
 class WhatsAppService
 {
-    public static function sendTicket($phone, $imageUrl, $reference)
+    public static function sendTicket($phone, $imageUrl, $reference,$full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -19,11 +19,16 @@ class WhatsAppService
                     'type' => 'image',
                     'image' => [
                         'link' => $imageUrl,
-                        'caption' =>
-                            "🎟️ تم تأكيد حجزك\n\n"
-                            . "رقم الحجز: {$reference}\n"
-                            . "يرجى إحضار هذه التذكرة عند الدخول ❤️",
-                    ],
+                       'caption' =>
+                                    "🎟️ تم تأكيد حجزك بنجاح {$full_name}\n\n"
+                                    . "نحن سعداء بوجودك ضمن جمهور فريق الصرخة المسرحي.\n\n"
+                                    . "نتمنالك أمسية مليئة بالفن، و الوعي، والصراخ ✨\n"
+                                    . "فنحن لا نريد سوى حواسِّكم.\n\n"
+                                    . "وكل ما نحتاجه منكم هو أن تأتوا إلى مصدر الصراخ…\n"
+                                    . "فدائمًا يكون على المسرح 🎭\n\n"
+                                    . " ❤️*نجول نصرخ فيزداد العقل وعيا*\n\n"
+                                    . "يرجى إحضار هذه التذكرة عند الدخول❤️🎭،\n"
+                                    ],
                 ]
             );
     }
