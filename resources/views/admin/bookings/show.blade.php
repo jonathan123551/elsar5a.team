@@ -95,7 +95,7 @@
         @php
             $screenshot = str_starts_with($booking->transfer_screenshot_path, 'http')
                 ? $booking->transfer_screenshot_path
-                : asset('storage/' . $booking->transfer_screenshot_path);
+                : $booking->transfer_screenshot_path;
         @endphp
 
         <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
@@ -121,7 +121,7 @@
         @php
             $qr = str_starts_with($booking->qr_code_path, 'http')
                 ? $booking->qr_code_path
-                : asset('storage/' . $booking->qr_code_path);
+                : $booking->qr_code_path;
         @endphp
 
         <div class="mt-8 flex flex-col items-center gap-3">
