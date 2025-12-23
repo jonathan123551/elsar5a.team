@@ -13,7 +13,6 @@ class ArchiveController extends Controller
 {
     public function __construct()
     {
-        // 🔥 Cloudinary configuration (مرة واحدة)
         Configuration::instance([
             'cloud' => [
                 'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
@@ -40,30 +39,36 @@ class ArchiveController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'video_url'   => 'nullable|string|max:255',
-            'year'        => 'nullable|integer|min:1900|max:2100',
-            'poster'      => 'nullable|image|max:4096',
-            'images.*'    => 'nullable|image|max:4096',
+            'video_url' => 'nullable|string|max:255',
+            'facebook_reel' => 'nullable|string|max:255',
+            'year' => 'nullable|integer|min:1900|max:2100',
+            'poster' => 'nullable|image|max:4096',
+            'images.*' => 'nullable|image|max:4096',
         ]);
 
-        // 🖼️ Poster upload
+        // 🔁 Facebook Reel → Embed URL
+        if (!empty($data['facebook_reel']) &&
+            !str_contains($data['facebook_reel'], 'plugins/video.php')) {
+            $data['facebook_reel'] =
+                'https://www.facebook.com/plugins/video.php?href=' .
+                urlencode($data['facebook_reel']) .
+                '&show_text=false';
+        }
+
         if ($request->hasFile('poster')) {
             $uploaded = (new UploadApi())->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-
             $data['poster_path'] = $uploaded['secure_url'];
         }
 
         $archive = Archive::create($data);
 
-        // 📸 Gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-
                 $uploaded = (new UploadApi())->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
@@ -90,31 +95,35 @@ class ArchiveController extends Controller
     public function update(Request $request, Archive $archive)
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'video_url'   => 'nullable|string|max:255',
+            'video_url' => 'nullable|string|max:255',
             'facebook_reel' => 'nullable|string|max:255',
-            'year'        => 'nullable|integer|min:1900|max:2100',
-            'poster'      => 'nullable|image|max:4096',
-            'images.*'    => 'nullable|image|max:4096',
+            'year' => 'nullable|integer|min:1900|max:2100',
+            'poster' => 'nullable|image|max:4096',
+            'images.*' => 'nullable|image|max:4096',
         ]);
 
-        // 🖼️ Update poster
+        if (!empty($data['facebook_reel']) &&
+            !str_contains($data['facebook_reel'], 'plugins/video.php')) {
+            $data['facebook_reel'] =
+                'https://www.facebook.com/plugins/video.php?href=' .
+                urlencode($data['facebook_reel']) .
+                '&show_text=false';
+        }
+
         if ($request->hasFile('poster')) {
             $uploaded = (new UploadApi())->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-
             $data['poster_path'] = $uploaded['secure_url'];
         }
 
         $archive->update($data);
 
-        // ➕ Add new gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-
                 $uploaded = (new UploadApi())->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
@@ -134,12 +143,7 @@ class ArchiveController extends Controller
 
     public function destroy(Archive $archive)
     {
-        if ($archive->images && $archive->images->count()) {
-            foreach ($archive->images as $img) {
-                $img->delete();
-            }
-        }
-
+        $archive->images()?->delete();
         $archive->delete();
 
         return redirect()

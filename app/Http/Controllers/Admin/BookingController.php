@@ -7,9 +7,26 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
-use Illuminate\Support\Facades\Storage;
+use Cloudinary\Configuration\Configuration;
+use Cloudinary\Api\Upload\UploadApi;
+
 class BookingController extends Controller
 {
+    public function __construct()
+    {
+        // 🔥 Cloudinary config
+        Configuration::instance([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_secret' => env('CLOUDINARY_API_SECRET'),
+            ],
+            'url' => [
+                'secure' => true,
+            ],
+        ]);
+    }
+
     public function index(Request $request)
     {
         $status = $request->query('status');
@@ -34,82 +51,78 @@ class BookingController extends Controller
         return view('admin.bookings.show', compact('booking'));
     }
 
-   public function approve(Booking $booking)
-{
-    if ($booking->status === 'approved') {
-        return back()->with('status', 'الحجز معتمد بالفعل');
+    public function approve(Booking $booking)
+    {
+        if ($booking->status === 'approved') {
+            return back()->with('status', 'الحجز معتمد بالفعل');
+        }
+
+        $booking->load('showTime.show');
+        $show = $booking->showTime?->show;
+
+        if (!$show || !$show->ticket_template_path) {
+            return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
+        }
+
+        // 1️⃣ اعتماد الحجز
+        $booking->update([
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        // 2️⃣ توليد QR
+        $qrSize = $show->ticket_qr_size ?? 220;
+        $x = $show->ticket_qr_x ?? 0;
+        $y = $show->ticket_qr_y ?? 0;
+
+        $qr = Builder::create()
+            ->writer(new PngWriter())
+            ->data($booking->reference_code)
+            ->size($qrSize)
+            ->margin(0)
+            ->build();
+
+        // 3️⃣ تحميل قالب التذكرة من Cloudinary
+        $templateImage = imagecreatefromstring(
+            file_get_contents($show->ticket_template_path)
+        );
+
+        $qrImage = imagecreatefromstring($qr->getString());
+
+        imagecopy(
+            $templateImage,
+            $qrImage,
+            $x,
+            $y,
+            0,
+            0,
+            imagesx($qrImage),
+            imagesy($qrImage)
+        );
+
+        // 4️⃣ حفظ مؤقت
+        $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
+        imagepng($templateImage, $tempPath);
+
+        imagedestroy($templateImage);
+        imagedestroy($qrImage);
+
+        // 5️⃣ رفع التذكرة النهائية على Cloudinary
+        $uploaded = (new UploadApi())->upload($tempPath, [
+            'folder' => 'tickets/generated',
+        ]);
+
+        unlink($tempPath);
+
+        // 6️⃣ حفظ URL في DB
+        $booking->update([
+            'qr_code_path' => $uploaded['secure_url'],
+        ]);
+
+        return redirect()
+            ->route('admin.bookings.show', $booking->id)
+            ->with('status', 'تم اعتماد الحجز وإنشاء التذكرة بنجاح 🎟️');
     }
-
-    // حمّل العرض ووقت العرض
-    $booking->load('showTime.show');
-    $show = $booking->showTime?->show;
-
-    if (!$show || !$show->ticket_template_path) {
-        return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
-    }
-
-    // 1️⃣ اعتماد الحجز
-    $booking->update([
-        'status' => 'approved',
-        'approved_at' => now(),
-    ]);
-
-    // 2️⃣ إعداد المسارات
-    $templatePath = storage_path('app/public/' . $show->ticket_template_path);
-    $outputPath   = "tickets/{$booking->reference_code}.png";
-
-    if (!file_exists($templatePath)) {
-        return back()->with('status', 'ملف قالب التذكرة غير موجود');
-    }
-
-    if (!Storage::disk('public')->exists('tickets')) {
-        Storage::disk('public')->makeDirectory('tickets');
-    }
-
-    // 3️⃣ إحداثيات و حجم QR من الداتابيز
-    $qrSize = $show->ticket_qr_size ?? 220;
-    $x = $show->ticket_qr_x ?? 0;
-    $y = $show->ticket_qr_y ?? 0;
-
-    // 4️⃣ توليد QR (Endroid بدون imagick)
-    $qrResult = \Endroid\QrCode\Builder\Builder::create()
-        ->writer(new \Endroid\QrCode\Writer\PngWriter())
-        ->data($booking->reference_code)
-        ->size($qrSize)
-        ->margin(0)
-        ->build();
-
-    // 5️⃣ دمج QR فوق التذكرة (GD)
-    $ticketImg = imagecreatefrompng($templatePath);
-    $qrImg = imagecreatefromstring($qrResult->getString());
-
-    imagecopy(
-        $ticketImg,
-        $qrImg,
-        $x,
-        $y,
-        0,
-        0,
-        imagesx($qrImg),
-        imagesy($qrImg)
-    );
-
-    imagepng($ticketImg, storage_path("app/public/{$outputPath}"));
-
-    imagedestroy($ticketImg);
-    imagedestroy($qrImg);
-
-    // 6️⃣ حفظ المسار في الحجز
-    $booking->update([
-        'qr_code_path' => $outputPath,
-    ]);
-
-    return redirect()
-        ->route('admin.bookings.show', $booking->id)
-        ->with('status', 'تم اعتماد الحجز وإنشاء التذكرة بنجاح 🎟️');
-}
-
-
 
     public function reject(Request $request, Booking $booking)
     {
