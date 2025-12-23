@@ -11,7 +11,8 @@
         @if($archive->poster_path)
             <img
                 src="{{ $archive->poster_path }}"
-                class="w-full h-[60vh] object-cover cursor-pointer"
+                class="h-72 w-full object-cover
+                                   group-hover:scale-105 transition duration-500">
                 onclick="openViewer(0)">
         @else
             <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">

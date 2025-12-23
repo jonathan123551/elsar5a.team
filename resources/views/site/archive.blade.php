@@ -53,7 +53,7 @@
                         <span
                             class="inline-block text-xs px-4 py-1.5 rounded-full
                                    bg-amber-400 text-black font-medium">
-                            المزيد →
+                            المزيد 
                         </span>
                     </div>
 
