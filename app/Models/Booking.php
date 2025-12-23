@@ -32,6 +32,9 @@ class Booking extends Model
     // واتساب
     'whatsapp_sent',
     'whatsapp_sent_at',
+
+    'transfer_screenshot_public_id',
+    'qr_code_public_id',
 ];
 
 
