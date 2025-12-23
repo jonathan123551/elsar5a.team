@@ -157,7 +157,7 @@ class BookingController extends Controller
     }
 
     // ================= WhatsApp =================
-    private function sendWhatsAppTicket($phone, $imageUrl, $reference)
+    private function sendWhatsAppTicket($phone, $imageUrl, $reference,$full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -171,10 +171,15 @@ class BookingController extends Controller
                     'image' => [
                         'link' => $imageUrl,
                         'caption' =>
-                            "🎟️ تم تأكيد حجزك\n\n"
-                            . "رقم الحجز: {$reference}\n"
-                            . "يرجى إحضار هذه التذكرة عند الدخول ❤️",
-                    ],
+                             "🎟️ تم تأكيد حجزك بنجاح {$full_name}\n"
+                                    . "نحن سعداء بوجودك ضمن جمهور فريق الصرخة المسرحي.\n"
+                                    . "نتمنالك أمسية مليئة بالفن، و الوعي، والصراخ ✨\n"
+                                    . "فنحن لا نريد سوى حواسِّكم.\n"
+                                    . "وكل ما نحتاجه منكم هو أن تأتوا إلى مصدر الصراخ…\n"
+                                    . "فدائمًا يكون على المسرح 🎭\n"
+                                    . " ❤️*نجول نصرخ فيزداد العقل وعيا*\n\n"
+                                    . "يرجى إحضار هذه التذكرة عند الدخول❤️🎭،\n"
+                                    ],
                 ]
             );
     }
