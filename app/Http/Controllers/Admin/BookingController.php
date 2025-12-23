@@ -124,7 +124,8 @@ class BookingController extends Controller
         $this->sendWhatsAppTicket(
             $booking->phone,
             $upload['secure_url'],
-            $booking->reference_code
+            $booking->reference_code,
+            $booking->full_name
         );
 
         return redirect()
