@@ -51,7 +51,7 @@ class BookingController extends Controller
 
         $request->validate([
             'full_name'          => 'required|string|max:255',
-            'phone'              => 'required|string|max:20',
+            'phone'              => 'required|string|min:8|max:20',
             'payment_screenshot' => 'required|image|max:4096',
         ]);
 
@@ -61,7 +61,41 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        // 💳 رفع Screenshot على Cloudinary
+        /*
+        |--------------------------------------------------------------------------
+        | 📞 Normalize phone number (Egypt → WhatsApp E.164)
+        |--------------------------------------------------------------------------
+        */
+        $phone = $request->phone;
+
+        // شيل أي رموز أو مسافات
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        // 01xxxxxxxxx
+        if (preg_match('/^01[0-9]{9}$/', $phone)) {
+            $phone = '20' . substr($phone, 1);
+        }
+        // 1xxxxxxxxx
+        elseif (preg_match('/^1[0-9]{9}$/', $phone)) {
+            $phone = '20' . $phone;
+        }
+        // 20xxxxxxxxxx (تمام)
+        elseif (preg_match('/^20[0-9]{10}$/', $phone)) {
+            // valid
+        }
+        else {
+            return back()
+                ->withErrors([
+                    'phone' => 'رقم الموبايل غير صالح، من فضلك تأكد من كتابته بشكل صحيح'
+                ])
+                ->withInput();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 💳 رفع Screenshot على Cloudinary
+        |--------------------------------------------------------------------------
+        */
         $upload = (new UploadApi())->upload(
             $request->file('payment_screenshot')->getRealPath(),
             [
@@ -69,7 +103,6 @@ class BookingController extends Controller
             ]
         );
 
-        // 🔥 مهم جدًا
         $screenshotUrl      = $upload['secure_url'];
         $screenshotPublicId = $upload['public_id'];
 
@@ -77,14 +110,19 @@ class BookingController extends Controller
         $ticketPrice = $showTime->ticket_price;
         $totalPrice  = $ticketPrice * $ticketsCount;
 
+        /*
+        |--------------------------------------------------------------------------
+        | 🧾 Create booking
+        |--------------------------------------------------------------------------
+        */
         $booking = Booking::create([
             'show_time_id'                  => $showTime->id,
             'full_name'                     => $request->full_name,
-            'phone'                         => $request->phone,
+            'phone'                         => $phone, // ✅ رقم مظبوط للـ WhatsApp
             'tickets_count'                 => $ticketsCount,
             'total_price'                   => $totalPrice,
 
-            // ✅ Cloudinary
+            // ☁️ Cloudinary
             'transfer_screenshot_path'      => $screenshotUrl,
             'transfer_screenshot_public_id' => $screenshotPublicId,
 
