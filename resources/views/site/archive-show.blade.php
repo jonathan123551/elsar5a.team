@@ -5,29 +5,36 @@
 @section('content')
 <section class="space-y-10 max-w-5xl mx-auto px-4">
 
-    {{-- ================= Hero ================= --}}
-    <div class="relative rounded-3xl overflow-hidden border border-white/10">
+   {{-- ================= Hero ================= --}}
+<div class="relative rounded-3xl overflow-hidden border border-white/10">
 
-        @if($archive->poster_path)
-            <img
-                src="{{ $archive->poster_path }}"
-                class="h-72 w-full object-cover"
-                onclick="openViewer(0)">
-        @else
-            <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">
-                لا يوجد بوستر
-            </div>
-        @endif
-
-        <div class="absolute inset-0 bg-black/60"></div>
-
-        <div class="absolute bottom-6 right-6 left-6">
-            <h1 class="text-3xl font-bold mb-2">{{ $archive->title }}</h1>
-            @if($archive->year)
-                <p class="text-sm text-gray-300">سنة العرض: {{ $archive->year }}</p>
-            @endif
+    @if($archive->poster_path)
+        <img
+            src="{{ $archive->poster_path }}"
+            alt="{{ $archive->title }}"
+            class="w-full h-auto object-contain cursor-zoom-in"
+            onclick="openViewer(0)">
+    @else
+        <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">
+            لا يوجد بوستر
         </div>
+    @endif
+
+    {{-- العنوان بدون سواد --}}
+    <div class="absolute bottom-4 right-4 left-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+        <h1 class="text-2xl md:text-3xl font-bold mb-1">
+            {{ $archive->title }}
+        </h1>
+
+        @if($archive->year)
+            <p class="text-sm text-gray-300">
+                سنة العرض: {{ $archive->year }}
+            </p>
+        @endif
     </div>
+
+</div>
+
 
     {{-- ================= Facebook Reel ================= --}}
     @if($archive->facebook_reel)
