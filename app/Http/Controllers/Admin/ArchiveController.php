@@ -6,9 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Models\Archive;
 use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Cloudinary\Configuration\Configuration;
+use Cloudinary\Api\Upload\UploadApi;
+
 class ArchiveController extends Controller
 {
+    public function __construct()
+    {
+        // 🔥 Cloudinary configuration (مرة واحدة)
+        Configuration::instance([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_secret' => env('CLOUDINARY_API_SECRET'),
+            ],
+            'url' => [
+                'secure' => true,
+            ],
+        ]);
+    }
+
     public function index()
     {
         $archives = Archive::with('images')->latest()->get();
@@ -31,28 +48,30 @@ class ArchiveController extends Controller
             'images.*'    => 'nullable|image|max:4096',
         ]);
 
-        // 📌 Poster (URL)
+        // 🖼️ Poster upload
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $uploaded = (new UploadApi())->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-            $data['poster_path'] = $poster->getSecurePath();
+
+            $data['poster_path'] = $uploaded['secure_url'];
         }
 
         $archive = Archive::create($data);
 
-        // 📸 Gallery images (URLs)
+        // 📸 Gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = Cloudinary::upload(
+
+                $uploaded = (new UploadApi())->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
 
                 ArchiveImage::create([
                     'archive_id' => $archive->id,
-                    'image_path' => $uploaded->getSecurePath(),
+                    'image_path' => $uploaded['secure_url'],
                 ]);
             }
         }
@@ -81,11 +100,12 @@ class ArchiveController extends Controller
 
         // 🖼️ Update poster
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $uploaded = (new UploadApi())->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'archives/posters']
             );
-            $data['poster_path'] = $poster->getSecurePath();
+
+            $data['poster_path'] = $uploaded['secure_url'];
         }
 
         $archive->update($data);
@@ -93,14 +113,15 @@ class ArchiveController extends Controller
         // ➕ Add new gallery images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $uploaded = Cloudinary::upload(
+
+                $uploaded = (new UploadApi())->upload(
                     $image->getRealPath(),
                     ['folder' => 'archives/gallery']
                 );
 
                 ArchiveImage::create([
                     'archive_id' => $archive->id,
-                    'image_path' => $uploaded->getSecurePath(),
+                    'image_path' => $uploaded['secure_url'],
                 ]);
             }
         }
@@ -112,14 +133,12 @@ class ArchiveController extends Controller
 
     public function destroy(Archive $archive)
     {
-        // ❌ Delete gallery images (DB only – URLs)
         if ($archive->images && $archive->images->count()) {
             foreach ($archive->images as $img) {
                 $img->delete();
             }
         }
 
-        // ❌ Delete archive
         $archive->delete();
 
         return redirect()
