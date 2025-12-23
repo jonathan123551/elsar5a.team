@@ -12,8 +12,7 @@
         <img
             src="{{ $archive->poster_path }}"
             alt="{{ $archive->title }}"
-            class="w-full h-auto object-contain cursor-zoom-in"
-            onclick="openViewer(0)">
+            class="w-full h-auto object-contain cursor-zoom-in">
     @else
         <div class="w-full h-[60vh] bg-black/40 flex items-center justify-center text-gray-400">
             لا يوجد بوستر
@@ -193,4 +192,5 @@ img.addEventListener('touchend', e => {
     lastTap = now;
 });
 </script>
+
 @endsection
