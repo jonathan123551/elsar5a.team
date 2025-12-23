@@ -9,6 +9,7 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
+use Illuminate\Support\Facades\Http;
 
 class BookingController extends Controller
 {
@@ -21,9 +22,7 @@ class BookingController extends Controller
                 'api_key'    => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
-            'url' => [
-                'secure' => true,
-            ],
+            'url' => ['secure' => true],
         ]);
     }
 
@@ -70,7 +69,7 @@ class BookingController extends Controller
             'approved_at' => now(),
         ]);
 
-        // 🎯 QR Settings
+        // 🎯 QR settings
         $qrSize = $show->ticket_qr_size ?? 220;
         $x = $show->ticket_qr_x ?? 0;
         $y = $show->ticket_qr_y ?? 0;
@@ -108,22 +107,29 @@ class BookingController extends Controller
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        // ☁️ Upload final ticket to Cloudinary
+        // ☁️ Upload final ticket
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
 
         unlink($tempPath);
 
-        // ✅ Save URL + public_id
+        // 💾 Save Cloudinary data
         $booking->update([
             'qr_code_path'      => $upload['secure_url'],
             'qr_code_public_id' => $upload['public_id'],
         ]);
 
+        // 📲 إرسال التذكرة على WhatsApp
+        $this->sendWhatsAppTicket(
+            $booking->phone,
+            $upload['secure_url'],
+            $booking->reference_code
+        );
+
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز وإنشاء التذكرة بنجاح 🎟️');
+            ->with('status', 'تم اعتماد الحجز وإرسال التذكرة على واتساب 🎟️📲');
     }
 
     public function reject(Request $request, Booking $booking)
@@ -135,12 +141,11 @@ class BookingController extends Controller
             $uploader->destroy($booking->transfer_screenshot_public_id);
         }
 
-        // 🗑️ حذف التذكرة لو كانت اتعملت
+        // 🗑️ حذف التذكرة
         if ($booking->qr_code_public_id) {
             $uploader->destroy($booking->qr_code_public_id);
         }
 
-        // ❌ تحديث الحالة
         $booking->update([
             'status'      => 'rejected',
             'admin_notes' => $request->admin_notes,
@@ -148,6 +153,29 @@ class BookingController extends Controller
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم رفض الحجز وحذف الملفات ❌');
+            ->with('status', 'تم رفض الحجز وحذف كل الملفات ❌');
+    }
+
+    // ================= WhatsApp =================
+    private function sendWhatsAppTicket($phone, $imageUrl, $reference)
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        Http::withToken(env('WHATSAPP_TOKEN'))
+            ->post(
+                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+                [
+                    'messaging_product' => 'whatsapp',
+                    'to' => $phone,
+                    'type' => 'image',
+                    'image' => [
+                        'link' => $imageUrl,
+                        'caption' =>
+                            "🎟️ تم تأكيد حجزك\n\n"
+                            . "رقم الحجز: {$reference}\n"
+                            . "يرجى إحضار هذه التذكرة عند الدخول ❤️",
+                    ],
+                ]
+            );
     }
 }
