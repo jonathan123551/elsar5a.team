@@ -73,24 +73,27 @@
                             </div>
                         @endif
 
-                        {{-- بوستر العرض --}}
-                        @if($show->poster_path)
-                            <div class="relative mb-4 rounded-xl overflow-hidden">
-                                <div class="overflow-hidden rounded-xl">
-                                   <img src="{{ $show->poster_path }}"
-                                        alt="{{ $show->title }}"
-                                        class="w-full h-56 object-cover rounded-xl border border-white/10
-                                               transform group-hover:scale-[1.03] transition-transform duration-500">
-                                </div>
+                      {{-- بوستر العرض --}}
+@if($show->poster_path)
+    <div class="relative mb-4 rounded-xl overflow-hidden bg-black/60 border border-white/10">
+        <div class="w-full aspect-[3/4] flex items-center justify-center">
+            <img
+                src="{{ $show->poster_path }}"
+                alt="{{ $show->title }}"
+                class="max-w-full max-h-full object-contain
+                       transition-transform duration-500 group-hover:scale-[1.02]">
+        </div>
 
-                                <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        {{-- Gradient خفيف --}}
+        <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
 
-                                {{-- شريط صغير تحت البوستر --}}
-                                <div class="absolute bottom-2 left-2 text-[11px] px-2 py-1 rounded-full bg-black/60 border border-white/20 text-gray-200">
-                                    🎫 احجز مقعدك قبل النفاد
-                                </div>
-                            </div>
-                        @endif
+        {{-- شريط تحت البوستر --}}
+        <div class="absolute bottom-2 left-2 text-[11px] px-2 py-1 rounded-full bg-black/70 border border-white/20 text-gray-200">
+            🎫 احجز مقعدك قبل النفاد
+        </div>
+    </div>
+@endif
+
 
                         <div class="space-y-2">
                             <h3 class="text-lg font-bold">{{ $show->title }}</h3>
