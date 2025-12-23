@@ -51,7 +51,7 @@
     @php
         $posterUrl = str_starts_with($show->poster_path, 'http')
             ? $show->poster_path
-            : asset('storage/' . $show->poster_path);
+            :  $show->poster_path;
     @endphp
 
     <div class="mb-2">
