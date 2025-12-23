@@ -5,10 +5,26 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Show;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Cloudinary\Api\Upload\UploadApi;
+use Cloudinary\Configuration\Configuration;
 
 class ShowController extends Controller
 {
+    public function __construct()
+    {
+        // Cloudinary configuration (مرة واحدة)
+        Configuration::instance([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_secret' => env('CLOUDINARY_API_SECRET'),
+            ],
+            'url' => [
+                'secure' => true,
+            ],
+        ]);
+    }
+
     public function index()
     {
         $shows = Show::latest()->get();
@@ -33,22 +49,24 @@ class ShowController extends Controller
             'is_active'       => 'nullable|boolean',
         ]);
 
+        $uploader = new UploadApi();
+
         // 🎭 Poster
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $uploadedPoster = $uploader->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'shows/posters']
             );
-            $data['poster_path'] = $poster->getSecurePath();
+            $data['poster_path'] = $uploadedPoster['secure_url'];
         }
 
         // 🎟️ Ticket template
         if ($request->hasFile('ticket_template')) {
-            $ticket = Cloudinary::upload(
+            $uploadedTicket = $uploader->upload(
                 $request->file('ticket_template')->getRealPath(),
                 ['folder' => 'tickets/templates']
             );
-            $data['ticket_template_path'] = $ticket->getSecurePath();
+            $data['ticket_template_path'] = $uploadedTicket['secure_url'];
         }
 
         $show = Show::create([
@@ -85,20 +103,22 @@ class ShowController extends Controller
             'is_active'       => 'nullable|boolean',
         ]);
 
+        $uploader = new UploadApi();
+
         if ($request->hasFile('poster')) {
-            $poster = Cloudinary::upload(
+            $uploadedPoster = $uploader->upload(
                 $request->file('poster')->getRealPath(),
                 ['folder' => 'shows/posters']
             );
-            $show->poster_path = $poster->getSecurePath();
+            $show->poster_path = $uploadedPoster['secure_url'];
         }
 
         if ($request->hasFile('ticket_template')) {
-            $ticket = Cloudinary::upload(
+            $uploadedTicket = $uploader->upload(
                 $request->file('ticket_template')->getRealPath(),
                 ['folder' => 'tickets/templates']
             );
-            $show->ticket_template_path = $ticket->getSecurePath();
+            $show->ticket_template_path = $uploadedTicket['secure_url'];
         }
 
         $show->title          = $data['title'];

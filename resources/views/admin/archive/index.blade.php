@@ -39,6 +39,7 @@
                         <th class="px-3 py-2 text-center">إدارة</th>
                     </tr>
                 </thead>
+
                 <tbody>
                 @foreach($archives as $archive)
                     <tr class="border-t border-white/5 hover:bg-white/5 align-middle">
@@ -88,6 +89,7 @@
                     </tr>
                 @endforeach
                 </tbody>
+
             </table>
         </div>
     @endif
