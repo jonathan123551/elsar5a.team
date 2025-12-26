@@ -38,7 +38,7 @@
     {{-- ================= Facebook Reel ================= --}}
     @if($archive->facebook_reel)
     <div class="bg-black/40 border border-white/10 rounded-2xl p-6">
-        <h2 class="font-semibold mb-4">🎬 مقطع من العرض</h2>
+        <h2 class="font-semibold mb-4">🎬 برومو العرض</h2>
         <div class="aspect-video rounded-xl overflow-hidden">
             <iframe
                 src="{{ $archive->facebook_reel }}"
