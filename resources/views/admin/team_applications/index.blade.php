@@ -3,62 +3,85 @@
 @section('content')
 
 <style>
-/* ===============================
-   Admin Table – Team Applications
-   =============================== */
-
+/* ===== Page ===== */
 .page-wrapper {
-    padding: 25px;
-    max-width: 1300px;
+    max-width: 1200px;
     margin: auto;
-}
-
-.page-title {
+    padding: 20px;
     color: #fff;
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 20px;
 }
 
-/* ===== Controls ===== */
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 15px;
+/* ===== Filter Card ===== */
+.filter-card {
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
-.controls input,
-.controls select {
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: none;
-    font-size: 15px;
-    min-width: 200px;
-}
-
-.controls input::placeholder {
-    color: #333;
-    font-weight: 500;
-}
-
-.counter {
+.filter-card h2 {
+    margin-bottom: 16px;
     color: #f5c542;
     font-weight: bold;
-    margin-top: 8px;
+}
+
+/* Inputs */
+.filter-card input,
+.filter-card select {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    background: #fff;
+    color: #000;
+}
+
+.filter-card input::placeholder {
+    color: #777;
+}
+
+/* Grid */
+.filter-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+/* Counter */
+.counter {
+    margin-top: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #f5c542;
+}
+
+/* Export */
+.export-btn {
+    display: inline-block;
+    margin-top: 14px;
+    background: #2ecc71;
+    color: #000;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
 }
 
 /* ===== Table ===== */
-.table-wrap {
+.table-wrapper {
     overflow-x: auto;
-    background: rgba(0,0,0,0.55);
-    border-radius: 12px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 thead {
@@ -66,84 +89,60 @@ thead {
     color: #000;
 }
 
-thead th {
+th, td {
     padding: 14px;
-    font-weight: bold;
-    text-align: right;
-    font-size: 14px;
-}
-
-tbody td {
-    padding: 12px;
-    color: #fff;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    font-size: 14px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    white-space: nowrap;
 }
 
 tbody tr:hover {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.08);
 }
 
-.badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    background: #f5c542;
-    color: #000;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-/* ===== Export ===== */
-.export-btn {
-    background: #2ecc71;
-    color: #000;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-weight: bold;
-    text-decoration: none;
-}
-
-/* ===== Mobile ===== */
-@media (max-width: 600px) {
-    .page-title {
-        font-size: 22px;
+/* ===== Desktop ===== */
+@media (min-width: 768px) {
+    .filter-grid {
+        grid-template-columns: 2fr 1fr 1fr;
     }
 }
 </style>
 
 <div class="page-wrapper">
 
-    <div class="page-title">طلبات الانضمام لفريق الصرخة 🎭</div>
+    <div class="filter-card">
+        <h2>🎭 طلبات الانضمام لفريق الصرخة</h2>
 
-    <div class="controls">
-        <input type="text" id="searchInput" placeholder="بحث بالاسم أو التليفون">
+        <div class="filter-grid">
+            <input type="text" id="searchInput" placeholder="بحث بالاسم أو التليفون">
 
-        <select id="stageFilter">
-            <option value="">كل المراحل</option>
-            <option value="اعدادي">إعدادي</option>
-            <option value="ثانوي">ثانوي</option>
-            <option value="جامعة">جامعة</option>
-            <option value="خريجين">خريجين</option>
-        </select>
+            <select id="stageFilter">
+                <option value="">كل المراحل</option>
+                <option value="اعدادي">إعدادي</option>
+                <option value="ثانوي">ثانوي</option>
+                <option value="جامعة">جامعة</option>
+                <option value="خريجين">خريجين</option>
+            </select>
 
-        <select id="deptFilter">
-            <option value="">كل الأقسام</option>
-            <option value="تمثيل">تمثيل وإخراج</option>
-            <option value="سينوغرافيا">سينوغرافيا</option>
-            <option value="تأليف">تأليف</option>
-        </select>
+            <select id="deptFilter">
+                <option value="">كل الأقسام</option>
+                <option value="تمثيل">تمثيل وإخراج</option>
+                <option value="سينوغرافيا">سينوغرافيا</option>
+                <option value="تأليف">تأليف</option>
+            </select>
+        </div>
 
         <a href="{{ route('admin.team_applications.export') }}" class="export-btn">
-            Export Excel
+            ⬇️ Export Excel
         </a>
+
+        <div class="counter">
+            عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
+        </div>
     </div>
 
-    <div class="counter">
-        عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
-    </div>
-
-    <div class="table-wrap mt-3">
-        <table>
+    <div class="table-wrapper">
+        <table id="applicationsTable">
             <thead>
                 <tr>
                     
@@ -154,23 +153,19 @@ tbody tr:hover {
                     <th>المرحلة</th>
                     <th>القسم</th>
                     <th>أب الاعتراف</th>
-                    <th>التاريخ</th>
+                    <th>تاريخ التقديم</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
+            <tbody>
                 @foreach($applications as $app)
-                <tr
-                    data-search="{{ strtolower($app->full_name.' '.$app->phone) }}"
-                    data-stage="{{ $app->education_stage }}"
-                    data-dept="{{ $app->department }}"
-                >
-                   
+                <tr>
+                 
                     <td>{{ $app->full_name }}</td>
                     <td>{{ $app->phone }}</td>
                     <td>{{ $app->email }}</td>
                     <td>{{ $app->age }}</td>
-                    <td><span class="badge">{{ $app->education_stage }}</span></td>
-                    <td><span class="badge">{{ $app->department }}</span></td>
+                    <td>{{ $app->education_stage }}</td>
+                    <td>{{ $app->department }}</td>
                     <td>{{ $app->confession_father }}</td>
                     <td>{{ $app->created_at->format('Y-m-d') }}</td>
                 </tr>
@@ -185,43 +180,36 @@ tbody tr:hover {
 const searchInput = document.getElementById('searchInput');
 const stageFilter = document.getElementById('stageFilter');
 const deptFilter  = document.getElementById('deptFilter');
-const rows = document.querySelectorAll('#tableBody tr');
-const counter = document.getElementById('counter');
+const tableRows   = document.querySelectorAll('#applicationsTable tbody tr');
+const counter     = document.getElementById('counter');
 
-function normalize(v) {
-    return (v || '').toLowerCase().trim();
-}
+function filterTable() {
+    let count = 0;
+    const search = searchInput.value.toLowerCase();
+    const stage  = stageFilter.value;
+    const dept   = deptFilter.value;
 
-function applyFilters() {
-    let visible = 0;
+    tableRows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const rowStage = row.children[5].innerText;
+        const rowDept  = row.children[6].innerText;
 
-    rows.forEach(row => {
-        const search = normalize(row.dataset.search);
-        const stage  = normalize(row.dataset.stage);
-        const dept   = normalize(row.dataset.dept);
+        let visible = true;
 
-        const sVal = normalize(searchInput.value);
-        const stVal = normalize(stageFilter.value);
-        const dVal = normalize(deptFilter.value);
+        if (search && !text.includes(search)) visible = false;
+        if (stage && rowStage !== stage) visible = false;
+        if (dept && !rowDept.includes(dept)) visible = false;
 
-        const okSearch = search.includes(sVal);
-        const okStage  = stVal === '' || stage.includes(stVal);
-        const okDept   = dVal === '' || dept.includes(dVal);
-
-        if (okSearch && okStage && okDept) {
-            row.style.display = '';
-            visible++;
-        } else {
-            row.style.display = 'none';
-        }
+        row.style.display = visible ? '' : 'none';
+        if (visible) count++;
     });
 
-    counter.innerText = visible;
+    counter.innerText = count;
 }
 
-searchInput.addEventListener('input', applyFilters);
-stageFilter.addEventListener('change', applyFilters);
-deptFilter.addEventListener('change', applyFilters);
+searchInput.addEventListener('input', filterTable);
+stageFilter.addEventListener('change', filterTable);
+deptFilter.addEventListener('change', filterTable);
 </script>
 
 @endsection
