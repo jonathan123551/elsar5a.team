@@ -1,6 +1,8 @@
-FROM php:8.2
+FROM php:8.2-fpm
 
 RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
     git unzip zip \
     libzip-dev \
     libpq-dev \
@@ -19,3 +21,14 @@ WORKDIR /app
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
+
+# Nginx config
+RUN rm /etc/nginx/sites-enabled/default
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Supervisor config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8080
+
+CMD ["/usr/bin/supervisord", "-n"]
