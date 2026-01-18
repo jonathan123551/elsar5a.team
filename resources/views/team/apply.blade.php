@@ -3,29 +3,47 @@
 @section('content')
 
 <style>
-    /* ===== Team Application Form Fix ===== */
+    /* ===== Team Application – Professional Style ===== */
 
     .team-form {
         max-width: 800px;
-        margin: 40px auto;
+        margin: 50px auto;
+        padding: 30px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 14px;
+        backdrop-filter: blur(6px);
+    }
+
+    .team-form h2 {
+        color: #ffffff;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .team-form label {
+        color: #ffffff;
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: block;
     }
 
     .team-form input,
     .team-form textarea,
     .team-form select {
         width: 100%;
-        padding: 12px 14px;
-        margin-bottom: 15px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        background-color: #ffffff;
-        color: #000000;
-        font-size: 16px;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background-color: rgba(255,255,255,0.9);
+        color: #000;
+        font-size: 15px;
+        transition: all 0.25s ease;
     }
 
     .team-form input::placeholder,
     .team-form textarea::placeholder {
-        color: #555555;
+        color: #666;
     }
 
     .team-form input:focus,
@@ -33,39 +51,36 @@
     .team-form select:focus {
         outline: none;
         border-color: #f5c542;
-        color: #000000;
-        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(245,197,66,0.3);
+        background-color: #fff;
     }
 
-    .team-form label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: bold;
-        color: #000000;
+    .team-form textarea {
+        resize: vertical;
     }
 
     .team-form button {
-        background-color: #f5c542;
-        color: #000;
-        border: none;
-        padding: 14px;
+        margin-top: 10px;
         width: 100%;
+        padding: 15px;
         font-size: 18px;
-        border-radius: 8px;
-        cursor: pointer;
         font-weight: bold;
+        border-radius: 12px;
+        border: none;
+        background: linear-gradient(135deg, #f5c542, #e0b838);
+        color: #000;
+        cursor: pointer;
+        transition: 0.3s;
     }
 
     .team-form button:hover {
-        background-color: #e0b838;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
-
 </style>
 
 <div class="team-form">
-    <h2 class="text-center mb-4">
-        التقديم لفريق الصرخة المسرحي 🎭
-    </h2>
+    <h2>التقديم لفريق الصرخة المسرحي 🎭</h2>
 
     <form method="POST" action="{{ route('team.apply.store') }}">
         @csrf
@@ -83,7 +98,7 @@
         <input type="number" name="age" placeholder="السن" required>
 
         <label>المرحلة الدراسية</label>
-        <select name="education_level" required>
+        <select name="education_level" id="education_level" required>
             <option value="">اختر المرحلة</option>
             <option value="اعدادي">إعدادي</option>
             <option value="ثانوي">ثانوي</option>
@@ -110,11 +125,8 @@
         </select>
 
         <label>القسم اللي حابب تشترك فيه</label>
-        <select name="department" required>
+        <select name="department" id="department" required>
             <option value="">اختر القسم</option>
-            <option value="تمثيل وإخراج">تمثيل وإخراج</option>
-            <option value="سينوغرافيا">سينوغرافيا</option>
-            <option value="تأليف">تأليف</option>
         </select>
 
         <label>ليه حابب تنضم لفريق الصرخة؟</label>
@@ -123,5 +135,43 @@
         <button type="submit">إرسال الطلب</button>
     </form>
 </div>
+
+<script>
+    const education = document.getElementById('education_level');
+    const department = document.getElementById('department');
+
+    const options = {
+        "اعدادي": [
+            "تمثيل وإخراج",
+            "سينوغرافيا"
+        ],
+        "ثانوي": [
+            "تمثيل وإخراج",
+            "سينوغرافيا",
+            "تأليف"
+        ],
+        "جامعة": [
+            "تمثيل وإخراج",
+            "سينوغرافيا",
+            "تأليف"
+        ],
+        "خريجين": [
+            "تأليف"
+        ]
+    };
+
+    education.addEventListener('change', function () {
+        department.innerHTML = '<option value="">اختر القسم</option>';
+
+        if (options[this.value]) {
+            options[this.value].forEach(dep => {
+                const option = document.createElement('option');
+                option.value = dep;
+                option.textContent = dep;
+                department.appendChild(option);
+            });
+        }
+    });
+</script>
 
 @endsection
