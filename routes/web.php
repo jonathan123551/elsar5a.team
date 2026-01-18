@@ -11,6 +11,7 @@ use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TeamApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,17 @@ Route::get('/book/{showTime}', [BookingController::class, 'create'])
 
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->name('bookings.store');
+
+/*
+|--------------------------------------------------------------------------
+| 🎭 Team Application (Public)
+|--------------------------------------------------------------------------
+*/
+Route::get('/join-team', [TeamApplicationController::class, 'create'])
+    ->name('team.apply');
+
+Route::post('/join-team', [TeamApplicationController::class, 'store'])
+    ->name('team.apply.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -152,7 +164,7 @@ Route::middleware('admin')
     Route::get('/archive/{archive}/edit', [ArchiveController::class, 'edit'])->name('archive.edit');
     Route::put('/archive/{archive}', [ArchiveController::class, 'update'])->name('archive.update');
     Route::delete('/archive/{archive}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
-    
+
     /*
     |--------------------------------------------------------------------------
     | About
