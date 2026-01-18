@@ -29,10 +29,11 @@ class TeamApplicationController extends Controller
             'why_join'          => 'required|string',
         ]);
 
-         TeamApplication::create($request->all());
+        // ✅ الحفظ الصح
+        TeamApplication::create($data);
 
-    return redirect()
-        ->route('team.apply')
-        ->with('success', 'تم إرسال طلبك بنجاح 🎉 سيتم تحويلك لجروب واتساب');
+        return redirect()
+            ->route('team.apply')
+            ->with('success', 'تم إرسال طلبك بنجاح 🎉');
     }
 }
