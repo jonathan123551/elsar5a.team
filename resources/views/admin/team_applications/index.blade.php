@@ -3,7 +3,6 @@
 @section('content')
 
 <style>
-/* ===== Page ===== */
 .page-wrapper {
     max-width: 1200px;
     margin: auto;
@@ -11,67 +10,51 @@
     color: #fff;
 }
 
-/* ===== Filter Card ===== */
 .filter-card {
     background: rgba(0,0,0,0.65);
     backdrop-filter: blur(8px);
     border-radius: 18px;
     padding: 18px;
     margin-bottom: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .filter-card h2 {
-    margin-bottom: 16px;
     color: #f5c542;
-    font-weight: bold;
+    margin-bottom: 15px;
 }
 
-/* Inputs */
+.filter-grid {
+    display: grid;
+    gap: 12px;
+}
+
 .filter-card input,
 .filter-card select {
-    width: 100%;
-    padding: 14px 16px;
+    padding: 14px;
     border-radius: 12px;
     border: none;
-    font-size: 16px;
+    font-size: 15px;
     background: #fff;
     color: #000;
 }
 
-.filter-card input::placeholder {
-    color: #777;
-}
-
-/* Grid */
-.filter-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-}
-
-/* Counter */
-.counter {
-    margin-top: 14px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #f5c542;
-}
-
-/* Export */
 .export-btn {
     display: inline-block;
-    margin-top: 14px;
+    margin-top: 15px;
     background: #2ecc71;
     color: #000;
-    padding: 14px 20px;
+    padding: 12px 18px;
     border-radius: 12px;
-    font-size: 16px;
     font-weight: bold;
     text-decoration: none;
 }
 
-/* ===== Table ===== */
+.counter {
+    margin-top: 10px;
+    color: #f5c542;
+    font-weight: bold;
+}
+
 .table-wrapper {
     overflow-x: auto;
 }
@@ -81,7 +64,6 @@ table {
     border-collapse: collapse;
     background: rgba(0,0,0,0.55);
     border-radius: 16px;
-    overflow: hidden;
 }
 
 thead {
@@ -92,15 +74,13 @@ thead {
 th, td {
     padding: 14px;
     text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
     white-space: nowrap;
 }
 
 tbody tr:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
 }
 
-/* ===== Desktop ===== */
 @media (min-width: 768px) {
     .filter-grid {
         grid-template-columns: 2fr 1fr 1fr;
@@ -114,7 +94,7 @@ tbody tr:hover {
         <h2>🎭 طلبات الانضمام لفريق الصرخة</h2>
 
         <div class="filter-grid">
-            <input type="text" id="searchInput" placeholder="بحث بالاسم أو التليفون">
+            <input type="text" id="searchInput" placeholder="بحث بالاسم أو التليفون أو الإيميل">
 
             <select id="stageFilter">
                 <option value="">كل المراحل</option>
@@ -126,7 +106,7 @@ tbody tr:hover {
 
             <select id="deptFilter">
                 <option value="">كل الأقسام</option>
-                <option value="تمثيل">تمثيل وإخراج</option>
+                <option value="تمثيل وإخراج">تمثيل وإخراج</option>
                 <option value="سينوغرافيا">سينوغرافيا</option>
                 <option value="تأليف">تأليف</option>
             </select>
@@ -145,7 +125,6 @@ tbody tr:hover {
         <table id="applicationsTable">
             <thead>
                 <tr>
-                    
                     <th>الاسم</th>
                     <th>التليفون</th>
                     <th>الإيميل</th>
@@ -159,7 +138,6 @@ tbody tr:hover {
             <tbody>
                 @foreach($applications as $app)
                 <tr>
-                 
                     <td>{{ $app->full_name }}</td>
                     <td>{{ $app->phone }}</td>
                     <td>{{ $app->email }}</td>
@@ -180,7 +158,7 @@ tbody tr:hover {
 const searchInput = document.getElementById('searchInput');
 const stageFilter = document.getElementById('stageFilter');
 const deptFilter  = document.getElementById('deptFilter');
-const tableRows   = document.querySelectorAll('#applicationsTable tbody tr');
+const rows        = document.querySelectorAll('#applicationsTable tbody tr');
 const counter     = document.getElementById('counter');
 
 function filterTable() {
@@ -189,16 +167,23 @@ function filterTable() {
     const stage  = stageFilter.value;
     const dept   = deptFilter.value;
 
-    tableRows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const rowStage = row.children[5].innerText;
-        const rowDept  = row.children[6].innerText;
+    rows.forEach(row => {
+        const name  = row.children[0].innerText.toLowerCase();
+        const phone = row.children[1].innerText.toLowerCase();
+        const email = row.children[2].innerText.toLowerCase();
+        const rowStage = row.children[4].innerText;
+        const rowDept  = row.children[5].innerText;
 
         let visible = true;
 
-        if (search && !text.includes(search)) visible = false;
-        if (stage && rowStage !== stage) visible = false;
-        if (dept && !rowDept.includes(dept)) visible = false;
+        if (search && !name.includes(search) && !phone.includes(search) && !email.includes(search))
+            visible = false;
+
+        if (stage && rowStage !== stage)
+            visible = false;
+
+        if (dept && rowDept !== dept)
+            visible = false;
 
         row.style.display = visible ? '' : 'none';
         if (visible) count++;
