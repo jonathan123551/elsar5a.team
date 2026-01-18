@@ -82,6 +82,31 @@
 <div class="team-form">
     <h2>التقديم لفريق الصرخة المسرحي 🎭</h2>
 
+    
+    @if(session('success'))
+    <div id="success-box" style="
+        background: rgba(0, 128, 0, 0.15);
+        border: 1px solid #3cff00;
+        color: #ffffff;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+    ">
+        {{ session('success') }}
+        <br>
+        <small>سيتم تحويلك خلال ثواني...</small>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            window.location.href = "https://chat.whatsapp.com/LRklhOxHEPu3M1UtxsdOvX";
+        }, 3000); // 3 ثواني
+    </script>
+@endif
+
     <form method="POST" action="{{ route('team.apply.store') }}">
         @csrf
 
