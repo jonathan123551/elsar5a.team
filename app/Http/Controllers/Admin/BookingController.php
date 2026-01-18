@@ -54,11 +54,11 @@ class BookingController extends Controller
      * APPROVE BOOKING
      * - Generate QR
      * - Upload Cloudinary
-     * - Send WhatsApp TEMPLATE
+     * - Send WhatsApp TEMPLATE (ticket)
      */
     public function approve(Booking $booking)
     {
-            Log::error('APPROVE HIT', ['booking_id' => $booking->id]);
+        Log::info('APPROVE HIT', ['booking_id' => $booking->id]);
 
         if ($booking->status === 'approved') {
             return back()->with('status', 'الحجز معتمد بالفعل');
@@ -71,7 +71,7 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // Approve
+        // Approve booking
         $booking->update([
             'status'      => 'approved',
             'approved_at' => now(),
@@ -90,7 +90,7 @@ class BookingController extends Controller
             ->margin(0)
             ->build();
 
-        // Load template
+        // Load template image
         $templateImage = imagecreatefromstring(
             file_get_contents($show->ticket_template_path)
         );
@@ -107,14 +107,14 @@ class BookingController extends Controller
             imagesy($qrImage)
         );
 
-        // Save temp
+        // Save temp file
         $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
         imagepng($templateImage, $tempPath);
 
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        // Upload Cloudinary
+        // Upload to Cloudinary
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
@@ -127,7 +127,7 @@ class BookingController extends Controller
             'qr_code_public_id' => $upload['public_id'],
         ]);
 
-        // SEND TEMPLATE
+        // Send WhatsApp TEMPLATE
         $this->sendTicketTemplate(
             $booking->phone,
             $booking->full_name
@@ -160,7 +160,7 @@ class BookingController extends Controller
             ->with('status', 'تم رفض الحجز ❌');
     }
 
-    // ================= TEMPLATE (DEBUG ENABLED) =================
+    // ================= TEMPLATE =================
     private function sendTicketTemplate($phone, $name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -173,13 +173,18 @@ class BookingController extends Controller
                     'to' => $phone,
                     'type' => 'template',
                     'template' => [
-                        'name' => 'ticket_ready',
-                        'language' => ['code' => 'ar'],
+                        'name' => 'ticket',
+                        'language' => [
+                            'code' => 'ar_EG',
+                        ],
                         'components' => [
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', 'text' => $name],
+                                    [
+                                        'type' => 'text',
+                                        'text' => $name,
+                                    ],
                                 ],
                             ],
                         ],
@@ -187,7 +192,6 @@ class BookingController extends Controller
                 ]
             );
 
-        // 🔴 DEBUG LOG
         Log::info('WHATSAPP TEMPLATE RESPONSE', [
             'phone'  => $phone,
             'status' => $response->status(),
