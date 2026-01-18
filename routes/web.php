@@ -30,6 +30,13 @@ use App\Http\Controllers\Admin\TeamApplicationController as AdminTeamApplication
 
 /*
 |--------------------------------------------------------------------------
+| Controllers (WhatsApp)
+|--------------------------------------------------------------------------
+*/
+use App\Http\Controllers\WhatsAppWebhookController;
+
+/*
+|--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
@@ -60,6 +67,18 @@ Route::get('/join-team', [TeamApplicationController::class, 'create'])
     ->name('team.apply');
 Route::post('/join-team', [TeamApplicationController::class, 'store'])
     ->name('team.apply.store');
+
+/*
+|--------------------------------------------------------------------------
+| WhatsApp Webhook (IMPORTANT)
+|--------------------------------------------------------------------------
+*/
+
+// Meta verification (GET)
+Route::get('/webhook/whatsapp', [WhatsAppWebhookController::class, 'verify']);
+
+// Incoming messages (POST)
+Route::post('/webhook/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 
 /*
 |--------------------------------------------------------------------------

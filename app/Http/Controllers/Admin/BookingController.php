@@ -50,6 +50,13 @@ class BookingController extends Controller
         return view('admin.bookings.show', compact('booking'));
     }
 
+    /**
+     * ✅ APPROVE BOOKING
+     * - Generate QR
+     * - Upload to Cloudinary
+     * - SAVE ONLY
+     * - Send TEMPLATE (NOT IMAGE)
+     */
     public function approve(Booking $booking)
     {
         if ($booking->status === 'approved') {
@@ -63,7 +70,7 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // ✅ اعتماد الحجز
+        // ✅ Approve booking
         $booking->update([
             'status'      => 'approved',
             'approved_at' => now(),
@@ -82,7 +89,7 @@ class BookingController extends Controller
             ->margin(0)
             ->build();
 
-        // 🖼️ Load ticket template from Cloudinary
+        // 🖼️ Load template from Cloudinary
         $templateImage = imagecreatefromstring(
             file_get_contents($show->ticket_template_path)
         );
@@ -100,49 +107,45 @@ class BookingController extends Controller
             imagesy($qrImage)
         );
 
-        // 💾 Save temp file
+        // 💾 Temp file
         $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
         imagepng($templateImage, $tempPath);
 
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        // ☁️ Upload final ticket
+        // ☁️ Upload ticket
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
 
         unlink($tempPath);
 
-        // 💾 Save Cloudinary data
+        // 💾 Save QR info
         $booking->update([
             'qr_code_path'      => $upload['secure_url'],
             'qr_code_public_id' => $upload['public_id'],
         ]);
 
-        // 📲 إرسال التذكرة على WhatsApp
-        $this->sendWhatsAppTicket(
+        // 📩 SEND TEMPLATE ONLY (OPEN SESSION)
+        $this->sendTicketTemplate(
             $booking->phone,
-            $upload['secure_url'],
-            $booking->reference_code,
             $booking->full_name
         );
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز وإرسال التذكرة على واتساب 🎟️📲');
+            ->with('status', 'تم اعتماد الحجز، في انتظار العميل لاستلام التذكرة 📩');
     }
 
     public function reject(Request $request, Booking $booking)
     {
         $uploader = new UploadApi();
 
-        // 🗑️ حذف Screenshot التحويل
         if ($booking->transfer_screenshot_public_id) {
             $uploader->destroy($booking->transfer_screenshot_public_id);
         }
 
-        // 🗑️ حذف التذكرة
         if ($booking->qr_code_public_id) {
             $uploader->destroy($booking->qr_code_public_id);
         }
@@ -154,11 +157,39 @@ class BookingController extends Controller
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم رفض الحجز وحذف كل الملفات ❌');
+            ->with('status', 'تم رفض الحجز ❌');
     }
 
-    // ================= WhatsApp =================
-    private function sendWhatsAppTicket($phone, $imageUrl, $reference,$full_name)
+    // ================= TEMPLATE =================
+    private function sendTicketTemplate($phone, $name)
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        Http::withToken(env('WHATSAPP_TOKEN'))
+            ->post(
+                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+                [
+                    'messaging_product' => 'whatsapp',
+                    'to' => $phone,
+                    'type' => 'template',
+                    'template' => [
+                        'name' => 'ticket_ready',
+                        'language' => ['code' => 'ar'],
+                        'components' => [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $name],
+                                ],
+                            ],
+                        ],
+                    ],
+                ]
+            );
+    }
+
+    // ================= IMAGE (USED BY WEBHOOK) =================
+    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -172,19 +203,17 @@ class BookingController extends Controller
                     'image' => [
                         'link' => $imageUrl,
                         'caption' =>
-                                     "*🎟️{$full_name}* \n"
-                                    ." تم تأكيد حجزك بنجاح ✅\n"
-                                    . "يسعدنا وجودك معنا،\n"
-                                    . "أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا… ليزداد العقل وعيًا.\n"
-                                    . "نتمنى لك أمسية ثرية بالفن ✨\n\n"
-                                    . "نحن لا نطلب منك سوى حواسك،\n"
-                                    . " ولا ننتظر منك إلا أن تأتي إلى مصدر الصراخ…\n"
-                                    . "فهو دائمًا على المسرح 🎭\n\n"
-                                    . " *نلتقي لنصرخ معًا،*\n"
-                                    ."*فنغيّر ما فسد*،\n"
-                                    ."*ونزرع بدلًا منه ثمرا صالحًا ❤️*\n\n"
-                                    . "يرجى إحضار هذه التذكرة عند الدخول‼️\n"
-                                    ],
+                            "*🎟️{$full_name}* \n" ." تم تأكيد حجزك بنجاح ✅\n" .
+                             "يسعدنا وجودك معنا،\n" .
+                             "أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا… ليزداد العقل وعيًا.\n" .
+                             "نتمنى لك أمسية ثرية بالفن ✨\n\n" . "نحن لا نطلب منك سوى حواسك،\n" . 
+                             " ولا ننتظر منك إلا أن تأتي إلى مصدر الصراخ…\n" . 
+                             "فهو دائمًا على المسرح 🎭\n\n" . 
+                             " *نلتقي لنصرخ معًا،*\n" .
+                             "*فنغيّر ما فسد*،\n" .
+                             "*ونزرع بدلًا منه ثمرا صالحًا ❤️*\n\n" . 
+                             "يرجى إحضار هذه التذكرة عند الدخول‼️\n"
+                    ],
                 ]
             );
     }
