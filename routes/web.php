@@ -30,21 +30,21 @@ use App\Http\Controllers\Admin\TeamApplicationController as AdminTeamApplication
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (User)
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
 // Home
 Route::get('/', [SiteController::class, 'home'])->name('home');
 
-// Current Shows
+// Shows
 Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
 Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');
 
 // About
 Route::get('/about', [SiteController::class, 'about'])->name('about');
 
-// Archive (Past Shows)
+// Archive
 Route::get('/archive', [SiteController::class, 'archive'])->name('archive');
 Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
     ->name('archive.show');
@@ -52,18 +52,12 @@ Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
 // Booking
 Route::get('/book/{showTime}', [BookingController::class, 'create'])
     ->name('bookings.create');
-
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->name('bookings.store');
 
-/*
-|--------------------------------------------------------------------------
-| 🎭 Team Application (Public)
-|--------------------------------------------------------------------------
-*/
+// 🎭 Team Application (Public)
 Route::get('/join-team', [TeamApplicationController::class, 'create'])
     ->name('team.apply');
-
 Route::post('/join-team', [TeamApplicationController::class, 'store'])
     ->name('team.apply.store');
 
@@ -85,20 +79,20 @@ Route::middleware('admin')
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-    Route::get('/team-applications', [AdminTeamApplicationController::class, 'index'])
-    ->name('team_applications.index');
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
+
+    // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Shows (Current)
-    |--------------------------------------------------------------------------
-    */
+    // 🎭 Team Applications
+    Route::get('/team-applications',
+        [AdminTeamApplicationController::class, 'index']
+    )->name('team_applications.index');
+
+    Route::get('/team-applications/export',
+        [AdminTeamApplicationController::class, 'export']
+    )->name('team_applications.export');
+
+    // Shows
     Route::get('/shows', [AdminShowController::class, 'index'])->name('shows.index');
     Route::get('/shows/create', [AdminShowController::class, 'create'])->name('shows.create');
     Route::post('/shows', [AdminShowController::class, 'store'])->name('shows.store');
@@ -108,58 +102,29 @@ Route::middleware('admin')
     Route::post('/shows/{show}/toggle', [AdminShowController::class, 'toggleActive'])
         ->name('shows.toggle');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Show Times
-    |--------------------------------------------------------------------------
-    */
+    // Show Times
     Route::get('/shows/{show}/times', [AdminShowTimeController::class, 'index'])
         ->name('shows.times.index');
-
     Route::get('/shows/{show}/times/create', [AdminShowTimeController::class, 'create'])
         ->name('shows.times.create');
-
     Route::post('/shows/{show}/times', [AdminShowTimeController::class, 'store'])
         ->name('shows.times.store');
-
     Route::get('/shows/{show}/times/{showTime}/edit', [AdminShowTimeController::class, 'edit'])
         ->name('shows.times.edit');
-
     Route::put('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'update'])
         ->name('shows.times.update');
-
     Route::delete('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'destroy'])
         ->name('shows.times.destroy');
 
-    Route::patch(
-        '/show-times/{showTime}/update-tickets',
-        [AdminShowTimeController::class, 'updateTickets']
-    )->name('show-times.update-tickets');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Bookings
-    |--------------------------------------------------------------------------
-    */
+    // Bookings
     Route::prefix('bookings')->name('bookings.')->group(function () {
-
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
-
-        Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])
-            ->name('approve');
-
-        Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])
-            ->name('reject');
-
-        Route::get('/{booking}', [AdminBookingController::class, 'show'])
-            ->name('show');
+        Route::post('/{booking}/approve', [AdminBookingController::class, 'approve'])->name('approve');
+        Route::post('/{booking}/reject', [AdminBookingController::class, 'reject'])->name('reject');
+        Route::get('/{booking}', [AdminBookingController::class, 'show'])->name('show');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Archive (Past Shows) - Admin
-    |--------------------------------------------------------------------------
-    */
+    // Archive
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
     Route::get('/archive/create', [ArchiveController::class, 'create'])->name('archive.create');
     Route::post('/archive', [ArchiveController::class, 'store'])->name('archive.store');
@@ -167,30 +132,17 @@ Route::middleware('admin')
     Route::put('/archive/{archive}', [ArchiveController::class, 'update'])->name('archive.update');
     Route::delete('/archive/{archive}', [ArchiveController::class, 'destroy'])->name('archive.destroy');
 
-    /*
-    |--------------------------------------------------------------------------
-    | About
-    |--------------------------------------------------------------------------
-    */
+    // About
     Route::get('/about', [AboutController::class, 'edit'])->name('about.edit');
     Route::post('/about', [AboutController::class, 'update'])->name('about.update');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Scanner
-    |--------------------------------------------------------------------------
-    */
+    // Scanner
     Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner');
     Route::post('/scanner/check', [ScannerController::class, 'check'])->name('scanner.check');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Payments Settings
-    |--------------------------------------------------------------------------
-    */
+    // Payments
     Route::get('/settings/payments', [SettingsController::class, 'editPayments'])
         ->name('settings.payments.edit');
-
     Route::post('/settings/payments', [SettingsController::class, 'updatePayments'])
         ->name('settings.payments.update');
 });
