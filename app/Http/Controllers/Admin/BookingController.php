@@ -58,6 +58,8 @@ class BookingController extends Controller
      */
     public function approve(Booking $booking)
     {
+            Log::error('APPROVE HIT', ['booking_id' => $booking->id]);
+
         if ($booking->status === 'approved') {
             return back()->with('status', 'الحجز معتمد بالفعل');
         }
