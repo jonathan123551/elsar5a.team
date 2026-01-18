@@ -1,90 +1,127 @@
 @extends('layouts.app')
 
-@section('title','التقديم لفريق الصرخة')
-
 @section('content')
-<section class="max-w-2xl mx-auto space-y-4">
 
-<h1 class="text-2xl font-bold text-center">🎭 التقديم لفريق الصرخة المسرحي</h1>
+<style>
+    /* ===== Team Application Form Fix ===== */
 
-@if(session('success'))
-<div class="bg-emerald-500/10 border border-emerald-400 p-4 rounded-xl text-center">
-    <p class="mb-3">تم إرسال طلبك بنجاح ❤️</p>
-    <a href="https://chat.whatsapp.com/LRklhOxHEPu3M1UtxsdOvX"
-       target="_blank"
-       class="px-4 py-2 bg-emerald-400 text-black rounded-full">
-        الانضمام لجروب واتساب
-    </a>
+    .team-form {
+        max-width: 800px;
+        margin: 40px auto;
+    }
+
+    .team-form input,
+    .team-form textarea,
+    .team-form select {
+        width: 100%;
+        padding: 12px 14px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: #ffffff;
+        color: #000000;
+        font-size: 16px;
+    }
+
+    .team-form input::placeholder,
+    .team-form textarea::placeholder {
+        color: #555555;
+    }
+
+    .team-form input:focus,
+    .team-form textarea:focus,
+    .team-form select:focus {
+        outline: none;
+        border-color: #f5c542;
+        color: #000000;
+        background-color: #ffffff;
+    }
+
+    .team-form label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: bold;
+        color: #000000;
+    }
+
+    .team-form button {
+        background-color: #f5c542;
+        color: #000;
+        border: none;
+        padding: 14px;
+        width: 100%;
+        font-size: 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .team-form button:hover {
+        background-color: #e0b838;
+    }
+
+</style>
+
+<div class="team-form">
+    <h2 class="text-center mb-4">
+        التقديم لفريق الصرخة المسرحي 🎭
+    </h2>
+
+    <form method="POST" action="{{ route('team.apply.store') }}">
+        @csrf
+
+        <label>الاسم</label>
+        <input type="text" name="name" placeholder="اكتب اسمك" required>
+
+        <label>رقم التليفون</label>
+        <input type="text" name="phone" placeholder="01XXXXXXXXX" required>
+
+        <label>الإيميل</label>
+        <input type="email" name="email" placeholder="example@email.com" required>
+
+        <label>السن</label>
+        <input type="number" name="age" placeholder="السن" required>
+
+        <label>المرحلة الدراسية</label>
+        <select name="education_level" required>
+            <option value="">اختر المرحلة</option>
+            <option value="اعدادي">إعدادي</option>
+            <option value="ثانوي">ثانوي</option>
+            <option value="جامعة">جامعة</option>
+            <option value="خريجين">خريجين</option>
+        </select>
+
+        <label>المدرسة / الكلية</label>
+        <input type="text" name="school" placeholder="اسم المدرسة أو الكلية">
+
+        <label>العنوان</label>
+        <input type="text" name="address" placeholder="العنوان">
+
+        <label>أب الاعتراف</label>
+        <input type="text" name="confession_father" placeholder="اسم أب الاعتراف">
+
+        <label>مشترك في خدمات إيه داخل أو خارج الكنيسة؟</label>
+        <textarea name="services" rows="3" placeholder="اكتب الخدمات"></textarea>
+
+        <label>هل التحقت بفصل إعداد خدام؟</label>
+        <select name="servants_class">
+            <option value="لا">لا</option>
+            <option value="نعم">نعم</option>
+        </select>
+
+        <label>القسم اللي حابب تشترك فيه</label>
+        <select name="department" required>
+            <option value="">اختر القسم</option>
+            <option value="تمثيل وإخراج">تمثيل وإخراج</option>
+            <option value="سينوغرافيا">سينوغرافيا</option>
+            <option value="تأليف">تأليف</option>
+        </select>
+
+        <label>ليه حابب تنضم لفريق الصرخة؟</label>
+        <textarea name="reason" rows="4" placeholder="اكتب سبب انضمامك"></textarea>
+
+        <button type="submit">إرسال الطلب</button>
+    </form>
 </div>
-@endif
 
-<form method="POST" action="/join-team" class="space-y-3">
-@csrf
-
-<input name="full_name" placeholder="الاسم بالكامل" class="input w-full">
-<input name="phone" placeholder="رقم التليفون" class="input w-full">
-<input name="email" placeholder="الإيميل" class="input w-full">
-<input name="age" type="number" placeholder="السن" class="input w-full">
-
-<select name="education_stage" id="education_stage" class="input w-full">
-    <option value="">المرحلة الدراسية</option>
-    <option value="اعدادي">إعدادي</option>
-    <option value="ثانوي">ثانوي</option>
-    <option value="جامعة">جامعة</option>
-    <option value="خريجين">خريجين</option>
-</select>
-
-<input name="school_or_college" placeholder="المدرسة / الكلية" class="input w-full">
-<input name="address" placeholder="العنوان" class="input w-full">
-<input name="confession_father" placeholder="أب الاعتراف" class="input w-full">
-
-<textarea name="services" placeholder="مشترك في خدمات ايه داخل أو خارج الكنيسة" class="input w-full"></textarea>
-
-<select name="preparation_class" class="input w-full">
-    <option value="">هل التحقت بفصل إعداد خدام؟</option>
-    <option value="1">نعم</option>
-    <option value="0">لا</option>
-</select>
-
-<select name="department" id="department" class="input w-full">
-    <option value="">القسم اللي حابب تشترك فيه</option>
-</select>
-
-<textarea name="why_join" placeholder="ليه حابب تنضم لفريق الصرخة؟" class="input w-full"></textarea>
-
-<button class="w-full bg-amber-400 text-black py-2 rounded-full">
-    إرسال الطلب
-</button>
-</form>
-</section>
-
-<script>
-const stage = document.getElementById('education_stage');
-const department = document.getElementById('department');
-
-stage.addEventListener('change', function () {
-    department.innerHTML = '<option value="">اختر القسم</option>';
-
-    if (this.value === 'اعدادي') {
-        department.innerHTML += `
-            <option value="تمثيل واخراج">تمثيل وإخراج</option>
-            <option value="سينوغرافيا">سينوغرافيا</option>
-        `;
-    }
-
-    else if (this.value === 'ثانوي' || this.value === 'جامعة') {
-        department.innerHTML += `
-            <option value="تمثيل واخراج">تمثيل وإخراج</option>
-            <option value="سينوغرافيا">سينوغرافيا</option>
-            <option value="تاليف">تأليف</option>
-        `;
-    }
-
-    else if (this.value === 'خريجين') {
-        department.innerHTML += `
-            <option value="تاليف">تأليف</option>
-        `;
-    }
-});
-</script>
 @endsection
