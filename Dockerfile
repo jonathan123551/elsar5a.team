@@ -6,11 +6,19 @@ RUN apt-get update && apt-get install -y \
     unzip \
     zip \
     libzip-dev \
-    libpq-dev
+    libpq-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev
 
 # PHP extensions
 RUN docker-php-ext-configure zip \
-    && docker-php-ext-install zip pdo pdo_pgsql
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        zip \
+        gd \
+        pdo \
+        pdo_pgsql
 
 # Redis extension
 RUN pecl install redis \
