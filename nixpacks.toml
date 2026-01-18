@@ -1,0 +1,12 @@
+[phases.setup]
+aptPkgs = [
+  "zip",
+  "unzip",
+  "libzip-dev"
+]
+
+[phases.install]
+cmds = [
+  "docker-php-ext-configure zip",
+  "docker-php-ext-install zip"
+]
