@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-
 <style>
 .page-wrapper {
     max-width: 1200px;
