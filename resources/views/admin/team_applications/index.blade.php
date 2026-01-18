@@ -3,221 +3,147 @@
 @section('content')
 
 <style>
-/* ================= BASE ================= */
-.page-title {
+/* ===============================
+   Team Applications – Admin UI
+   =============================== */
+
+.page-wrap {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.page-header h2 {
+    color: #fff;
     font-size: 26px;
     font-weight: bold;
-    margin-bottom: 10px;
 }
 
-.counter-box {
-    margin: 15px 0 20px;
-    padding: 12px 18px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
-    font-size: 17px;
-    font-weight: bold;
-    display: inline-block;
-}
-
-.counter-box span {
-    color: #f5c542;
-    font-size: 22px;
-}
-
-.export-btn {
-    display: inline-block;
-    background: #28a745;
-    color: #fff;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-decoration: none;
-}
-
-/* ================= FILTERS ================= */
 .filters {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
 }
 
 .filters input,
 .filters select {
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid #ddd;
-    background: #fff;
-    color: #000;
-    min-width: 200px;
-}
-
-/* ================= TABLE ================= */
-.table-wrapper {
-    background: rgba(0,0,0,0.45);
-    border-radius: 16px;
-    padding: 20px;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 1200px;
-}
-
-th {
-    background: #111;
-    color: #f5c542;
-    padding: 14px;
-}
-
-td {
     padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
 }
 
-/* ================= BADGES ================= */
-.badge-yes {
-    background: #28a745;
-    padding: 5px 10px;
-    border-radius: 20px;
+.counter {
+    color: #f5c542;
+    font-size: 16px;
     font-weight: bold;
 }
 
-.badge-no {
-    background: #dc3545;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-weight: bold;
+/* ===== Cards ===== */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
 }
 
-/* ================= MOBILE ================= */
-@media (max-width: 768px) {
+.card {
+    background: rgba(0,0,0,0.55);
+    border-radius: 14px;
+    padding: 18px;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
-    .page-title {
-        text-align: center;
-        font-size: 22px;
-    }
+.card .name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #f5c542;
+}
 
-    .counter-box {
-        display: block;
-        text-align: center;
-    }
+.card span {
+    font-size: 14px;
+    opacity: 0.95;
+}
 
+.card .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f5c542;
+    color: #000;
+    font-size: 12px;
+    font-weight: bold;
+    width: fit-content;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 600px) {
     .filters {
-        flex-direction: column;
-    }
-
-    .filters input,
-    .filters select {
-        width: 100%;
-    }
-
-    table thead {
-        display: none;
-    }
-
-    table, tbody, tr, td {
-        display: block;
-        width: 100%;
-    }
-
-    tr {
-        background: rgba(0,0,0,0.6);
-        margin-bottom: 16px;
-        padding: 12px;
-        border-radius: 14px;
-    }
-
-    td {
-        text-align: right;
-        padding: 8px 0;
-        border: none;
-    }
-
-    td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        color: #f5c542;
-        float: left;
+        grid-template-columns: 1fr;
     }
 }
 </style>
 
-<div class="container">
+<div class="page-wrap">
 
-    <h2 class="page-title">طلبات التقديم لفريق الصرخة 🎭</h2>
+    <div class="page-header">
+        <h2>طلبات الانضمام لفريق الصرخة 🎭</h2>
 
-    <div class="counter-box">
-        عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 بحث بالاسم / التليفون">
+
+            <select id="stageFilter">
+                <option value="">كل المراحل</option>
+                <option value="اعدادي">إعدادي</option>
+                <option value="ثانوي">ثانوي</option>
+                <option value="جامعة">جامعة</option>
+                <option value="خريجين">خريجين</option>
+            </select>
+
+            <select id="deptFilter">
+                <option value="">كل الأقسام</option>
+                <option value="تمثيل">تمثيل وإخراج</option>
+                <option value="سينوغرافيا">سينوغرافيا</option>
+                <option value="تأليف">تأليف</option>
+            </select>
+        </div>
+
+        <div class="counter">
+            عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
+        </div>
     </div>
 
-    <br>
+    <div class="cards" id="cardsWrapper">
+        @foreach($applications as $app)
+        <div class="card"
+             data-search="{{ strtolower($app->full_name.' '.$app->phone) }}"
+             data-stage="{{ $app->education_stage }}"
+             data-department="{{ $app->department }}">
 
-    <a href="{{ route('admin.team_applications.export') }}" class="export-btn">
-        Export Excel
-    </a>
+            <div class="name">{{ $app->full_name }}</div>
 
-    <div class="filters">
-        <input type="text" id="searchInput" placeholder="بحث بالاسم / التليفون / الإيميل">
+            <span>📞 {{ $app->phone }}</span>
+            <span>📧 {{ $app->email }}</span>
+            <span>🎂 {{ $app->age }} سنة</span>
 
-        <select id="stageFilter">
-            <option value="">كل المراحل</option>
-            <option value="اعدادي">إعدادي</option>
-            <option value="ثانوي">ثانوي</option>
-            <option value="جامعة">جامعة</option>
-            <option value="خريجين">خريجين</option>
-        </select>
+            <span class="badge">{{ $app->education_stage }}</span>
+            <span class="badge">{{ $app->department }}</span>
 
-        <select id="deptFilter">
-            <option value="">كل الأقسام</option>
-            <option value="تمثيل وإخراج">تمثيل وإخراج</option>
-            <option value="سينوغرافيا">سينوغرافيا</option>
-            <option value="تأليف">تأليف</option>
-        </select>
-    </div>
+            <span>👤 أب الاعتراف: {{ $app->confession_father }}</span>
+            <span>📅 {{ $app->created_at->format('Y-m-d') }}</span>
 
-    <div class="table-wrapper">
-        <table id="applicationsTable">
-            <thead>
-                <tr>
-                    
-                    <th>الاسم</th>
-                    <th>التليفون</th>
-                    <th>الإيميل</th>
-                    <th>السن</th>
-                    <th>المرحلة</th>
-                    <th>القسم</th>
-                    <th>إعداد خدام</th>
-                    <th>التاريخ</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($applications as $app)
-                <tr>
-                    
-                    <td data-label="الاسم">{{ $app->full_name }}</td>
-                    <td data-label="التليفون">{{ $app->phone }}</td>
-                    <td data-label="الإيميل">{{ $app->email }}</td>
-                    <td data-label="السن">{{ $app->age }}</td>
-                    <td data-label="المرحلة">{{ $app->education_stage }}</td>
-                    <td data-label="القسم">{{ $app->department }}</td>
-                    <td data-label="إعداد خدام">
-                        @if($app->preparation_class)
-                            <span class="badge-yes">نعم</span>
-                        @else
-                            <span class="badge-no">لا</span>
-                        @endif
-                    </td>
-                    <td data-label="التاريخ">{{ $app->created_at->format('Y-m-d') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+        </div>
+        @endforeach
     </div>
 
 </div>
@@ -226,35 +152,43 @@ td {
 const searchInput = document.getElementById('searchInput');
 const stageFilter = document.getElementById('stageFilter');
 const deptFilter  = document.getElementById('deptFilter');
-const rows = document.querySelectorAll('#applicationsTable tbody tr');
+const cards = document.querySelectorAll('.card');
 const counter = document.getElementById('counter');
 
-function filterTable() {
+function normalize(t) {
+    return (t || '').toLowerCase().trim();
+}
+
+function filterCards() {
     let visible = 0;
 
-    rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const stage = row.children[5].innerText;
-        const dept  = row.children[6].innerText;
+    cards.forEach(card => {
+        const search = normalize(card.dataset.search);
+        const stage  = normalize(card.dataset.stage);
+        const dept   = normalize(card.dataset.department);
 
-        const matchSearch = text.includes(searchInput.value.toLowerCase());
-        const matchStage  = stageFilter.value === "" || stage === stageFilter.value;
-        const matchDept   = deptFilter.value === "" || dept === deptFilter.value;
+        const sVal = normalize(searchInput.value);
+        const stVal = normalize(stageFilter.value);
+        const dVal = normalize(deptFilter.value);
 
-        if (matchSearch && matchStage && matchDept) {
-            row.style.display = "";
+        const okSearch = search.includes(sVal);
+        const okStage  = stVal === '' || stage.includes(stVal);
+        const okDept   = dVal === '' || dept.includes(dVal);
+
+        if (okSearch && okStage && okDept) {
+            card.style.display = '';
             visible++;
         } else {
-            row.style.display = "none";
+            card.style.display = 'none';
         }
     });
 
     counter.innerText = visible;
 }
 
-searchInput.addEventListener('input', filterTable);
-stageFilter.addEventListener('change', filterTable);
-deptFilter.addEventListener('change', filterTable);
+searchInput.addEventListener('input', filterCards);
+stageFilter.addEventListener('change', filterCards);
+deptFilter.addEventListener('change', filterCards);
 </script>
 
 @endsection
