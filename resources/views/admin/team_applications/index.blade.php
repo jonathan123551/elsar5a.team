@@ -3,179 +3,186 @@
 @section('content')
 
 <style>
-    /* ===== Admin Team Applications – Premium Style ===== */
+/* ================= BASE ================= */
+.page-title {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
 
-    .admin-wrapper {
-        padding: 30px;
-        background: linear-gradient(135deg, #0f0f0f, #1b1b1b);
-        border-radius: 16px;
-        color: #fff;
+.counter-box {
+    margin: 15px 0 20px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+    font-size: 17px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.counter-box span {
+    color: #f5c542;
+    font-size: 22px;
+}
+
+.export-btn {
+    display: inline-block;
+    background: #28a745;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-decoration: none;
+}
+
+/* ================= FILTERS ================= */
+.filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.filters input,
+.filters select {
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #000;
+    min-width: 200px;
+}
+
+/* ================= TABLE ================= */
+.table-wrapper {
+    background: rgba(0,0,0,0.45);
+    border-radius: 16px;
+    padding: 20px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1200px;
+}
+
+th {
+    background: #111;
+    color: #f5c542;
+    padding: 14px;
+}
+
+td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ================= BADGES ================= */
+.badge-yes {
+    background: #28a745;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.badge-no {
+    background: #dc3545;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+    .page-title {
+        text-align: center;
+        font-size: 22px;
     }
 
-    .admin-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
+    .counter-box {
+        display: block;
+        text-align: center;
     }
 
-    .admin-header h2 {
-        margin: 0;
-        font-size: 26px;
-        font-weight: 800;
-    }
-
-    .export-btn {
-        padding: 12px 20px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #f5c542, #e0b838);
-        color: #000;
-        font-weight: bold;
-        text-decoration: none;
-        transition: 0.3s;
-    }
-
-    .export-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-
-    /* ===== Filters ===== */
     .filters {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr auto;
-        gap: 15px;
-        margin-bottom: 25px;
+        flex-direction: column;
     }
 
     .filters input,
     .filters select {
-        padding: 14px;
-        border-radius: 10px;
-        border: none;
-        font-size: 14px;
+        width: 100%;
     }
 
-    .filters button {
-        padding: 14px 22px;
-        border-radius: 10px;
-        border: none;
-        background: #ffffff;
-        color: #000;
-        font-weight: bold;
-        cursor: pointer;
+    table thead {
+        display: none;
     }
 
-    /* ===== Table ===== */
-    .table-wrapper {
-        overflow-x: auto;
+    table, tbody, tr, td {
+        display: block;
+        width: 100%;
+    }
+
+    tr {
+        background: rgba(0,0,0,0.6);
+        margin-bottom: 16px;
+        padding: 12px;
         border-radius: 14px;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 1200px;
-    }
-
-    thead {
-        background: #111;
-    }
-
-    thead th {
-        padding: 14px;
-        font-size: 14px;
-        border-bottom: 2px solid #333;
-        white-space: nowrap;
-    }
-
-    tbody tr {
-        background: rgba(255,255,255,0.03);
-        transition: 0.2s;
-    }
-
-    tbody tr:hover {
-        background: rgba(255,255,255,0.08);
-    }
-
     td {
-        padding: 14px;
-        font-size: 14px;
-        text-align: center;
-        white-space: nowrap;
+        text-align: right;
+        padding: 8px 0;
+        border: none;
     }
 
-    .badge {
-        padding: 6px 10px;
-        border-radius: 8px;
-        font-size: 12px;
+    td::before {
+        content: attr(data-label);
         font-weight: bold;
+        color: #f5c542;
+        float: left;
     }
-
-    .badge-yes {
-        background: #2ecc71;
-        color: #000;
-    }
-
-    .badge-no {
-        background: #7f8c8d;
-    }
-
-    .reason {
-        max-width: 220px;
-        white-space: normal;
-        font-size: 13px;
-        opacity: 0.9;
-    }
-
-    /* ===== Pagination ===== */
-    .pagination {
-        margin-top: 25px;
-        display: flex;
-        justify-content: center;
-    }
-
+}
 </style>
 
-<div class="admin-wrapper">
+<div class="container">
 
-    <div class="admin-header">
-        <h2>طلبات التقديم لفريق الصرخة 🎭</h2>
+    <h2 class="page-title">طلبات التقديم لفريق الصرخة 🎭</h2>
 
-        <a href="{{ route('admin.team_applications.export') }}"
-           class="export-btn">
-            Export Excel
-        </a>
+    <div class="counter-box">
+        عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
     </div>
 
-    {{-- Filters --}}
-    <form method="GET" class="filters">
-        <input type="text"
-               name="search"
-               value="{{ request('search') }}"
-               placeholder="🔍 بحث بالاسم / التليفون / الإيميل">
+    <br>
 
-        <select name="education_stage">
+    <a href="{{ route('admin.team_applications.export') }}" class="export-btn">
+        Export Excel
+    </a>
+
+    <div class="filters">
+        <input type="text" id="searchInput" placeholder="بحث بالاسم / التليفون / الإيميل">
+
+        <select id="stageFilter">
             <option value="">كل المراحل</option>
-            <option value="اعدادي" {{ request('education_stage')=='اعدادي'?'selected':'' }}>إعدادي</option>
-            <option value="ثانوي" {{ request('education_stage')=='ثانوي'?'selected':'' }}>ثانوي</option>
-            <option value="جامعة" {{ request('education_stage')=='جامعة'?'selected':'' }}>جامعة</option>
-            <option value="خريجين" {{ request('education_stage')=='خريجين'?'selected':'' }}>خريجين</option>
+            <option value="اعدادي">إعدادي</option>
+            <option value="ثانوي">ثانوي</option>
+            <option value="جامعة">جامعة</option>
+            <option value="خريجين">خريجين</option>
         </select>
 
-        <select name="department">
+        <select id="deptFilter">
             <option value="">كل الأقسام</option>
-            <option value="تمثيل وإخراج" {{ request('department')=='تمثيل وإخراج'?'selected':'' }}>تمثيل وإخراج</option>
-            <option value="سينوغرافيا" {{ request('department')=='سينوغرافيا'?'selected':'' }}>سينوغرافيا</option>
-            <option value="تأليف" {{ request('department')=='تأليف'?'selected':'' }}>تأليف</option>
+            <option value="تمثيل وإخراج">تمثيل وإخراج</option>
+            <option value="سينوغرافيا">سينوغرافيا</option>
+            <option value="تأليف">تأليف</option>
         </select>
+    </div>
 
-        <button>فلترة</button>
-    </form>
-
-    {{-- Table --}}
     <div class="table-wrapper">
-        <table>
+        <table id="applicationsTable">
             <thead>
                 <tr>
                     
@@ -185,46 +192,69 @@
                     <th>السن</th>
                     <th>المرحلة</th>
                     <th>القسم</th>
-                    <th>الخدمات</th>
                     <th>إعداد خدام</th>
-                    <th>سبب الانضمام</th>
                     <th>التاريخ</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($applications as $app)
-                    <tr>
-                        
-                        <td>{{ $app->full_name }}</td>
-                        <td>{{ $app->phone }}</td>
-                        <td>{{ $app->email }}</td>
-                        <td>{{ $app->age }}</td>
-                        <td>{{ $app->education_stage }}</td>
-                        <td>{{ $app->department }}</td>
-                        <td>{{ $app->services ?? '-' }}</td>
-                        <td>
-                            @if($app->preparation_class)
-                                <span class="badge badge-yes">نعم</span>
-                            @else
-                                <span class="badge badge-no">لا</span>
-                            @endif
-                        </td>
-                        <td class="reason">
-                            {{ \Illuminate\Support\Str::limit($app->why_join, 80) }}
-                        </td>
-                        <td>{{ $app->created_at->format('Y-m-d') }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="11">لا توجد طلبات</td>
-                    </tr>
-                @endforelse
+                @foreach($applications as $app)
+                <tr>
+                    
+                    <td data-label="الاسم">{{ $app->full_name }}</td>
+                    <td data-label="التليفون">{{ $app->phone }}</td>
+                    <td data-label="الإيميل">{{ $app->email }}</td>
+                    <td data-label="السن">{{ $app->age }}</td>
+                    <td data-label="المرحلة">{{ $app->education_stage }}</td>
+                    <td data-label="القسم">{{ $app->department }}</td>
+                    <td data-label="إعداد خدام">
+                        @if($app->preparation_class)
+                            <span class="badge-yes">نعم</span>
+                        @else
+                            <span class="badge-no">لا</span>
+                        @endif
+                    </td>
+                    <td data-label="التاريخ">{{ $app->created_at->format('Y-m-d') }}</td>
+                </tr>
+                @endforeach
             </tbody>
         </table>
     </div>
 
-    {{ $applications->links() }}
-
 </div>
+
+<script>
+const searchInput = document.getElementById('searchInput');
+const stageFilter = document.getElementById('stageFilter');
+const deptFilter  = document.getElementById('deptFilter');
+const rows = document.querySelectorAll('#applicationsTable tbody tr');
+const counter = document.getElementById('counter');
+
+function filterTable() {
+    let visible = 0;
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const stage = row.children[5].innerText;
+        const dept  = row.children[6].innerText;
+
+        const matchSearch = text.includes(searchInput.value.toLowerCase());
+        const matchStage  = stageFilter.value === "" || stage === stageFilter.value;
+        const matchDept   = deptFilter.value === "" || dept === deptFilter.value;
+
+        if (matchSearch && matchStage && matchDept) {
+            row.style.display = "";
+            visible++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    counter.innerText = visible;
+}
+
+searchInput.addEventListener('input', filterTable);
+stageFilter.addEventListener('change', filterTable);
+deptFilter.addEventListener('change', filterTable);
+</script>
 
 @endsection
