@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\ScannerController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\AboutController;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\TeamApplicationController as AdminTeamApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,7 +85,8 @@ Route::middleware('admin')
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-
+    Route::get('/team-applications', [AdminTeamApplicationController::class, 'index'])
+    ->name('team_applications.index');
     /*
     |--------------------------------------------------------------------------
     | Dashboard
