@@ -1,5 +1,6 @@
 FROM php:8.2-fpm
 
+# System dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -8,28 +9,37 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libpng-dev \
     libjpeg-dev \
-    libfreetype6-dev
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+# PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd zip pdo pdo_pgsql
 
+# Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# App
 WORKDIR /app
 COPY . .
 
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
+# 🔥🔥🔥 FIX PERMISSIONS (THE REAL FIX)
+RUN chown -R www-data:www-data /app \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
+
 # Nginx config
-RUN rm /etc/nginx/sites-enabled/default
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Supervisor config
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8080
-RUN chmod -R 775 storage bootstrap/cache
 
 CMD ["/usr/bin/supervisord", "-n"]
