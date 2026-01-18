@@ -4,146 +4,179 @@
 
 <style>
 /* ===============================
-   Team Applications – Admin UI
+   Admin Table – Team Applications
    =============================== */
 
-.page-wrap {
-    padding: 20px;
-    max-width: 1200px;
+.page-wrapper {
+    padding: 25px;
+    max-width: 1300px;
     margin: auto;
 }
 
-.page-header {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.page-header h2 {
+.page-title {
     color: #fff;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: bold;
+    margin-bottom: 20px;
 }
 
-.filters {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
+/* ===== Controls ===== */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 15px;
 }
 
-.filters input,
-.filters select {
-    padding: 12px;
-    border-radius: 10px;
+.controls input,
+.controls select {
+    padding: 10px 14px;
+    border-radius: 8px;
     border: none;
     font-size: 15px;
+    min-width: 200px;
+}
+
+.controls input::placeholder {
+    color: #333;
+    font-weight: 500;
 }
 
 .counter {
     color: #f5c542;
-    font-size: 16px;
     font-weight: bold;
+    margin-top: 8px;
 }
 
-/* ===== Cards ===== */
-.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-}
-
-.card {
+/* ===== Table ===== */
+.table-wrap {
+    overflow-x: auto;
     background: rgba(0,0,0,0.55);
-    border-radius: 14px;
-    padding: 18px;
-    color: #fff;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    border-radius: 12px;
 }
 
-.card .name {
-    font-size: 20px;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+thead {
+    background: #f5c542;
+    color: #000;
+}
+
+thead th {
+    padding: 14px;
     font-weight: bold;
-    color: #f5c542;
-}
-
-.card span {
+    text-align: right;
     font-size: 14px;
-    opacity: 0.95;
 }
 
-.card .badge {
-    display: inline-block;
+tbody td {
+    padding: 12px;
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 14px;
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.badge {
     padding: 4px 10px;
     border-radius: 20px;
     background: #f5c542;
     color: #000;
     font-size: 12px;
     font-weight: bold;
-    width: fit-content;
+}
+
+/* ===== Export ===== */
+.export-btn {
+    background: #2ecc71;
+    color: #000;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
 }
 
 /* ===== Mobile ===== */
 @media (max-width: 600px) {
-    .filters {
-        grid-template-columns: 1fr;
+    .page-title {
+        font-size: 22px;
     }
 }
 </style>
 
-<div class="page-wrap">
+<div class="page-wrapper">
 
-    <div class="page-header">
-        <h2>طلبات الانضمام لفريق الصرخة 🎭</h2>
+    <div class="page-title">طلبات الانضمام لفريق الصرخة 🎭</div>
 
-        <div class="filters">
-            <input type="text" id="searchInput" placeholder="🔍 بحث بالاسم / التليفون">
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="بحث بالاسم أو التليفون">
 
-            <select id="stageFilter">
-                <option value="">كل المراحل</option>
-                <option value="اعدادي">إعدادي</option>
-                <option value="ثانوي">ثانوي</option>
-                <option value="جامعة">جامعة</option>
-                <option value="خريجين">خريجين</option>
-            </select>
+        <select id="stageFilter">
+            <option value="">كل المراحل</option>
+            <option value="اعدادي">إعدادي</option>
+            <option value="ثانوي">ثانوي</option>
+            <option value="جامعة">جامعة</option>
+            <option value="خريجين">خريجين</option>
+        </select>
 
-            <select id="deptFilter">
-                <option value="">كل الأقسام</option>
-                <option value="تمثيل">تمثيل وإخراج</option>
-                <option value="سينوغرافيا">سينوغرافيا</option>
-                <option value="تأليف">تأليف</option>
-            </select>
-        </div>
+        <select id="deptFilter">
+            <option value="">كل الأقسام</option>
+            <option value="تمثيل">تمثيل وإخراج</option>
+            <option value="سينوغرافيا">سينوغرافيا</option>
+            <option value="تأليف">تأليف</option>
+        </select>
 
-        <div class="counter">
-            عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
-        </div>
+        <a href="{{ route('admin.team_applications.export') }}" class="export-btn">
+            Export Excel
+        </a>
     </div>
 
-    <div class="cards" id="cardsWrapper">
-        @foreach($applications as $app)
-        <div class="card"
-             data-search="{{ strtolower($app->full_name.' '.$app->phone) }}"
-             data-stage="{{ $app->education_stage }}"
-             data-department="{{ $app->department }}">
+    <div class="counter">
+        عدد الطلبات: <span id="counter">{{ $applications->count() }}</span>
+    </div>
 
-            <div class="name">{{ $app->full_name }}</div>
-
-            <span>📞 {{ $app->phone }}</span>
-            <span>📧 {{ $app->email }}</span>
-            <span>🎂 {{ $app->age }} سنة</span>
-
-            <span class="badge">{{ $app->education_stage }}</span>
-            <span class="badge">{{ $app->department }}</span>
-
-            <span>👤 أب الاعتراف: {{ $app->confession_father }}</span>
-            <span>📅 {{ $app->created_at->format('Y-m-d') }}</span>
-
-        </div>
-        @endforeach
+    <div class="table-wrap mt-3">
+        <table>
+            <thead>
+                <tr>
+                    
+                    <th>الاسم</th>
+                    <th>التليفون</th>
+                    <th>الإيميل</th>
+                    <th>السن</th>
+                    <th>المرحلة</th>
+                    <th>القسم</th>
+                    <th>أب الاعتراف</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                @foreach($applications as $app)
+                <tr
+                    data-search="{{ strtolower($app->full_name.' '.$app->phone) }}"
+                    data-stage="{{ $app->education_stage }}"
+                    data-dept="{{ $app->department }}"
+                >
+                   
+                    <td>{{ $app->full_name }}</td>
+                    <td>{{ $app->phone }}</td>
+                    <td>{{ $app->email }}</td>
+                    <td>{{ $app->age }}</td>
+                    <td><span class="badge">{{ $app->education_stage }}</span></td>
+                    <td><span class="badge">{{ $app->department }}</span></td>
+                    <td>{{ $app->confession_father }}</td>
+                    <td>{{ $app->created_at->format('Y-m-d') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
 
 </div>
@@ -152,20 +185,20 @@
 const searchInput = document.getElementById('searchInput');
 const stageFilter = document.getElementById('stageFilter');
 const deptFilter  = document.getElementById('deptFilter');
-const cards = document.querySelectorAll('.card');
+const rows = document.querySelectorAll('#tableBody tr');
 const counter = document.getElementById('counter');
 
-function normalize(t) {
-    return (t || '').toLowerCase().trim();
+function normalize(v) {
+    return (v || '').toLowerCase().trim();
 }
 
-function filterCards() {
+function applyFilters() {
     let visible = 0;
 
-    cards.forEach(card => {
-        const search = normalize(card.dataset.search);
-        const stage  = normalize(card.dataset.stage);
-        const dept   = normalize(card.dataset.department);
+    rows.forEach(row => {
+        const search = normalize(row.dataset.search);
+        const stage  = normalize(row.dataset.stage);
+        const dept   = normalize(row.dataset.dept);
 
         const sVal = normalize(searchInput.value);
         const stVal = normalize(stageFilter.value);
@@ -176,19 +209,19 @@ function filterCards() {
         const okDept   = dVal === '' || dept.includes(dVal);
 
         if (okSearch && okStage && okDept) {
-            card.style.display = '';
+            row.style.display = '';
             visible++;
         } else {
-            card.style.display = 'none';
+            row.style.display = 'none';
         }
     });
 
     counter.innerText = visible;
 }
 
-searchInput.addEventListener('input', filterCards);
-stageFilter.addEventListener('change', filterCards);
-deptFilter.addEventListener('change', filterCards);
+searchInput.addEventListener('input', applyFilters);
+stageFilter.addEventListener('change', applyFilters);
+deptFilter.addEventListener('change', applyFilters);
 </script>
 
 @endsection
