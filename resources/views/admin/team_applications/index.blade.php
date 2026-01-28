@@ -1,39 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<div id="closedOverlay" style="
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #fff;
-">
-    <div style="
-        background: #111;
-        padding: 40px;
-        border-radius: 20px;
-        max-width: 400px;
-        box-shadow: 0 0 30px rgba(245,197,66,0.6);
-    ">
-        <h2 style="color:#f5c542; margin-bottom:15px;">🚫 تم غلق باب الحجز</h2>
-        <p style="font-size:16px; line-height:1.7;">
-            نشكركم على اهتمامكم <br>
-            وسيتم فتح باب التقديم في أقرب وقت
-        </p>
-    </div>
-</div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    alert("🚫 تم غلق باب الحجز");
-    window.location.href = "/"; // رجوع للهوم
-});
-</script>
-
 <style>
 .page-wrapper {
     max-width: 1200px;
