@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    abort(403, 'تم غلق باب الحجز');
+@endphp
+
 <style>
 .page-wrapper {
     max-width: 1200px;
