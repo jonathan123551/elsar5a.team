@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    {{-- 🔥 الفلتر الجديد السريع --}}
+    {{-- 🔥 الفلتر السريع --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
 
@@ -41,11 +41,21 @@
                 <option value="rejected">Rejected</option>
             </select>
 
-            <select id="showFilter"
+            {{-- ✅ فلترة بتاريخ العرض --}}
+            <select id="dateFilter"
                 class="rounded-xl bg-black/60 border border-white/15 px-3 py-2 focus:outline-none focus:border-amber-400">
-                <option value="">كل العروض</option>
-                @foreach($bookings->pluck('showTime.show.title')->unique()->filter() as $title)
-                    <option value="{{ $title }}">{{ $title }}</option>
+                <option value="">كل المواعيد</option>
+                @foreach(
+                    $bookings
+                        ->pluck('showTime.date')
+                        ->filter()
+                        ->unique()
+                        ->sort()
+                    as $date
+                )
+                    <option value="{{ $date->format('Y-m-d') }}">
+                        {{ $date->format('d / m / Y') }}
+                    </option>
                 @endforeach
             </select>
 
@@ -57,7 +67,7 @@
         <p class="text-sm text-gray-400">لا توجد حجوزات.</p>
     @else
         <div class="bg-black/40 border border-white/10 rounded-2xl overflow-x-auto">
-            <table class="w-full text-sm text-gray-200" id="bookingsTable">
+            <table class="w-full text-sm text-gray-200">
                 <thead class="bg-white/5 text-xs text-gray-400">
                     <tr>
                         <th class="px-3 py-2 text-right">رقم الحجز</th>
@@ -71,7 +81,7 @@
                 @foreach($bookings as $booking)
                     <tr class="border-t border-white/5 booking-row"
                         data-status="{{ $booking->status }}"
-                        data-show="{{ $booking->showTime->show->title ?? '' }}"
+                        data-date="{{ optional($booking->showTime->date)->format('Y-m-d') }}"
                         data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
                     >
                         <td class="px-3 py-2 text-xs font-mono">
@@ -124,31 +134,32 @@
     @endif
 </section>
 
-{{-- ⚡ JS فلترة سريعة --}}
+{{-- ⚡ JS فلترة --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput  = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
-    const showFilter   = document.getElementById('showFilter');
+    const dateFilter   = document.getElementById('dateFilter');
     const rows         = document.querySelectorAll('.booking-row');
 
     function filterTable() {
         const search = searchInput.value.toLowerCase();
         const status = statusFilter.value;
-        const show   = showFilter.value;
+        const date   = dateFilter.value;
 
         rows.forEach(row => {
             const matchSearch = row.dataset.search.includes(search);
             const matchStatus = !status || row.dataset.status === status;
-            const matchShow   = !show || row.dataset.show === show;
+            const matchDate   = !date || row.dataset.date === date;
 
-            row.style.display = (matchSearch && matchStatus && matchShow)
-                ? ''
-                : 'none';
+            row.style.display =
+                (matchSearch && matchStatus && matchDate)
+                    ? ''
+                    : 'none';
         });
     }
 
-    [searchInput, statusFilter, showFilter].forEach(el => {
+    [searchInput, statusFilter, dateFilter].forEach(el => {
         el.addEventListener('input', filterTable);
         el.addEventListener('change', filterTable);
     });
