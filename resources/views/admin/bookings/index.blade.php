@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    {{-- 🔥 الفلتر السريع --}}
+    {{-- 🔥 الفلتر --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
 
@@ -41,20 +41,24 @@
                 <option value="rejected">Rejected</option>
             </select>
 
-            {{-- ✅ فلترة بتاريخ العرض --}}
-            <select id="dateFilter"
+            {{-- ✅ ميعاد العرض (تاريخ + ساعة) --}}
+            <select id="dateTimeFilter"
                 class="rounded-xl bg-black/60 border border-white/15 px-3 py-2 focus:outline-none focus:border-amber-400">
                 <option value="">كل المواعيد</option>
+
                 @foreach(
                     $bookings
-                        ->pluck('showTime.date')
+                        ->map(fn($b) => $b->showTime
+                            ? $b->showTime->date->format('Y-m-d').' '.$b->showTime->time
+                            : null
+                        )
                         ->filter()
                         ->unique()
                         ->sort()
-                    as $date
+                    as $datetime
                 )
-                    <option value="{{ $date->format('Y-m-d') }}">
-                        {{ $date->format('d / m / Y') }}
+                    <option value="{{ $datetime }}">
+                        {{ \Carbon\Carbon::parse($datetime)->format('d/m/Y • g:i A') }}
                     </option>
                 @endforeach
             </select>
@@ -79,9 +83,15 @@
                 </thead>
                 <tbody>
                 @foreach($bookings as $booking)
+                    @php
+                        $dateTimeValue = $booking->showTime
+                            ? $booking->showTime->date->format('Y-m-d').' '.$booking->showTime->time
+                            : '';
+                    @endphp
+
                     <tr class="border-t border-white/5 booking-row"
                         data-status="{{ $booking->status }}"
-                        data-date="{{ optional($booking->showTime->date)->format('Y-m-d') }}"
+                        data-datetime="{{ $dateTimeValue }}"
                         data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
                     >
                         <td class="px-3 py-2 text-xs font-mono">
@@ -134,32 +144,32 @@
     @endif
 </section>
 
-{{-- ⚡ JS فلترة --}}
+{{-- ⚡ JS --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput  = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const dateFilter   = document.getElementById('dateFilter');
-    const rows         = document.querySelectorAll('.booking-row');
+    const searchInput   = document.getElementById('searchInput');
+    const statusFilter  = document.getElementById('statusFilter');
+    const dateTimeFilter = document.getElementById('dateTimeFilter');
+    const rows          = document.querySelectorAll('.booking-row');
 
     function filterTable() {
-        const search = searchInput.value.toLowerCase();
-        const status = statusFilter.value;
-        const date   = dateFilter.value;
+        const search   = searchInput.value.toLowerCase();
+        const status   = statusFilter.value;
+        const datetime = dateTimeFilter.value;
 
         rows.forEach(row => {
-            const matchSearch = row.dataset.search.includes(search);
-            const matchStatus = !status || row.dataset.status === status;
-            const matchDate   = !date || row.dataset.date === date;
+            const matchSearch   = row.dataset.search.includes(search);
+            const matchStatus   = !status || row.dataset.status === status;
+            const matchDateTime = !datetime || row.dataset.datetime === datetime;
 
             row.style.display =
-                (matchSearch && matchStatus && matchDate)
+                (matchSearch && matchStatus && matchDateTime)
                     ? ''
                     : 'none';
         });
     }
 
-    [searchInput, statusFilter, dateFilter].forEach(el => {
+    [searchInput, statusFilter, dateTimeFilter].forEach(el => {
         el.addEventListener('input', filterTable);
         el.addEventListener('change', filterTable);
     });
