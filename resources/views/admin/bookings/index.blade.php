@@ -5,7 +5,7 @@
 @section('content')
 <section class="space-y-6">
 
-    {{-- العنوان + زر الرجوع للوحة التحكم --}}
+    {{-- العنوان --}}
     <div class="flex items-center justify-between gap-3">
         <h1 class="text-2xl font-bold mb-2">إدارة الحجوزات</h1>
 
@@ -15,81 +15,49 @@
         </a>
     </div>
 
-    {{-- رسائل الحالة --}}
+    {{-- رسالة --}}
     @if(session('status'))
         <div class="bg-emerald-500/10 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl p-3">
             {{ session('status') }}
         </div>
     @endif
 
-    {{-- فورم الفلترة والبحث --}}
-    <form id="filters-form"
-      method="GET"
-      action="{{ route('admin.bookings.index') }}"
-      class="bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-xs flex flex-wrap gap-3 items-end">
+    {{-- 🔥 الفلتر الجديد السريع --}}
+    <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
 
-    <div class="flex flex-col">
-        <label class="mb-1 text-gray-300">فلترة بالحالة</label>
-        <select name="status"
-                class="rounded-xl bg-black/60 border border-white/15 px-3 py-1.5 text-xs focus:outline-none focus:border-amber-400">
-            <option value="">الكل</option>
-            <option value="pending"  {{ request('status') === 'pending'  ? 'selected' : '' }}>Pending</option>
-            <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
-            <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-        </select>
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="بحث بالاسم / الموبايل / كود الحجز"
+                class="rounded-xl bg-black/60 border border-white/15 px-3 py-2 focus:outline-none focus:border-amber-400"
+            >
+
+            <select id="statusFilter"
+                class="rounded-xl bg-black/60 border border-white/15 px-3 py-2 focus:outline-none focus:border-amber-400">
+                <option value="">كل الحالات</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+
+            <select id="showFilter"
+                class="rounded-xl bg-black/60 border border-white/15 px-3 py-2 focus:outline-none focus:border-amber-400">
+                <option value="">كل العروض</option>
+                @foreach($bookings->pluck('showTime.show.title')->unique()->filter() as $title)
+                    <option value="{{ $title }}">{{ $title }}</option>
+                @endforeach
+            </select>
+
+        </div>
     </div>
-
-    <div class="flex flex-col flex-1 min-w-[180px]">
-        <label class="mb-1 text-gray-300">بحث (اسم / موبايل / كود الحجز)</label>
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="اكتب جزء من الاسم أو رقم الموبايل أو كود SRC..."
-               class="rounded-xl bg-black/60 border border-white/15 px-3 py-1.5 text-xs focus:outline-none focus:border-amber-400">
-    </div>
-
-    {{-- سيبنا المكان ده فاضي، شيلنا الزراير خالص --}}
-</form>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form        = document.getElementById('filters-form');
-        if (!form) return;
-
-        const statusField = form.querySelector('select[name="status"]');
-        const searchField = form.querySelector('input[name="search"]');
-
-        let searchTimeout = null;
-
-        // أول ما تتغير الحالة → ابعت الفورم
-        if (statusField) {
-            statusField.addEventListener('change', function () {
-                form.submit();
-            });
-        }
-
-        // أول ما تكتب في البحث → استنى شوية صغيرين وبعدين ابعت
-        if (searchField) {
-            searchField.addEventListener('input', function () {
-                if (searchTimeout) {
-                    clearTimeout(searchTimeout);
-                }
-
-                searchTimeout = setTimeout(function () {
-                    form.submit();
-                }, 400); // 0.4 ثانية بعد آخر حرف
-            });
-        }
-    });
-</script>
-
 
     {{-- الجدول --}}
     @if($bookings->isEmpty())
-        <p class="text-sm text-gray-400">لا توجد حجوزات حسب الفلتر الحالي.</p>
+        <p class="text-sm text-gray-400">لا توجد حجوزات.</p>
     @else
-     <p class="text-[10px] text-gray-500 md:hidden px-1">
-            ‼️ تقدر تسحب الجدول يمين/شمال لو مش باين كله على الشاشة.
-        </p>
         <div class="bg-black/40 border border-white/10 rounded-2xl overflow-x-auto">
-            <table class="w-full text-sm text-gray-200">
+            <table class="w-full text-sm text-gray-200" id="bookingsTable">
                 <thead class="bg-white/5 text-xs text-gray-400">
                     <tr>
                         <th class="px-3 py-2 text-right">رقم الحجز</th>
@@ -101,7 +69,11 @@
                 </thead>
                 <tbody>
                 @foreach($bookings as $booking)
-                    <tr class="border-t border-white/5">
+                    <tr class="border-t border-white/5 booking-row"
+                        data-status="{{ $booking->status }}"
+                        data-show="{{ $booking->showTime->show->title ?? '' }}"
+                        data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
+                    >
                         <td class="px-3 py-2 text-xs font-mono">
                             {{ $booking->reference_code }}
                         </td>
@@ -122,15 +94,12 @@
                             @endif
                         </td>
 
-                       
                         <td class="px-3 py-2 text-xs">
-                            @php $status = $booking->status; @endphp
-
-                            @if($status === 'approved')
+                            @if($booking->status === 'approved')
                                 <span class="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-200 border border-emerald-500/40 text-[11px]">
                                     approved
                                 </span>
-                            @elseif($status === 'rejected')
+                            @elseif($booking->status === 'rejected')
                                 <span class="px-2 py-1 rounded-full bg-red-500/15 text-red-200 border border-red-500/40 text-[11px]">
                                     rejected
                                 </span>
@@ -154,4 +123,35 @@
         </div>
     @endif
 </section>
+
+{{-- ⚡ JS فلترة سريعة --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput  = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const showFilter   = document.getElementById('showFilter');
+    const rows         = document.querySelectorAll('.booking-row');
+
+    function filterTable() {
+        const search = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const show   = showFilter.value;
+
+        rows.forEach(row => {
+            const matchSearch = row.dataset.search.includes(search);
+            const matchStatus = !status || row.dataset.status === status;
+            const matchShow   = !show || row.dataset.show === show;
+
+            row.style.display = (matchSearch && matchStatus && matchShow)
+                ? ''
+                : 'none';
+        });
+    }
+
+    [searchInput, statusFilter, showFilter].forEach(el => {
+        el.addEventListener('input', filterTable);
+        el.addEventListener('change', filterTable);
+    });
+});
+</script>
 @endsection
