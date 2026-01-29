@@ -10,12 +10,19 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-   ->withMiddleware(function (Middleware $middleware) {
-    $middleware->alias([
-        'admin' => \App\Http\Middleware\IsAdmin::class,
-    ]);
-})
+    ->withMiddleware(function (Middleware $middleware) {
 
+        // ✅ Middleware aliases
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\IsAdmin::class,
+        ]);
+
+        // ✅ Disable CSRF for WhatsApp Webhook (VERY IMPORTANT)
+        $middleware->validateCsrfTokens(except: [
+            'webhook/whatsapp',
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();
