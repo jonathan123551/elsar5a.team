@@ -28,18 +28,18 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        $entry = $request->input('entry.0.changes.0.value.messages.0');
+        $message = $request->input('entry.0.changes.0.value.messages.0');
 
-        if (!$entry) {
+        if (!$message) {
             return response()->json(['ok' => true]);
         }
 
         // Quick Reply button
         if (
-            isset($entry['button']['text']) &&
-            $entry['button']['text'] === 'استلم التذكرة'
+            isset($message['button']['text']) &&
+            $message['button']['text'] === 'استلم التذكرة'
         ) {
-            $phone = preg_replace('/[^0-9]/', '', $entry['from']);
+            $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
             $booking = Booking::where('phone', 'like', "%$phone%")
                 ->whereNotNull('qr_code_path')
@@ -47,8 +47,12 @@ class WhatsAppWebhookController extends Controller
                 ->first();
 
             if ($booking) {
-                app(BookingController::class)
-                    ->sendWhatsAppTicket($booking);
+                app(BookingController::class)->sendWhatsAppTicket(
+                    $booking->phone,
+                    $booking->qr_code_path,
+                    $booking->reference_code,
+                    $booking->full_name
+                );
             }
         }
 
