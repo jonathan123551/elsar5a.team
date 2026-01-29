@@ -8,9 +8,6 @@ use App\Http\Controllers\Admin\BookingController;
 
 class WhatsAppWebhookController extends Controller
 {
-    /**
-     * Meta verification
-     */
     public function verify(Request $request)
     {
         if (
@@ -23,9 +20,6 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
-    /**
-     * Handle incoming messages
-     */
     public function handle(Request $request)
     {
         $message = $request->input('entry.0.changes.0.value.messages.0');
@@ -34,7 +28,7 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Quick Reply button
+        // ✅ Quick Reply Button
         if (
             isset($message['button']['text']) &&
             $message['button']['text'] === 'استلم التذكرة'
