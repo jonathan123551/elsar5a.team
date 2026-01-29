@@ -201,7 +201,6 @@ class BookingController extends Controller
                         'link' => $imageUrl,
                         'caption' =>
                                "*🎟️ أهلاً {$full_name}*\n\n"
-                                ."تم تأكيد حجزك بنجاح ✅\n\n"
                                 ."يسعدنا وجودك معنا،\n"
                                 ."أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا…\n"
                                 ."ليزداد العقل وعيًا.\n\n"
