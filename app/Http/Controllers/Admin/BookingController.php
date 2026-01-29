@@ -127,11 +127,8 @@ class BookingController extends Controller
             'qr_code_public_id' => $upload['public_id'],
         ]);
 
-        // Send WhatsApp TEMPLATE
-        $this->sendTicketTemplate(
-            $booking->phone,
-            $booking->full_name
-        );
+        // 🔔 SEND TEMPLATE (NO VARIABLES)
+        $this->sendTicketTemplate($booking->phone);
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
@@ -160,8 +157,8 @@ class BookingController extends Controller
             ->with('status', 'تم رفض الحجز ❌');
     }
 
-    // ================= TEMPLATE =================
-    private function sendTicketTemplate($phone, $name)
+    // ================= TEMPLATE (NO VARIABLES) =================
+    private function sendTicketTemplate($phone)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -176,17 +173,6 @@ class BookingController extends Controller
                         'name' => 'ticket',
                         'language' => [
                             'code' => 'ar_EG',
-                        ],
-                        'components' => [
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    [
-                                        'type' => 'text',
-                                        'text' => $name,
-                                    ],
-                                ],
-                            ],
                         ],
                     ],
                 ]
