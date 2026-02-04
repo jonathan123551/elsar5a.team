@@ -31,7 +31,10 @@ class WhatsAppWebhookController extends Controller
 
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        Log::info('WHATSAPP MESSAGE IN', ['phone' => $phone]);
+        Log::info('WHATSAPP MESSAGE IN', [
+            'from' => $phone,
+            'message' => $message,
+        ]);
 
         $booking = Booking::where('phone', 'like', "%$phone%")
             ->where('status', 'approved')
@@ -44,6 +47,7 @@ class WhatsAppWebhookController extends Controller
             ->first();
 
         if (!$booking) {
+            Log::info('NO BOOKING OR ALREADY SENT', ['phone' => $phone]);
             return response()->json(['ok' => true]);
         }
 
