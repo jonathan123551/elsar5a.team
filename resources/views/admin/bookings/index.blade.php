@@ -74,11 +74,14 @@
             <table class="w-full text-sm text-gray-200">
                 <thead class="bg-white/5 text-xs text-gray-400">
                     <tr>
-                        <th class="px-3 py-2 text-right">رقم الحجز</th>
+                        
                         <th class="px-3 py-2 text-right">الضيف</th>
                         <th class="px-3 py-2 text-right">العرض / الموعد</th>
                         <th class="px-3 py-2 text-right">الحالة</th>
+                        <th class="px-3 py-2 text-center">التذكرة</th>
                         <th class="px-3 py-2 text-right">إجراءات</th>
+                        <th class="px-3 py-2 text-right">رقم الحجز</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -94,9 +97,7 @@
                         data-datetime="{{ $dateTimeValue }}"
                         data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
                     >
-                        <td class="px-3 py-2 text-xs font-mono">
-                            {{ $booking->reference_code }}
-                        </td>
+                        
 
                         <td class="px-3 py-2 text-xs">
                             {{ $booking->full_name }}<br>
@@ -129,12 +130,32 @@
                                 </span>
                             @endif
                         </td>
+                        
+                        <td class="px-3 py-2 text-center">
+                            @if($booking->whatsapp_sent)
+                                {{-- 🟢 استلم التذكرة --}}
+                                <span
+                                    class="inline-block w-3 h-3 rounded-full bg-emerald-400"
+                                    title="تم استلام التذكرة {{ optional($booking->whatsapp_sent_at)->format('d/m/Y h:i A') }}"
+                                ></span>
+                            @else
+                                {{-- 🔴 لم يستلم --}}
+                                <span
+                                    class="inline-block w-3 h-3 rounded-full bg-red-500"
+                                    title="لم يتم استلام التذكرة بعد"
+                                ></span>
+                            @endif
+                        </td>
 
                         <td class="px-3 py-2 text-xs">
                             <a href="{{ route('admin.bookings.show', $booking) }}"
                                class="px-2 py-1 rounded-full bg-white/10 hover:bg-white/20">
                                 تفاصيل
                             </a>
+                        </td>
+
+                        <td class="px-3 py-2 text-xs font-mono">
+                            {{ $booking->reference_code }}
                         </td>
                     </tr>
                 @endforeach
