@@ -26,6 +26,9 @@
          class="text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-center text-gray-300">
         جاهز للفحص
     </div>
+    {{-- ملخص --}}
+    <div id="booking-summary"
+         class="hidden bg-white/5 border border-white/10 rounded-xl p-3 text-xs"></div>
 
     {{-- إدخال يدوي --}}
     <form id="manual-form" class="flex gap-2">
@@ -38,10 +41,7 @@
         </button>
     </form>
 
-    {{-- ملخص --}}
-    <div id="booking-summary"
-         class="hidden bg-white/5 border border-white/10 rounded-xl p-3 text-xs"></div>
-
+    
 </section>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
