@@ -32,20 +32,27 @@ public function handle(Request $request)
     }
 
     $phone = preg_replace('/[^0-9]/', '', $message['from']);
-    $text  = trim($message['text']['body'] ?? '');
+
+    // ✅ دعم Text + Button
+    $text = '';
+    if (isset($message['text']['body'])) {
+        $text = trim($message['text']['body']);
+    }
+    if (isset($message['button']['text'])) {
+        $text = trim($message['button']['text']);
+    }
 
     \Log::info('MESSAGE FROM USER', [
         'phone' => $phone,
         'text'  => $text,
     ]);
 
-    // ✅ كلمة الاستلام فقط
     if ($text !== 'استلم التذكرة') {
         return response()->json(['ok' => true]);
     }
 
-    // ✅ نجيب آخر حجز
-    $booking = Booking::where('phone', 'like', "%$phone%")
+    $booking = Booking::with('showTime')
+        ->where('phone', 'like', "%$phone%")
         ->where('status', 'approved')
         ->whereNotNull('qr_code_path')
         ->latest()
@@ -55,30 +62,32 @@ public function handle(Request $request)
         return response()->json(['ok' => true]);
     }
 
-    // ✅ إرسال التذكرة (مسموح دايمًا)
+    // ✅ تجهيز موعد الحفلة
+    $showTimeText = $booking->showTime
+        ? $booking->showTime->date->format('d/m/Y') . ' • ' .
+          \Carbon\Carbon::parse($booking->showTime->time)->format('h:i A')
+        : 'سيتم إبلاغك بالموعد';
+
     app(\App\Http\Controllers\Admin\BookingController::class)
         ->sendWhatsAppTicket(
             $booking->phone,
             $booking->qr_code_path,
             $booking->reference_code,
             $booking->full_name,
-            $booking->showTime
+            $showTimeText
         );
 
-    // ✅ تسجيل أول استلام فقط (للداتا بيز)
+    // تسجيل الاستلام
     if (!$booking->whatsapp_sent) {
         $booking->update([
             'whatsapp_sent'    => true,
             'whatsapp_sent_at' => now(),
         ]);
-
-        \Log::info('TICKET MARKED AS RECEIVED', [
-            'booking_id' => $booking->id,
-        ]);
     }
 
     return response()->json(['ok' => true]);
 }
+
 
 
 
