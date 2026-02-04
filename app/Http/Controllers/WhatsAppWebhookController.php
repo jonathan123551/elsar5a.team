@@ -41,10 +41,9 @@ class WhatsAppWebhookController extends Controller
 
     // ✅ VALIDATION
     $allowedMessages = [
-        'استلام',
-        'استلام التذكرة',
-        'ticket',
-        'get ticket'
+       
+        'استلم التذكرة'
+        
     ];
 
     if (!in_array($text, $allowedMessages)) {

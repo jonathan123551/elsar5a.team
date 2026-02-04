@@ -141,7 +141,7 @@ class BookingController extends Controller
     /* =======================
      |  IMAGE SEND (WEBHOOK)
      ======================= */
-    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name)
+    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name,$show_time)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -165,6 +165,8 @@ class BookingController extends Controller
                                 ."نلتقي لنصرخ معًا،\n"
                                 ."فنغيّر ما فسد،\n"
                                 ."ونزرع بدلًا منه ثمرًا صالحًا ❤️\n\n"
+                                ."🗓️ *موعد الحفلة:*\n"
+                                ."{$show_time}\n"
                                 ."‼️ *يرجى إحضار هذه التذكرة عند الدخول*",
                     ],
             ]
