@@ -70,6 +70,17 @@
     100%{transform:scale(1);opacity:1}
 }
 .pop{animation:pop .35s cubic-bezier(.2,.9,.3,1)}
+
+.status-ok{
+    color:#22c55e; /* أخضر */
+}
+.status-used{
+    color:#facc15; /* أصفر */
+}
+.status-error{
+    color:#ef4444; /* أحمر */
+}
+
 </style>
 
 <script>
@@ -126,19 +137,28 @@ function check(code){
     })
     .then(r=>r.json())
     .then(d=>{
-        if(d.status==='ok'){
-            status.textContent='تم الدخول';
-            showAnim('ok');
-            render(d);
-        }else if(d.status==='used'){
-            status.textContent='تذكرة مستخدمة قبل كده';
-            showAnim('used');
-            render(d);
-        }else{
-            status.textContent='كود غير صالح';
-            showAnim('error');
-        }
-    })
+    // امسح أي لون قديم
+    status.classList.remove('status-ok','status-used','status-error');
+
+    if(d.status==='ok'){
+        status.textContent='تم الدخول';
+        status.classList.add('status-ok');
+        showAnim('ok');
+        render(d);
+    }
+    else if(d.status==='used'){
+        status.textContent='تذكرة مستخدمة قبل كده';
+        status.classList.add('status-used');
+        showAnim('used');
+        render(d);
+    }
+    else{
+        status.textContent='كود غير صالح';
+        status.classList.add('status-error');
+        showAnim('error');
+    }
+})
+
     .finally(()=>setTimeout(()=>busy=false,400));
 }
 
