@@ -10,7 +10,7 @@
         <h1 class="text-2xl font-bold">إدارة الحجوزات</h1>
 
         <a href="{{ route('admin.dashboard') }}"
-           class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10">
+           class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
             ← رجوع
         </a>
     </div>
@@ -41,7 +41,7 @@
                     class="rounded-xl bg-black/60 border border-white/15 px-3 py-2">
                 <option value="">كل المواعيد</option>
                 @foreach(
-                    $bookings->map(fn($b)=>$b->showTime
+                    $bookings->map(fn($b) => $b->showTime
                         ? $b->showTime->date->format('Y-m-d').' '.$b->showTime->time
                         : null)->filter()->unique()->sort()
                     as $dt
@@ -54,92 +54,145 @@
         </div>
     </div>
 
-    {{-- الجدول --}}
-    <div class="bg-black/40 border border-white/10 rounded-2xl overflow-hidden">
-        <table class="w-full text-sm text-gray-200 responsive-table">
-            <thead class="bg-white/5 text-xs text-gray-400">
-            <tr>
-                <th>الضيف</th>
-                <th>العرض / الموعد</th>
-                <th>الحالة</th>
-                <th>التذكرة</th>
-                <th>إجراءات</th>
-                <th>رقم الحجز</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($bookings as $booking)
-                @php
-                    $dt = $booking->showTime
-                        ? $booking->showTime->date->format('Y-m-d').' '.$booking->showTime->time
-                        : '';
-                @endphp
+    {{-- 💻 DESKTOP TABLE --}}
+    <div class="hidden md:block">
+        <div class="bg-black/40 border border-white/10 rounded-2xl overflow-x-auto">
+            <table class="w-full text-sm text-gray-200">
+                <thead class="bg-white/5 text-xs text-gray-400">
+                <tr>
+                    <th class="px-3 py-2 text-right">الضيف</th>
+                    <th class="px-3 py-2 text-right">العرض / الموعد</th>
+                    <th class="px-3 py-2 text-right">الحالة</th>
+                    <th class="px-3 py-2 text-center">التذكرة</th>
+                    <th class="px-3 py-2 text-right">إجراءات</th>
+                    <th class="px-3 py-2 text-right">الكود</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($bookings as $booking)
+                    @php
+                        $dt = $booking->showTime
+                            ? $booking->showTime->date->format('Y-m-d').' '.$booking->showTime->time
+                            : '';
+                    @endphp
+                    <tr class="border-t border-white/5 booking-row"
+                        data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
+                        data-status="{{ $booking->status }}"
+                        data-datetime="{{ $dt }}">
 
-                <tr class="booking-row"
-                    data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
-                    data-status="{{ $booking->status }}"
-                    data-datetime="{{ $dt }}">
+                        <td class="px-3 py-2">
+                            {{ $booking->full_name }}<br>
+                            <span class="text-gray-400">{{ $booking->phone }}</span>
+                        </td>
 
-                    <td data-label="الضيف">
-                        <strong>{{ $booking->full_name }}</strong><br>
-                        <span class="text-gray-400">{{ $booking->phone }}</span>
-                    </td>
+                        <td class="px-3 py-2">
+                            {{ $booking->showTime->show->title ?? '-' }}<br>
+                            <span class="text-gray-400">
+                                {{ $booking->showTime?->date->format('d/m/Y') }}
+                                • {{ \Carbon\Carbon::parse($booking->showTime?->time)->format('g:i A') }}
+                            </span>
+                        </td>
 
-                    <td data-label="العرض / الموعد">
-                        {{ $booking->showTime->show->title ?? '-' }}<br>
-                        <span class="text-gray-400">
-                            {{ $booking->showTime?->date->format('d/m/Y') }}
-                            • {{ \Carbon\Carbon::parse($booking->showTime?->time)->format('g:i A') }}
-                        </span>
-                    </td>
+                        <td class="px-3 py-2">
+                            <span class="px-2 py-1 rounded-full text-[11px]
+                                {{ $booking->status==='approved' ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/40' :
+                                   ($booking->status==='rejected' ? 'bg-red-500/15 text-red-200 border border-red-500/40' :
+                                   'bg-sky-500/15 text-sky-200 border border-sky-500/40') }}">
+                                {{ $booking->status }}
+                            </span>
+                        </td>
 
-                    <td data-label="الحالة">
-                        <span class="px-2 py-1 rounded-full text-[11px]
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-block w-3 h-3 rounded-full {{ $booking->whatsapp_sent ? 'bg-emerald-400' : 'bg-red-500' }}"></span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <a href="{{ route('admin.bookings.show',$booking) }}"
+                               class="px-2 py-1 rounded-full bg-white/10">تفاصيل</a>
+                        </td>
+
+                        <td class="px-3 py-2 font-mono text-xs">{{ $booking->reference_code }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- 📱 MOBILE CARDS --}}
+    <div class="md:hidden space-y-3">
+        @foreach($bookings as $booking)
+            @php
+                $dt = $booking->showTime
+                    ? $booking->showTime->date->format('Y-m-d').' '.$booking->showTime->time
+                    : '';
+            @endphp
+
+            <div class="bg-black/40 border border-white/10 rounded-2xl p-4 text-xs booking-card"
+                 data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
+                 data-status="{{ $booking->status }}"
+                 data-datetime="{{ $dt }}">
+
+                <div class="flex justify-between mb-2">
+                    <div>
+                        <div class="font-semibold text-sm">{{ $booking->full_name }}</div>
+                        <div class="text-gray-400">{{ $booking->phone }}</div>
+                    </div>
+                    <span class="font-mono bg-white/5 px-2 py-1 rounded">
+                        {{ $booking->reference_code }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    🎭 {{ $booking->showTime->show->title ?? '-' }}<br>
+                    <span class="text-gray-400">
+                        🕒 {{ $booking->showTime?->date->format('d/m/Y') }}
+                        • {{ \Carbon\Carbon::parse($booking->showTime?->time)->format('g:i A') }}
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="px-2 py-1 rounded-full text-[11px]
                         {{ $booking->status==='approved' ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/40' :
                            ($booking->status==='rejected' ? 'bg-red-500/15 text-red-200 border border-red-500/40' :
                            'bg-sky-500/15 text-sky-200 border border-sky-500/40') }}">
-                            {{ $booking->status }}
+                        {{ $booking->status }}
+                    </span>
+
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full {{ $booking->whatsapp_sent ? 'bg-emerald-400' : 'bg-red-500' }}"></span>
+                        <span class="text-gray-400">
+                            {{ $booking->whatsapp_sent ? 'تم الاستلام' : 'لم تُرسل' }}
                         </span>
-                    </td>
+                    </div>
 
-                    <td data-label="التذكرة">
-                        <span class="inline-block w-3 h-3 rounded-full {{ $booking->whatsapp_sent ? 'bg-emerald-400' : 'bg-red-500' }}"></span>
-                    </td>
-
-                    <td data-label="إجراءات">
-                        <a href="{{ route('admin.bookings.show',$booking) }}"
-                           class="px-2 py-1 rounded-full bg-white/10">
-                            تفاصيل
-                        </a>
-                    </td>
-
-                    <td data-label="رقم الحجز" class="font-mono">
-                        {{ $booking->reference_code }}
-                    </td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
+                    <a href="{{ route('admin.bookings.show',$booking) }}"
+                       class="px-3 py-1 rounded-full bg-white/10">
+                        تفاصيل
+                    </a>
+                </div>
+            </div>
+        @endforeach
     </div>
 
 </section>
 
-{{-- FILTER --}}
+{{-- JS FILTER --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const search = document.getElementById('searchInput');
     const status = document.getElementById('statusFilter');
     const dt     = document.getElementById('dateTimeFilter');
-    const rows   = document.querySelectorAll('.booking-row');
+    const items  = document.querySelectorAll('.booking-row, .booking-card');
 
     function filter(){
         const s = search.value.toLowerCase();
-        rows.forEach(r=>{
+        items.forEach(el=>{
             const ok =
-                r.dataset.search.includes(s) &&
-                (!status.value || r.dataset.status===status.value) &&
-                (!dt.value || r.dataset.datetime===dt.value);
-            r.style.display = ok ? '' : 'none';
+                el.dataset.search.includes(s) &&
+                (!status.value || el.dataset.status===status.value) &&
+                (!dt.value || el.dataset.datetime===dt.value);
+            el.style.display = ok ? '' : 'none';
         });
     }
 
@@ -149,33 +202,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-
-{{-- 📱 Responsive magic --}}
-<style>
-@media (max-width: 768px) {
-    .responsive-table thead {
-        display: none;
-    }
-
-    .responsive-table tr {
-        display: block;
-        border-bottom: 1px solid rgba(255,255,255,.1);
-        padding: 12px;
-        margin-bottom: 10px;
-    }
-
-    .responsive-table td {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        font-size: 12px;
-    }
-
-    .responsive-table td::before {
-        content: attr(data-label);
-        color: #9ca3af;
-        font-weight: 500;
-    }
-}
-</style>
 @endsection
