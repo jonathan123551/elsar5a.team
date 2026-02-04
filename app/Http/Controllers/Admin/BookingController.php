@@ -10,7 +10,6 @@ use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -26,12 +25,27 @@ class BookingController extends Controller
         ]);
     }
 
-    /**
-     * APPROVE BOOKING
-     * - Generate QR
-     * - Upload Cloudinary
-     * - Send WhatsApp TEMPLATE
-     */
+    /* =======================
+     |  ADMIN LIST
+     ======================= */
+    public function index(Request $request)
+    {
+        $bookings = Booking::with('showTime.show')
+            ->latest()
+            ->get();
+
+        return view('admin.bookings.index', compact('bookings'));
+    }
+
+    public function show(Booking $booking)
+    {
+        $booking->load('showTime.show');
+        return view('admin.bookings.show', compact('booking'));
+    }
+
+    /* =======================
+     |  APPROVE BOOKING
+     ======================= */
     public function approve(Booking $booking)
     {
         if ($booking->status === 'approved') {
@@ -45,13 +59,13 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // Approve
+        // approve
         $booking->update([
             'status'      => 'approved',
             'approved_at' => now(),
         ]);
 
-        // QR
+        /* === Generate QR === */
         $qr = Builder::create()
             ->writer(new PngWriter())
             ->data($booking->reference_code)
@@ -81,13 +95,13 @@ class BookingController extends Controller
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
+        /* === Upload === */
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
-
         unlink($tempPath);
 
-        // Save + reset WhatsApp flags
+        /* === Save === */
         $booking->update([
             'qr_code_path'      => $upload['secure_url'],
             'qr_code_public_id' => $upload['public_id'],
@@ -95,7 +109,7 @@ class BookingController extends Controller
             'whatsapp_sent_at'  => null,
         ]);
 
-        // 🔔 SEND TEMPLATE
+        /* === Send template message === */
         $this->sendTicketTemplate($booking->phone);
 
         return redirect()
@@ -103,40 +117,43 @@ class BookingController extends Controller
             ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
     }
 
+    /* =======================
+     |  TEMPLATE MESSAGE
+     ======================= */
     private function sendTicketTemplate($phone)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))
-            ->post(
-                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-                [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $phone,
-                    'type' => 'template',
-                    'template' => [
-                        'name' => 'ticket',
-                        'language' => ['code' => 'ar_EG'],
-                    ],
-                ]
-            );
+        Http::withToken(env('WHATSAPP_TOKEN'))->post(
+            'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+            [
+                'messaging_product' => 'whatsapp',
+                'to' => $phone,
+                'type' => 'template',
+                'template' => [
+                    'name' => 'ticket',
+                    'language' => ['code' => 'ar_EG'],
+                ],
+            ]
+        );
     }
 
-    // IMAGE SEND (called by webhook)
+    /* =======================
+     |  IMAGE SEND (WEBHOOK)
+     ======================= */
     public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))
-            ->post(
-                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-                [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $phone,
-                    'type' => 'image',
-                    'image' => [
-                        'link' => $imageUrl,
-                        'caption' =>
+        Http::withToken(env('WHATSAPP_TOKEN'))->post(
+            'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+            [
+                'messaging_product' => 'whatsapp',
+                'to' => $phone,
+                'type' => 'image',
+                'image' => [
+                    'link' => $imageUrl,
+                    'caption' =>
                                "*🎟️ أهلاً {$full_name}*\n\n"
                                 ."يسعدنا وجودك معنا،\n"
                                 ."أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا…\n"
@@ -150,7 +167,7 @@ class BookingController extends Controller
                                 ."ونزرع بدلًا منه ثمرًا صالحًا ❤️\n\n"
                                 ."‼️ *يرجى إحضار هذه التذكرة عند الدخول*",
                     ],
-                ]
-            );
+            ]
+        );
     }
 }
