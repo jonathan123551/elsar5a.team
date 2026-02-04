@@ -9,20 +9,18 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
-    // ✅ VERIFY (دي أهم حتة)
     public function verify(Request $request)
     {
         if (
-            $request->query('hub_mode') === 'subscribe' &&
-            $request->query('hub_verify_token') === env('WHATSAPP_VERIFY_TOKEN')
+            $request->hub_mode === 'subscribe' &&
+            $request->hub_verify_token === env('WHATSAPP_VERIFY_TOKEN')
         ) {
-            return response($request->query('hub_challenge'), 200);
+            return response($request->hub_challenge, 200);
         }
 
         return response('Forbidden', 403);
     }
 
-    // ✅ HANDLE INCOMING MESSAGES
     public function handle(Request $request)
     {
         Log::info('WEBHOOK HIT', $request->all());
@@ -35,9 +33,9 @@ class WhatsAppWebhookController extends Controller
 
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        Log::info('WHATSAPP MESSAGE IN', [
-            'from' => $phone,
-            'message' => $message,
+        Log::info('MESSAGE FROM USER', [
+            'phone' => $phone,
+            'text'  => $message['text']['body'] ?? null,
         ]);
 
         $booking = Booking::where('phone', 'like', "%$phone%")
@@ -55,7 +53,6 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // ✅ ابعت التذكرة
         app(BookingController::class)->sendWhatsAppTicket(
             $booking->phone,
             $booking->qr_code_path,
@@ -63,7 +60,6 @@ class WhatsAppWebhookController extends Controller
             $booking->full_name
         );
 
-        // ✅ امنع الإعادة
         $booking->update([
             'whatsapp_sent'    => true,
             'whatsapp_sent_at' => now(),
