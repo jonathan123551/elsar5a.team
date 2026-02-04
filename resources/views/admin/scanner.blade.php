@@ -7,39 +7,36 @@
 <section class="space-y-6 max-w-3xl mx-auto">
 
     <div class="flex items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-            🎫 وضع فحص التذاكر
-        </h1>
-
+        <h1 class="text-2xl font-bold flex items-center gap-2">🎫 فحص التذاكر</h1>
         <a href="{{ route('admin.dashboard') }}"
-           class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
+           class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10">
             ← رجوع
         </a>
     </div>
 
     <p class="text-xs text-gray-400">
-        افتح الصفحة من موبايل المسؤول واسمح للكاميرا.
+        افتح الصفحة من موبايل المسؤول واسمح للكاميرا
     </p>
 
     {{-- الكاميرا --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-3">
-        <h2 class="text-sm font-semibold">فحص QR</h2>
+        <h2 class="text-sm font-semibold">QR Scanner</h2>
 
         <div id="qr-wrapper" class="relative flex justify-center">
             <div id="qr-reader"
                  class="w-full max-w-[220px] mx-auto rounded-xl overflow-hidden border-4 border-white/10 transition-all"></div>
 
-            {{-- Overlay --}}
+            {{-- Overlay Animation --}}
             <div id="scan-overlay"
                  class="pointer-events-none absolute inset-0 flex items-center justify-center hidden">
                 <div id="scan-icon"
-                     class="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold scale-50 opacity-0">
+                     class="scan-glass w-28 h-28 rounded-full flex items-center justify-center text-5xl font-bold scale-50 opacity-0">
                 </div>
             </div>
         </div>
 
         <p id="camera-hint" class="text-[11px] text-gray-500 hidden">
-            تأكد إن المتصفح واخد صلاحية الكاميرا
+            تأكد من صلاحية الكاميرا
         </p>
     </div>
 
@@ -49,7 +46,7 @@
 
         <div id="scan-status"
              class="text-xs px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300">
-            لم يتم الفحص بعد
+            جاهز للمسح
         </div>
 
         {{-- إدخال يدوي --}}
@@ -71,17 +68,39 @@
 
 </section>
 
-{{-- QR LIB --}}
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-@keyframes pop {
-    0% { transform: scale(.5); opacity: 0 }
-    60% { transform: scale(1.1); opacity: 1 }
+/* Glass look */
+.scan-glass {
+    backdrop-filter: blur(10px);
+    background: radial-gradient(circle at top,
+        rgba(255,255,255,.35),
+        rgba(255,255,255,.15)
+    );
+    box-shadow:
+        0 0 0 6px rgba(255,255,255,.15),
+        0 0 40px rgba(255,255,255,.35);
+}
+
+/* Big smooth pop */
+@keyframes applePop {
+    0%   { transform: scale(.4); opacity: 0 }
+    60%  { transform: scale(1.15); opacity: 1 }
     100% { transform: scale(1); opacity: 1 }
 }
-.scan-pop {
-    animation: pop .25s ease-out;
+.apple-pop {
+    animation: applePop .35s cubic-bezier(.2,.9,.3,1);
+}
+
+/* Ignore pulse */
+@keyframes softPulse {
+    0%   { transform: scale(.95); opacity:.4 }
+    50%  { transform: scale(1); opacity:.8 }
+    100% { transform: scale(.95); opacity:.4 }
+}
+.ignore-pulse {
+    animation: softPulse .25s ease-out;
 }
 </style>
 
@@ -103,40 +122,48 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastCodeTime = 0;
 
     const SCAN_COOLDOWN = 400;
-    const SAME_CODE_COOLDOWN = 3000;
+    const SAME_CODE_COOLDOWN = 30000; // 30 ثانية
 
-    function vibrate(type) {
-        if (!navigator.vibrate) return;
-        if (type === 'ok') navigator.vibrate(40);
-        else if (type === 'used') navigator.vibrate([30,40,30]);
-        else navigator.vibrate([60,40,60]);
+    /* Apple Pay tap */
+    function appleTap() {
+        if (navigator.vibrate) navigator.vibrate(15);
     }
 
     function showOverlay(type) {
         overlay.classList.remove('hidden');
-        icon.className = 'scan-pop';
+        icon.className = 'scan-glass apple-pop';
 
         if (type === 'ok') {
             icon.textContent = '✓';
             icon.classList.add('bg-emerald-500','text-white');
-            vibrate('ok');
-        } else if (type === 'used') {
+            appleTap();
+        }
+        else if (type === 'used') {
             icon.textContent = '!';
             icon.classList.add('bg-amber-400','text-black');
-            vibrate('used');
-        } else {
+            appleTap();
+        }
+        else {
             icon.textContent = '✕';
             icon.classList.add('bg-red-500','text-white');
-            vibrate('error');
+            appleTap();
         }
 
         setTimeout(() => {
             overlay.classList.add('hidden');
             icon.className = '';
-        }, 500);
+        }, 550);
     }
 
-    function flash() {
+    function ignoreFeedback() {
+        appleTap();
+        qrBox.classList.add('ignore-pulse','ring-2','ring-white/40');
+        setTimeout(() => {
+            qrBox.classList.remove('ignore-pulse','ring-2','ring-white/40');
+        }, 250);
+    }
+
+    function flashGreen() {
         qrBox.classList.add('ring-4','ring-emerald-400');
         setTimeout(() => qrBox.classList.remove('ring-4','ring-emerald-400'), 180);
     }
@@ -179,14 +206,17 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(r=>r.json())
         .then(d=>{
             if (d.status==='ok') {
-                flash(); showOverlay('ok');
-                setStatus('تم الدخول ✓','ok');
+                flashGreen();
+                showOverlay('ok');
+                setStatus('تم الدخول','ok');
                 renderSummary(d);
-            } else if (d.status==='used') {
+            }
+            else if (d.status==='used') {
                 showOverlay('used');
                 setStatus('تذكرة مستخدمة','warn');
                 renderSummary(d);
-            } else {
+            }
+            else {
                 showOverlay('error');
                 setStatus('كود غير صالح','error');
             }
@@ -208,16 +238,23 @@ document.addEventListener('DOMContentLoaded', () => {
             { facingMode:'environment' },
             { fps:30, qrbox:{width:180,height:180} },
             text=>{
-                const now=Date.now();
-                if (busy || now-lastScan<SCAN_COOLDOWN) return;
-                if (text===lastCode && now-lastCodeTime<SAME_CODE_COOLDOWN) return;
+                const now = Date.now();
+                const code = text.trim();
 
-                lastScan=now;
-                lastCode=text;
-                lastCodeTime=now;
-                busy=true;
-                codeInput.value=text;
-                check(text);
+                if (code === lastCode && now - lastCodeTime < SAME_CODE_COOLDOWN) {
+                    ignoreFeedback(); // Ignore بنفس الإحساس
+                    return;
+                }
+
+                if (busy || now - lastScan < SCAN_COOLDOWN) return;
+
+                lastScan = now;
+                lastCode = code;
+                lastCodeTime = now;
+                busy = true;
+
+                codeInput.value = code;
+                check(code);
             }
         );
     });
