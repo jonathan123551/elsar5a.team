@@ -13,257 +13,213 @@
 
         <a href="{{ route('admin.dashboard') }}"
            class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-            ← رجوع للوحة التحكم
+            ← رجوع
         </a>
     </div>
 
     <p class="text-xs text-gray-400">
-        افتح الصفحة من موبايل المسؤول على الباب، واسمح للكاميرا.
+        افتح الصفحة من موبايل المسؤول واسمح للكاميرا.
     </p>
 
     {{-- الكاميرا --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-3">
-        <h2 class="text-sm font-semibold mb-1">الكاميرا / قارئ الـ QR</h2>
+        <h2 class="text-sm font-semibold">فحص QR</h2>
 
         <div id="qr-wrapper" class="relative flex justify-center">
             <div id="qr-reader"
-                 class="w-full max-w-xs mx-auto rounded-xl overflow-hidden border-4 border-white/10 transition-all duration-150"></div>
+                 class="w-full max-w-[220px] mx-auto rounded-xl overflow-hidden border-4 border-white/10 transition-all"></div>
+
+            {{-- Overlay --}}
+            <div id="scan-overlay"
+                 class="pointer-events-none absolute inset-0 flex items-center justify-center hidden">
+                <div id="scan-icon"
+                     class="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold scale-50 opacity-0">
+                </div>
+            </div>
         </div>
 
-        <p id="camera-hint" class="text-[11px] text-gray-500 mt-2 hidden">
-            لو الكاميرا مش شغالة، اتأكد إن المتصفح واخد صلاحية الكاميرا.
+        <p id="camera-hint" class="text-[11px] text-gray-500 hidden">
+            تأكد إن المتصفح واخد صلاحية الكاميرا
         </p>
     </div>
 
-    {{-- نتيجة الفحص --}}
+    {{-- النتيجة --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-4 text-sm">
-        <h2 class="text-sm font-semibold">نتيجة آخر فحص</h2>
+        <h2 class="text-sm font-semibold">آخر فحص</h2>
 
         <div id="scan-status"
              class="text-xs px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300">
-            لسه مفيش كود متفحوص.
+            لم يتم الفحص بعد
         </div>
 
         {{-- إدخال يدوي --}}
-        <div class="space-y-2">
-            <label class="block text-xs text-gray-400">
-                إدخال يدوي احتياطي:
-            </label>
-            <form id="manual-form" class="flex gap-2">
-                @csrf
-                <input id="code-input" type="text" name="code"
-                       placeholder="SRC-XXXX"
-                       class="flex-1 rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-xs focus:outline-none focus:border-amber-400 font-mono">
+        <form id="manual-form" class="flex gap-2">
+            @csrf
+            <input id="code-input" type="text"
+                   placeholder="SRC-XXXX"
+                   class="flex-1 rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-xs font-mono">
 
-                <button type="submit"
-                        class="px-4 py-2 rounded-full bg-amber-400 text-black text-xs font-medium hover:bg-amber-300 transition">
-                    فحص
-                </button>
-            </form>
-        </div>
+            <button class="px-4 py-2 rounded-full bg-amber-400 text-black text-xs font-medium">
+                فحص
+            </button>
+        </form>
 
         <div id="booking-summary"
-             class="hidden text-xs bg-white/5 border border-white/10 rounded-xl p-3 mt-2">
+             class="hidden text-xs bg-white/5 border border-white/10 rounded-xl p-3">
         </div>
     </div>
 
 </section>
 
-{{-- مكتبة QR --}}
+{{-- QR LIB --}}
 <script src="https://unpkg.com/html5-qrcode"></script>
 
+<style>
+@keyframes pop {
+    0% { transform: scale(.5); opacity: 0 }
+    60% { transform: scale(1.1); opacity: 1 }
+    100% { transform: scale(1); opacity: 1 }
+}
+.scan-pop {
+    animation: pop .25s ease-out;
+}
+</style>
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
 
-    const statusBox   = document.getElementById('scan-status');
-    const summaryBox  = document.getElementById('booking-summary');
-    const codeInput   = document.getElementById('code-input');
-    const manualForm  = document.getElementById('manual-form');
-    const cameraHint  = document.getElementById('camera-hint');
-    const qrReaderBox = document.getElementById('qr-reader');
+    const statusBox  = document.getElementById('scan-status');
+    const summaryBox = document.getElementById('booking-summary');
+    const codeInput  = document.getElementById('code-input');
+    const overlay    = document.getElementById('scan-overlay');
+    const icon       = document.getElementById('scan-icon');
+    const qrBox      = document.getElementById('qr-reader');
 
-    const csrfToken = '{{ csrf_token() }}';
+    const csrf = '{{ csrf_token() }}';
 
-    // تحكم في الضغط على السيرفر
-    let isProcessing  = false;
-    let lastScanTime  = 0;
-    const SCAN_COOLDOWN_MS = 600; // يقدر يقرا كود جديد كل0.6 ثانية
-
-    // علشان نتجاهل نفس التذكرة لو اتقرت في خلال 5 ثواني
+    let busy = false;
+    let lastScan = 0;
     let lastCode = null;
-    let lastCodeScanTime = 0;
-    const SAME_CODE_COOLDOWN_MS = 5000;
+    let lastCodeTime = 0;
 
-    function setStatus(text, type = 'normal') {
-        let base = 'text-xs px-3 py-2 rounded-xl ';
+    const SCAN_COOLDOWN = 400;
+    const SAME_CODE_COOLDOWN = 3000;
+
+    function vibrate(type) {
+        if (!navigator.vibrate) return;
+        if (type === 'ok') navigator.vibrate(40);
+        else if (type === 'used') navigator.vibrate([30,40,30]);
+        else navigator.vibrate([60,40,60]);
+    }
+
+    function showOverlay(type) {
+        overlay.classList.remove('hidden');
+        icon.className = 'scan-pop';
 
         if (type === 'ok') {
-            base += 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-200';
-        } else if (type === 'warn') {
-            base += 'bg-amber-500/15 border border-amber-400/40 text-amber-200';
-        } else if (type === 'error') {
-            base += 'bg-red-500/15 border border-red-500/40 text-red-200';
+            icon.textContent = '✓';
+            icon.classList.add('bg-emerald-500','text-white');
+            vibrate('ok');
+        } else if (type === 'used') {
+            icon.textContent = '!';
+            icon.classList.add('bg-amber-400','text-black');
+            vibrate('used');
         } else {
-            base += 'bg-white/5 border border-white/10 text-gray-300';
+            icon.textContent = '✕';
+            icon.classList.add('bg-red-500','text-white');
+            vibrate('error');
         }
 
-        statusBox.className = base;
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            icon.className = '';
+        }, 500);
+    }
+
+    function flash() {
+        qrBox.classList.add('ring-4','ring-emerald-400');
+        setTimeout(() => qrBox.classList.remove('ring-4','ring-emerald-400'), 180);
+    }
+
+    function setStatus(text, type='normal') {
+        const map = {
+            ok: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
+            warn: 'bg-amber-500/15 text-amber-200 border-amber-400/40',
+            error: 'bg-red-500/15 text-red-200 border-red-500/40',
+            normal: 'bg-white/5 text-gray-300 border-white/10'
+        };
+        statusBox.className = `text-xs px-3 py-2 rounded-xl border ${map[type]}`;
         statusBox.textContent = text;
     }
 
-    function flashGreen() {
-        qrReaderBox.classList.add('border-emerald-400');
-        setTimeout(() => {
-            qrReaderBox.classList.remove('border-emerald-400');
-        }, 200);
-    }
-
-    // شكل البوكس اللي تحت (المرجع / الضيف / العرض .. إلخ)
-    function renderSummary(data) {
+    function renderSummary(d) {
         summaryBox.classList.remove('hidden');
-
-        const statusColor =
-            data.status === 'ok'
-                ? 'text-emerald-300'
-                : (data.status === 'used' ? 'text-amber-300' : 'text-red-300');
-
-        const checkedInRow = data.checked_in_at ? `
-            <div>
-                <span class="text-gray-400">وقت استخدام التذكرة:</span>
-                <span class="text-emerald-300 font-semibold">${data.checked_in_at}</span>
-            </div>
-        ` : '';
-
         summaryBox.innerHTML = `
             <div class="space-y-1">
-                
-                <div>
-                    <span class="text-gray-400">الضيف:</span>
-                    ${data.full_name}
-                </div>
-
-                <div>
-                    <span class="text-gray-400">العرض:</span>
-                    ${data.show_title}
-                </div>
-
-                <div>
-                    <span class="text-gray-400">الموعد:</span>
-                    ${data.date} • ${data.time}
-                </div>
-
-                
-
-                ${checkedInRow}
+                <div><span class="text-gray-400">الضيف:</span> ${d.full_name}</div>
+                <div><span class="text-gray-400">العرض:</span> ${d.show_title}</div>
+                <div><span class="text-gray-400">الموعد:</span> ${d.date} • ${d.time}</div>
+                ${d.checked_in_at ? `<div><span class="text-gray-400">الدخول:</span> ${d.checked_in_at}</div>` : ''}
             </div>
         `;
     }
 
-    function clearSummary() {
-        summaryBox.classList.add('hidden');
-        summaryBox.innerHTML = '';
-    }
-
-    function checkCode(code) {
-        code = code.trim();
-        if (!code) return;
-
+    function check(code) {
         setStatus('جارٍ الفحص...');
-        clearSummary();
+        summaryBox.classList.add('hidden');
 
-        return fetch("/admin/scanner/check", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
+        return fetch('/admin/scanner/check', {
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json',
+                'X-CSRF-TOKEN':csrf
             },
-            body: JSON.stringify({ code })
+            body:JSON.stringify({code})
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                flashGreen();
-                setStatus('✅ التذكرة صالحة', 'ok');
-                renderSummary(data);
-            } else if (data.status === 'used') {
-                setStatus('⚠️ التذكرة مستخدمة قبل كده', 'warn');
-                renderSummary(data);
+        .then(r=>r.json())
+        .then(d=>{
+            if (d.status==='ok') {
+                flash(); showOverlay('ok');
+                setStatus('تم الدخول ✓','ok');
+                renderSummary(d);
+            } else if (d.status==='used') {
+                showOverlay('used');
+                setStatus('تذكرة مستخدمة','warn');
+                renderSummary(d);
             } else {
-                setStatus('❌ الكود غير صالح', 'error');
-                clearSummary();
+                showOverlay('error');
+                setStatus('كود غير صالح','error');
             }
         })
-        .catch(() => {
-            setStatus('خطأ في الاتصال بالسيرفر', 'error');
-            clearSummary();
-        });
+        .finally(()=> setTimeout(()=>busy=false,200));
     }
 
-    // إدخال يدوي
-    manualForm.addEventListener('submit', function (e) {
+    document.getElementById('manual-form').addEventListener('submit',e=>{
         e.preventDefault();
-        if (isProcessing) return;
-        isProcessing = true;
-        checkCode(codeInput.value).finally(() => {
-            setTimeout(() => { isProcessing = false; }, 200);
-        });
+        if (busy) return;
+        busy=true;
+        check(codeInput.value.trim());
     });
 
-    // بيتندّه من الكاميرا لما تقرأ كود
-    function handleScan(decodedText) {
-        const now = Date.now();
-        const code = decodedText.trim();
+    const qr = new Html5Qrcode("qr-reader");
 
-        // 1) كول داون عام علشان ما يضربش السيرفر كل فريم
-        if (isProcessing || (now - lastScanTime) < SCAN_COOLDOWN_MS) return;
+    Html5Qrcode.getCameras().then(() => {
+        qr.start(
+            { facingMode:'environment' },
+            { fps:30, qrbox:{width:180,height:180} },
+            text=>{
+                const now=Date.now();
+                if (busy || now-lastScan<SCAN_COOLDOWN) return;
+                if (text===lastCode && now-lastCodeTime<SAME_CODE_COOLDOWN) return;
 
-        // 2) تجاهل نفس الكود لو اتقرا تاني خلال 3 ثواني
-        if (code === lastCode && (now - lastCodeScanTime) < SAME_CODE_COOLDOWN_MS) {
-            return;
-        }
-
-        lastScanTime      = now;
-        lastCode          = code;
-        lastCodeScanTime  = now;
-        isProcessing      = true;
-
-        codeInput.value = code;
-
-        checkCode(code).finally(() => {
-            setTimeout(() => { isProcessing = false; }, 200);
-        });
-    }
-
-    // تشغيل الكاميرا
-    const html5QrCode = new Html5Qrcode("qr-reader");
-
-    Html5Qrcode.getCameras().then(devices => {
-        if (!devices.length) {
-            cameraHint.classList.remove('hidden');
-            return;
-        }
-
-        const config = {
-            fps: 25,
-            qrbox: { width: 220, height: 220 },
-            aspectRatio: 1,
-            disableFlip: true
-        };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            handleScan,
-            function(errorMessage) {
-                // ممكن تتجاهل الأخطاء اللحظية هنا
+                lastScan=now;
+                lastCode=text;
+                lastCodeTime=now;
+                busy=true;
+                codeInput.value=text;
+                check(text);
             }
-        ).catch(() => {
-            cameraHint.classList.remove('hidden');
-            setStatus('فشل تشغيل الكاميرا', 'error');
-        });
-    }).catch(() => {
-        cameraHint.classList.remove('hidden');
-        setStatus('تعذر الوصول للكاميرا', 'error');
+        );
     });
 
 });
