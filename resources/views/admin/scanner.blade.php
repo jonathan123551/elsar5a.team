@@ -99,7 +99,7 @@ function showAnim(type){
     setTimeout(()=>{
         overlay.classList.add('hidden');
         icon.className='scan-icon';
-    },2000);
+    },5000);
 }
 
 function render(d){
