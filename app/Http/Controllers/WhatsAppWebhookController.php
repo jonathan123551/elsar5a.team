@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
-    // ✅ Verify webhook
     public function verify(Request $request)
     {
         if (
@@ -22,7 +21,6 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
-    // ✅ Handle incoming messages
     public function handle(Request $request)
     {
         $message = $request->input('entry.0.changes.0.value.messages.0');
@@ -33,18 +31,8 @@ class WhatsAppWebhookController extends Controller
 
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        Log::info('WHATSAPP INCOMING MESSAGE', [
-            'from' => $phone,
-            'message' => $message,
-        ]);
+        Log::info('WHATSAPP MESSAGE IN', ['phone' => $phone]);
 
-        /**
-         * نجيب آخر حجز:
-         * - نفس الرقم
-         * - Approved
-         * - فيه QR
-         * - التذكرة متبعتتش قبل كده
-         */
         $booking = Booking::where('phone', 'like', "%$phone%")
             ->where('status', 'approved')
             ->whereNotNull('qr_code_path')
@@ -55,15 +43,10 @@ class WhatsAppWebhookController extends Controller
             ->latest()
             ->first();
 
-        // لو التذكرة اتبعت قبل كده → تجاهل
         if (!$booking) {
-            Log::info('NO VALID BOOKING OR TICKET ALREADY SENT', [
-                'phone' => $phone,
-            ]);
             return response()->json(['ok' => true]);
         }
 
-        // ✅ ابعت التذكرة
         app(BookingController::class)->sendWhatsAppTicket(
             $booking->phone,
             $booking->qr_code_path,
@@ -71,16 +54,12 @@ class WhatsAppWebhookController extends Controller
             $booking->full_name
         );
 
-        // ✅ علّم إن التذكرة اتبعت
         $booking->update([
             'whatsapp_sent'    => true,
             'whatsapp_sent_at' => now(),
         ]);
 
-        Log::info('TICKET SENT SUCCESSFULLY', [
-            'booking_id' => $booking->id,
-            'phone' => $phone,
-        ]);
+        Log::info('TICKET SENT', ['booking_id' => $booking->id]);
 
         return response()->json(['ok' => true]);
     }

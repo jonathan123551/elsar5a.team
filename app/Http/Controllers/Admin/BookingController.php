@@ -26,40 +26,14 @@ class BookingController extends Controller
         ]);
     }
 
-    public function index(Request $request)
-    {
-        $status = $request->query('status');
-        $search = $request->query('search');
-
-        $bookings = Booking::with('showTime.show')
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->when($search, function ($q) use ($search) {
-                $q->where('full_name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('reference_code', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->get();
-
-        return view('admin.bookings.index', compact('bookings'));
-    }
-
-    public function show(Booking $booking)
-    {
-        $booking->load('showTime.show');
-        return view('admin.bookings.show', compact('booking'));
-    }
-
     /**
      * APPROVE BOOKING
      * - Generate QR
      * - Upload Cloudinary
-     * - ❌ NO WhatsApp sending here
+     * - Send WhatsApp TEMPLATE
      */
     public function approve(Booking $booking)
     {
-        Log::info('APPROVE HIT', ['booking_id' => $booking->id]);
-
         if ($booking->status === 'approved') {
             return back()->with('status', 'الحجز معتمد بالفعل');
         }
@@ -71,26 +45,20 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // Approve booking
+        // Approve
         $booking->update([
             'status'      => 'approved',
             'approved_at' => now(),
         ]);
 
-        // QR settings
-        $qrSize = $show->ticket_qr_size ?? 220;
-        $x = $show->ticket_qr_x ?? 0;
-        $y = $show->ticket_qr_y ?? 0;
-
-        // Generate QR
+        // QR
         $qr = Builder::create()
             ->writer(new PngWriter())
             ->data($booking->reference_code)
-            ->size($qrSize)
+            ->size($show->ticket_qr_size ?? 220)
             ->margin(0)
             ->build();
 
-        // Load template image
         $templateImage = imagecreatefromstring(
             file_get_contents($show->ticket_template_path)
         );
@@ -99,29 +67,27 @@ class BookingController extends Controller
         imagecopy(
             $templateImage,
             $qrImage,
-            $x,
-            $y,
+            $show->ticket_qr_x ?? 0,
+            $show->ticket_qr_y ?? 0,
             0,
             0,
             imagesx($qrImage),
             imagesy($qrImage)
         );
 
-        // Save temp file
         $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
         imagepng($templateImage, $tempPath);
 
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        // Upload to Cloudinary
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
 
         unlink($tempPath);
 
-        // Save QR data + reset whatsapp flags
+        // Save + reset WhatsApp flags
         $booking->update([
             'qr_code_path'      => $upload['secure_url'],
             'qr_code_public_id' => $upload['public_id'],
@@ -129,39 +95,39 @@ class BookingController extends Controller
             'whatsapp_sent_at'  => null,
         ]);
 
+        // 🔔 SEND TEMPLATE
+        $this->sendTicketTemplate($booking->phone);
+
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز ✅ التذكرة ستُرسل عند أول رسالة من العميل');
+            ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
     }
 
-    public function reject(Request $request, Booking $booking)
+    private function sendTicketTemplate($phone)
     {
-        $uploader = new UploadApi();
+        $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        if ($booking->transfer_screenshot_public_id) {
-            $uploader->destroy($booking->transfer_screenshot_public_id);
-        }
-
-        if ($booking->qr_code_public_id) {
-            $uploader->destroy($booking->qr_code_public_id);
-        }
-
-        $booking->update([
-            'status'      => 'rejected',
-            'admin_notes' => $request->admin_notes,
-        ]);
-
-        return redirect()
-            ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم رفض الحجز ❌');
+        Http::withToken(env('WHATSAPP_TOKEN'))
+            ->post(
+                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+                [
+                    'messaging_product' => 'whatsapp',
+                    'to' => $phone,
+                    'type' => 'template',
+                    'template' => [
+                        'name' => 'ticket',
+                        'language' => ['code' => 'ar_EG'],
+                    ],
+                ]
+            );
     }
 
-    // ================= IMAGE SEND (USED BY WEBHOOK) =================
+    // IMAGE SEND (called by webhook)
     public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        $response = Http::withToken(env('WHATSAPP_TOKEN'))
+        Http::withToken(env('WHATSAPP_TOKEN'))
             ->post(
                 'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
                 [
@@ -186,11 +152,5 @@ class BookingController extends Controller
                     ],
                 ]
             );
-
-        Log::info('WHATSAPP IMAGE RESPONSE', [
-            'phone'  => $phone,
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
     }
 }
