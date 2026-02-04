@@ -39,13 +39,12 @@ public function handle(Request $request)
         'text'  => $text,
     ]);
 
-    // ✅ السماح بكلمة واحدة فقط
+    // ✅ كلمة الاستلام فقط
     if ($text !== 'استلم التذكرة') {
-        \Log::info('IGNORED MESSAGE (INVALID KEYWORD)', ['text' => $text]);
         return response()->json(['ok' => true]);
     }
 
-    // ✅ نجيب آخر حجز معتمد
+    // ✅ نجيب آخر حجز
     $booking = Booking::where('phone', 'like', "%$phone%")
         ->where('status', 'approved')
         ->whereNotNull('qr_code_path')
@@ -53,19 +52,10 @@ public function handle(Request $request)
         ->first();
 
     if (!$booking) {
-        \Log::info('NO BOOKING FOUND', ['phone' => $phone]);
         return response()->json(['ok' => true]);
     }
 
-    // ✅ لو اتبعت قبل كده → ممنوع
-    if ($booking->whatsapp_sent) {
-        \Log::info('TICKET ALREADY SENT - BLOCKED', [
-            'booking_id' => $booking->id
-        ]);
-        return response()->json(['ok' => true]);
-    }
-
-    // ✅ إرسال التذكرة مرة واحدة فقط
+    // ✅ إرسال التذكرة (مسموح دايمًا)
     app(\App\Http\Controllers\Admin\BookingController::class)
         ->sendWhatsAppTicket(
             $booking->phone,
@@ -75,18 +65,21 @@ public function handle(Request $request)
             $booking->showTime
         );
 
-    // ✅ قفل الإرسال نهائي
-    $booking->update([
-        'whatsapp_sent'    => true,
-        'whatsapp_sent_at' => now(),
-    ]);
+    // ✅ تسجيل أول استلام فقط (للداتا بيز)
+    if (!$booking->whatsapp_sent) {
+        $booking->update([
+            'whatsapp_sent'    => true,
+            'whatsapp_sent_at' => now(),
+        ]);
 
-    \Log::info('TICKET SENT SUCCESSFULLY (ONCE)', [
-        'booking_id' => $booking->id,
-    ]);
+        \Log::info('TICKET MARKED AS RECEIVED', [
+            'booking_id' => $booking->id,
+        ]);
+    }
 
     return response()->json(['ok' => true]);
 }
+
 
 
 
