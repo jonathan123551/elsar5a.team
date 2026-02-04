@@ -69,7 +69,7 @@
     60%{transform:scale(1.15);opacity:1}
     100%{transform:scale(1);opacity:1}
 }
-.pop{animation:pop .6s cubic-bezier(.2,.9,.3,1)}
+.pop{animation:pop 2.0s cubic-bezier(.2,.9,.3,1)}
 
 .status-ok{
     color:#22c55e; /* أخضر */
