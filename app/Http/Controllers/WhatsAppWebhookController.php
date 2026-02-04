@@ -21,9 +21,9 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
- public function handle(Request $request)
+public function handle(Request $request)
 {
-    Log::info('WEBHOOK HIT', $request->all());
+    \Log::info('WEBHOOK HIT', $request->all());
 
     $message = $request->input('entry.0.changes.0.value.messages.0');
 
@@ -34,24 +34,18 @@ class WhatsAppWebhookController extends Controller
     $phone = preg_replace('/[^0-9]/', '', $message['from']);
     $text  = trim($message['text']['body'] ?? '');
 
-    Log::info('MESSAGE FROM USER', [
+    \Log::info('MESSAGE FROM USER', [
         'phone' => $phone,
         'text'  => $text,
     ]);
 
-    /**
-     * ✅ 1️⃣ السماح برسالة واحدة فقط
-     */
+    // ✅ السماح بكلمة واحدة فقط
     if ($text !== 'استلم التذكرة') {
-        Log::info('IGNORED MESSAGE (NOT VALID KEYWORD)', [
-            'text' => $text
-        ]);
+        \Log::info('IGNORED MESSAGE (INVALID KEYWORD)', ['text' => $text]);
         return response()->json(['ok' => true]);
     }
 
-    /**
-     * ✅ 2️⃣ نجيب الحجز سواء اتبعت أو لأ
-     */
+    // ✅ نجيب آخر حجز معتمد
     $booking = Booking::where('phone', 'like', "%$phone%")
         ->where('status', 'approved')
         ->whereNotNull('qr_code_path')
@@ -59,45 +53,41 @@ class WhatsAppWebhookController extends Controller
         ->first();
 
     if (!$booking) {
-        Log::info('NO BOOKING FOUND', ['phone' => $phone]);
+        \Log::info('NO BOOKING FOUND', ['phone' => $phone]);
         return response()->json(['ok' => true]);
     }
 
-    /**
-     * ✅ 3️⃣ لو التذكرة اتبعت قبل كده → خلاص
-     */
+    // ✅ لو اتبعت قبل كده → ممنوع
     if ($booking->whatsapp_sent) {
-        Log::info('TICKET ALREADY SENT - BLOCKED', [
-            'booking_id' => $booking->ALK->id
+        \Log::info('TICKET ALREADY SENT - BLOCKED', [
+            'booking_id' => $booking->id
         ]);
         return response()->json(['ok' => true]);
     }
 
-    /**
-     * ✅ 4️⃣ إرسال التذكرة مرة واحدة فقط
-     */
-    app(BookingController::class)->sendWhatsAppTicket(
-        $booking->phone,
-        $booking->qr_code_path,
-        $booking->reference_code,
-        $booking->full_name,
-        $booking->showTime
-    );
+    // ✅ إرسال التذكرة مرة واحدة فقط
+    app(\App\Http\Controllers\Admin\BookingController::class)
+        ->sendWhatsAppTicket(
+            $booking->phone,
+            $booking->qr_code_path,
+            $booking->reference_code,
+            $booking->full_name,
+            $booking->showTime
+        );
 
-    /**
-     * ✅ 5️⃣ قفل الإرسال نهائي
-     */
+    // ✅ قفل الإرسال نهائي
     $booking->update([
         'whatsapp_sent'    => true,
         'whatsapp_sent_at' => now(),
     ]);
 
-    Log::info('TICKET SENT SUCCESSFULLY (ONCE)', [
+    \Log::info('TICKET SENT SUCCESSFULLY (ONCE)', [
         'booking_id' => $booking->id,
     ]);
 
     return response()->json(['ok' => true]);
 }
+
 
 
 }

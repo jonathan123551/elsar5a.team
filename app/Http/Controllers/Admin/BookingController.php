@@ -141,20 +141,25 @@ class BookingController extends Controller
     /* =======================
      |  IMAGE SEND (WEBHOOK)
      ======================= */
-    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name,$show_time)
-    {
-        $phone = preg_replace('/[^0-9]/', '', $phone);
+    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name, $showTime)
+{
+    $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))->post(
-            'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-            [
-                'messaging_product' => 'whatsapp',
-                'to' => $phone,
-                'type' => 'image',
-                'image' => [
-                    'link' => $imageUrl,
-                    'caption' =>
-                               "*🎟️ أهلاً {$full_name}*\n\n"
+    // تنسيق موعد الحفلة
+    $showDate = $showTime
+        ? \Carbon\Carbon::parse($showTime)->format('Y-m-d h:i A')
+        : 'سيتم إبلاغك بالموعد';
+
+    $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
+        'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+        [
+            'messaging_product' => 'whatsapp',
+            'to' => $phone,
+            'type' => 'image',
+            'image' => [
+                'link' => $imageUrl,
+                'caption' =>
+                                 "*🎟️ أهلاً {$full_name}*\n\n"
                                 ."يسعدنا وجودك معنا،\n"
                                 ."أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا…\n"
                                 ."ليزداد العقل وعيًا.\n\n"
@@ -166,10 +171,25 @@ class BookingController extends Controller
                                 ."فنغيّر ما فسد،\n"
                                 ."ونزرع بدلًا منه ثمرًا صالحًا ❤️\n\n"
                                 ."🗓️ *موعد الحفلة:*\n"
-                                ."{$show_time}\n"
+                                ."{$showTime}\n"
                                 ."‼️ *يرجى إحضار هذه التذكرة عند الدخول*",
                     ],
-            ]
-        );
+                
+        ]
+    );
+
+    // Logs
+    \Log::info('WHATSAPP SEND RESPONSE', [
+        'status' => $response->status(),
+        'body'   => $response->json(),
+    ]);
+
+    if (!$response->successful()) {
+        \Log::error('WHATSAPP SEND FAILED', [
+            'phone' => $phone,
+            'error' => $response->json(),
+        ]);
     }
+}
+
 }
