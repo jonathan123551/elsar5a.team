@@ -54,7 +54,7 @@ class BookingController extends Controller
      * APPROVE BOOKING
      * - Generate QR
      * - Upload Cloudinary
-     * - Send WhatsApp TEMPLATE (ticket)
+     * - ❌ NO WhatsApp sending here
      */
     public function approve(Booking $booking)
     {
@@ -121,18 +121,17 @@ class BookingController extends Controller
 
         unlink($tempPath);
 
-        // Save QR data
+        // Save QR data + reset whatsapp flags
         $booking->update([
             'qr_code_path'      => $upload['secure_url'],
             'qr_code_public_id' => $upload['public_id'],
+            'whatsapp_sent'     => false,
+            'whatsapp_sent_at'  => null,
         ]);
-
-        // 🔔 SEND TEMPLATE (NO VARIABLES)
-        $this->sendTicketTemplate($booking->phone);
 
         return redirect()
             ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز، تم إرسال رسالة واتساب 📩');
+            ->with('status', 'تم اعتماد الحجز ✅ التذكرة ستُرسل عند أول رسالة من العميل');
     }
 
     public function reject(Request $request, Booking $booking)
@@ -157,35 +156,7 @@ class BookingController extends Controller
             ->with('status', 'تم رفض الحجز ❌');
     }
 
-    // ================= TEMPLATE (NO VARIABLES) =================
-    private function sendTicketTemplate($phone)
-    {
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-
-        $response = Http::withToken(env('WHATSAPP_TOKEN'))
-            ->post(
-                'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-                [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $phone,
-                    'type' => 'template',
-                    'template' => [
-                        'name' => 'ticket',
-                        'language' => [
-                            'code' => 'ar_EG',
-                        ],
-                    ],
-                ]
-            );
-
-        Log::info('WHATSAPP TEMPLATE RESPONSE', [
-            'phone'  => $phone,
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
-    }
-
-    // ================= IMAGE (USED BY WEBHOOK) =================
+    // ================= IMAGE SEND (USED BY WEBHOOK) =================
     public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);

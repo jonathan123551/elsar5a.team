@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Http\Controllers\Admin\BookingController;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -32,19 +33,37 @@ class WhatsAppWebhookController extends Controller
 
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        // آخر حجز فيه QR ولسه التذكرة متبعتتش
+        Log::info('WHATSAPP INCOMING MESSAGE', [
+            'from' => $phone,
+            'message' => $message,
+        ]);
+
+        /**
+         * نجيب آخر حجز:
+         * - نفس الرقم
+         * - Approved
+         * - فيه QR
+         * - التذكرة متبعتتش قبل كده
+         */
         $booking = Booking::where('phone', 'like', "%$phone%")
+            ->where('status', 'approved')
             ->whereNotNull('qr_code_path')
-            ->whereNull('ticket_sent_at')
+            ->where(function ($q) {
+                $q->whereNull('whatsapp_sent')
+                  ->orWhere('whatsapp_sent', false);
+            })
             ->latest()
             ->first();
 
         // لو التذكرة اتبعت قبل كده → تجاهل
         if (!$booking) {
+            Log::info('NO VALID BOOKING OR TICKET ALREADY SENT', [
+                'phone' => $phone,
+            ]);
             return response()->json(['ok' => true]);
         }
 
-        // ابعت التذكرة
+        // ✅ ابعت التذكرة
         app(BookingController::class)->sendWhatsAppTicket(
             $booking->phone,
             $booking->qr_code_path,
@@ -52,9 +71,15 @@ class WhatsAppWebhookController extends Controller
             $booking->full_name
         );
 
-        // علّم إن التذكرة اتبعت
+        // ✅ علّم إن التذكرة اتبعت
         $booking->update([
-            'ticket_sent_at' => now(),
+            'whatsapp_sent'    => true,
+            'whatsapp_sent_at' => now(),
+        ]);
+
+        Log::info('TICKET SENT SUCCESSFULLY', [
+            'booking_id' => $booking->id,
+            'phone' => $phone,
         ]);
 
         return response()->json(['ok' => true]);
