@@ -4,8 +4,14 @@
 
 @section('content')
 <section class="space-y-6 max-w-3xl mx-auto">
-
+    <div class="flex items-center justify-between gap-3">
     <h1 class="text-2xl font-bold">🎫 فحص التذاكر</h1>
+
+        <a href="{{ route('admin.dashboard') }}"
+           class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
+            ← رجوع
+        </a>
+    </div>
 
     {{-- الكاميرا --}}
     <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
