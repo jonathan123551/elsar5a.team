@@ -178,5 +178,28 @@ class BookingController extends Controller
     ]);
 }
 
+/* =======================
+ |  REJECT BOOKING
+ ======================= */
+public function reject(Booking $booking)
+{
+    if ($booking->status === 'rejected') {
+        return back()->with('status', 'الحجز مرفوض بالفعل');
+    }
+
+    // لو كان Approved قبل كده (اختياري)
+    if ($booking->status === 'approved') {
+        return back()->with('status', 'لا يمكن رفض حجز تم اعتماده');
+    }
+
+    $booking->update([
+        'status' => 'rejected',
+        'rejected_at' => now(), // لو عندك العمود
+    ]);
+
+    return redirect()
+        ->route('admin.bookings.index')
+        ->with('status', 'تم رفض الحجز بنجاح ❌');
+}
 
 }
