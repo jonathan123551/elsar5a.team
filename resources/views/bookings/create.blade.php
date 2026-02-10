@@ -188,4 +188,23 @@
     nameInput.addEventListener('input', updateButton);
     phoneInput.addEventListener('input', updateButton);
 </script>
+<script>
+    const bookingForm = document.getElementById('bookingForm');
+    const submitBtn   = document.getElementById('submitBtn');
+
+    let isSubmitting = false;
+
+    bookingForm.addEventListener('submit', function () {
+        if (isSubmitting) {
+            return false;
+        }
+
+        isSubmitting = true;
+
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        submitBtn.innerText = 'جاري الإرسال...';
+    });
+</script>
+
 @endsection

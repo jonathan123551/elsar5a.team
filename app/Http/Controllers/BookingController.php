@@ -7,6 +7,7 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
 
@@ -14,7 +15,6 @@ class BookingController extends Controller
 {
     public function __construct()
     {
-        // 🔥 Cloudinary config
         Configuration::instance([
             'cloud' => [
                 'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
@@ -46,89 +46,76 @@ class BookingController extends Controller
 
     public function store(Request $request, ShowTime $showTime)
     {
-        // 🎟️ عدد التذاكر ثابت
-        $ticketsCount = 1;
-
-        // ✅ Validation (زي ما هو)
-        $request->validate([
-            'full_name'          => 'required|string|max:255',
-            'phone'              => 'required|string|min:8|max:20',
-            'payment_screenshot' => 'required|image|max:16000', // 16MB
-        ]);
-
-        if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {
-            return back()
-                ->withErrors(['tickets_count' => 'عدد التذاكر غير متاح.'])
-                ->withInput();
-        }
-
-        /*
-        |------------------------------------------------------------------
-        | 📞 Normalize phone number
-        |------------------------------------------------------------------
-        */
-        try {
-            $phone = $this->normalizeEgyptPhone($request->phone);
-        } catch (\Exception $e) {
-            return back()
-                ->withErrors(['phone' => $e->getMessage()])
-                ->withInput();
-        }
-
-        /*
-        |------------------------------------------------------------------
-        | 💳 Upload payment screenshot (FIXED – NO CONNECTION LOST)
-        |------------------------------------------------------------------
-        */
-        $file = $request->file('payment_screenshot');
-
-        // انسخ الملف في temp قبل Cloudinary
-        $tempPath = sys_get_temp_dir() . '/' . uniqid('payment_', true);
-        file_put_contents($tempPath, file_get_contents($file->getRealPath()));
-
-        $upload = (new UploadApi())->upload(
-            $tempPath,
-            ['folder' => 'payments/screenshots']
+        /* ======================================================
+        | 🛑 ANTI DOUBLE REQUEST (THE REAL FIX)
+        ====================================================== */
+        $requestKey = 'booking_lock_' . sha1(
+            $request->ip() .
+            $request->full_name .
+            $request->phone .
+            $showTime->id
         );
 
-        // امسح الملف المؤقت
-        @unlink($tempPath);
+        if (Cache::has($requestKey)) {
+            return back()->withErrors([
+                'general' => '⏳ الطلب قيد المعالجة بالفعل، من فضلك انتظر.'
+            ]);
+        }
 
-        $screenshotUrl      = $upload['secure_url'];
-        $screenshotPublicId = $upload['public_id'];
+        Cache::put($requestKey, true, 30); // lock 30 sec
 
-        // 💰 السعر
-        $ticketPrice = $showTime->ticket_price;
-        $totalPrice  = $ticketPrice * $ticketsCount;
+        try {
+            // 🎟️ عدد التذاكر ثابت
+            $ticketsCount = 1;
 
-        /*
-        |------------------------------------------------------------------
-        | 🧾 Create booking
-        |------------------------------------------------------------------
-        */
-        $booking = Booking::create([
-            'show_time_id'                  => $showTime->id,
-            'full_name'                     => $request->full_name,
-            'phone'                         => $phone,
-            'tickets_count'                 => $ticketsCount,
-            'total_price'                   => $totalPrice,
+            $request->validate([
+                'full_name'          => 'required|string|max:255',
+                'phone'              => 'required|string|min:8|max:20',
+                'payment_screenshot' => 'required|image|max:16000',
+            ]);
 
-            // ☁️ Cloudinary
-            'transfer_screenshot_path'      => $screenshotUrl,
-            'transfer_screenshot_public_id' => $screenshotPublicId,
+            if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {
+                throw new \Exception('عدد التذاكر غير متاح');
+            }
 
-            'status'                        => 'pending',
-            'reference_code'                => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
-        ]);
+            // 📞 Normalize phone
+            $phone = $this->normalizeEgyptPhone($request->phone);
 
-        return view('bookings.thankyou', compact('booking'));
+            // ☁️ Upload to Cloudinary (safe)
+            $file = $request->file('payment_screenshot');
+            $tempPath = sys_get_temp_dir() . '/' . uniqid('payment_', true);
+            file_put_contents($tempPath, file_get_contents($file->getRealPath()));
+
+            $upload = (new UploadApi())->upload(
+                $tempPath,
+                ['folder' => 'payments/screenshots']
+            );
+
+            @unlink($tempPath);
+
+            // 💰 السعر
+            $totalPrice = $showTime->ticket_price * $ticketsCount;
+
+            $booking = Booking::create([
+                'show_time_id'                  => $showTime->id,
+                'full_name'                     => $request->full_name,
+                'phone'                         => $phone,
+                'tickets_count'                 => $ticketsCount,
+                'total_price'                   => $totalPrice,
+                'transfer_screenshot_path'      => $upload['secure_url'],
+                'transfer_screenshot_public_id' => $upload['public_id'],
+                'status'                        => 'pending',
+                'reference_code'                => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
+            ]);
+
+            return view('bookings.thankyou', compact('booking'));
+
+        } finally {
+            // 🔓 فك القفل مهما حصل
+            Cache::forget($requestKey);
+        }
     }
 
-    /*
-    |------------------------------------------------------------------
-    | 🔧 Helpers
-    |------------------------------------------------------------------
-    */
     private function normalizeEgyptPhone(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -145,6 +132,6 @@ class BookingController extends Controller
             return $phone;
         }
 
-        throw new \Exception('رقم الموبايل غير صالح، من فضلك تأكد من كتابته بشكل صحيح');
+        throw new \Exception('رقم الموبايل غير صالح');
     }
 }
