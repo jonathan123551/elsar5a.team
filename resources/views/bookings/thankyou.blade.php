@@ -53,31 +53,32 @@
           <ul class="space-y-2 text-xs sm:text-sm text-gray-200 leading-relaxed text-left">
 
     <li class="flex items-start gap-1">
-        <span class="text-2xl leading-none text-amber-300">•</span>
-        <span>
+        <span class="text-2xl leading-[1.2] text-amber-300 pt-[1px]">•</span>
+        <span class="block">
             يتم <span class="text-white font-semibold">مراجعة عملية الدفع</span>
             والتأكد من التحويل.
         </span>
     </li>
 
     <li class="flex items-start gap-1">
-        <span class="text-2xl leading-none text-emerald-300">•</span>
-        <span>
-            بعد <span class="text-emerald-300 font-semibold">تأكيد</span>،
- الحجز
+        <span class="text-2xl leading-[1.2] text-emerald-300 pt-[1px]">•</span>
+        <span class="block">
+            بعد <span class="text-emerald-300 font-semibold">تأكيد</span> الحجز،
             سيتم إرسال <span class="text-white font-semibold">التذكرة</span>
             مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
         </span>
     </li>
 
     <li class="flex items-start gap-1">
-        <span class="text-2xl leading-none text-sky-300">•</span>
-        <span> عملية المراجعة قد تستغرق بحد أقصى           
+        <span class="text-2xl leading-[1.2] text-sky-300 pt-[1px]">•</span>
+        <span class="block">
+            عملية المراجعة قد تستغرق بحد أقصى
             <span class="text-white font-semibold">24 ساعة.</span>
         </span>
     </li>
 
 </ul>
+
 
         </div>
 
