@@ -7,11 +7,15 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {{-- 🎭 Show Details --}}
-        <div class="md:col-span-1 bg-black/40 border border-white/10 rounded-3xl p-5 space-y-4
-                    shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+        {{-- =========================
+        | 🎭 SHOW + PAYMENT DETAILS
+        ========================== --}}
+        <div class="md:col-span-1 bg-black/40 border border-white/10 rounded-3xl p-5 space-y-5
+                    shadow-[0_0_40px_rgba(0,0,0,0.45)]">
 
-            <h2 class="text-base font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
+            <h2 class="text-base font-semibold text-amber-300">
+                🎭 تفاصيل العرض
+            </h2>
 
             <p class="text-sm text-white font-medium">
                 {{ $showTime->show->title }}
@@ -41,42 +45,62 @@
                 </div>
             </div>
 
-            {{-- 💳 Payment Info --}}
-            <div class="bg-black/50 border border-amber-400/30 rounded-2xl p-4 space-y-3
-                        shadow-[0_0_25px_rgba(250,204,21,0.15)]">
+            {{-- =========================
+            | 💳 STEP 1 – PAYMENT
+            ========================== --}}
+            <div class="bg-black/50 border border-amber-400/30 rounded-2xl p-4 space-y-4
+                        shadow-[0_0_30px_rgba(250,204,21,0.15)]">
 
-                <h3 class="text-sm font-semibold text-amber-300 flex items-center gap-1">
-                    💳 بيانات التحويل
+                <h3 class="text-sm font-semibold text-amber-300">
+                    💳 خطوة 1: تحويل قيمة التذكرة
                 </h3>
 
+                <p class="text-[12px] text-gray-300 leading-relaxed">
+                    من فضلك قم بتحويل
+                    <span class="text-amber-300 font-semibold">
+                        {{ $showTime->ticket_price }} جنيه
+                    </span>
+                    (قيمة التذكرة)
+                    على <span class="text-white font-semibold">أحد الوسيلتين</span>:
+                </p>
+
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[11px] text-gray-400 mb-1">رقم المحفظة</p>
+                    <p class="text-[11px] text-gray-400 mb-1">📱 رقم المحفظة</p>
                     <p class="text-sm font-bold tracking-wide text-white select-all">
                         {{ $transferWallet }}
                     </p>
                 </div>
 
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[11px] text-gray-400 mb-1">InstaPay</p>
+                    <p class="text-[11px] text-gray-400 mb-1">⚡ InstaPay</p>
                     <p class="text-sm font-bold tracking-wide text-white select-all">
                         {{ $transferInsta }}
                     </p>
                 </div>
 
-                <p class="text-[11px] text-gray-400 leading-relaxed">
-                    اكتب اسمك ورقم موبايل عليه واتساب،
-                    وبعد التحويل خد Screenshot وارفعه في الفورم.
-                </p>
+                <div class="bg-amber-500/10 border border-amber-400/30 rounded-xl p-3">
+                    <p class="text-[11px] text-amber-200 leading-relaxed">
+                        📝 <span class="font-semibold">مهم:</span>
+                        اكتب اسمك أثناء التحويل، ورقم موبايل عليه واتساب.
+                    </p>
+                </div>
             </div>
         </div>
 
-        {{-- 📝 Booking Form --}}
+        {{-- =========================
+        | 📝 BOOKING FORM
+        ========================== --}}
         <div class="md:col-span-2 bg-black/40 border border-white/10 rounded-3xl p-6 space-y-5
-                    shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+                    shadow-[0_0_40px_rgba(0,0,0,0.45)]">
 
             <h2 class="text-base font-semibold text-amber-300">
-                📝 بيانات الحجز
+                📸 خطوة 2 و 3: رفع صورة التحويل وإرسال الطلب
             </h2>
+
+            <p class="text-[12px] text-gray-300 leading-relaxed">
+                بعد التحويل، خد Screenshot واضحة لعملية الدفع،
+                وبعدها كمّل البيانات واضغط إرسال.
+            </p>
 
             @if ($errors->any())
                 <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-xs rounded-xl p-3">
@@ -97,8 +121,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                     <div>
-                        <label class="block text-xs mb-1 text-gray-300">الاسم بالكامل</label>
-                        <input type="text" name="full_name" value="{{ old('full_name') }}"
+                        <label class="block text-xs mb-1 text-gray-300">
+                            الاسم بالكامل
+                        </label>
+                        <input type="text"
+                               name="full_name"
+                               value="{{ old('full_name') }}"
                                class="w-full rounded-xl bg-black/60 border border-white/15
                                       px-3 py-2 text-sm text-white
                                       focus:outline-none focus:border-amber-400">
@@ -108,21 +136,31 @@
                         <label class="block text-xs mb-1 text-gray-300">
                             رقم الموبايل <span class="text-amber-300">(واتساب)</span>
                         </label>
-                        <input type="text" name="phone" value="{{ old('phone') }}"
+                        <input type="text"
+                               name="phone"
+                               value="{{ old('phone') }}"
                                class="w-full rounded-xl bg-black/60 border border-white/15
                                       px-3 py-2 text-sm text-white
                                       focus:outline-none focus:border-amber-400">
                     </div>
                 </div>
 
-                {{-- Tickets fixed --}}
+                {{-- ثابت --}}
                 <input type="hidden" name="tickets_count" value="1">
 
-                <div>
-                    <label class="block text-xs mb-1 text-gray-300">
-                        Screenshot لعملية التحويل
+                {{-- Screenshot Upload --}}
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                    <label class="block text-sm font-semibold text-white">
+                        📸 Screenshot لعملية التحويل
                     </label>
-                    <input type="file" name="payment_screenshot" accept="image/*"
+
+                    <p class="text-[11px] text-gray-400 leading-relaxed">
+                        يفضل تكون الصورة واضحة ويظهر فيها المبلغ.
+                    </p>
+
+                    <input type="file"
+                           name="payment_screenshot"
+                           accept="image/*"
                            class="w-full text-xs text-gray-300">
                 </div>
 
@@ -134,6 +172,11 @@
                                hover:bg-amber-300 transition">
                     إرسال طلب الحجز
                 </button>
+
+                <p class="text-[11px] text-gray-400 leading-relaxed">
+                    سيتم مراجعة الطلب يدويًا.
+                    في حالة وجود أي مشكلة، سيتم التواصل معك قبل الرفض.
+                </p>
             </form>
         </div>
 
