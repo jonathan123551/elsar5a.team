@@ -11,90 +11,90 @@
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
         <div
-    class="md:col-span-1 relative
-           bg-black/50
-           border border-amber-400/30
-           rounded-3xl p-5 space-y-4
+            class="md:col-span-1 relative
+                   bg-black/50
+                   border border-amber-400/30
+                   rounded-3xl p-5 space-y-4
 
-           shadow-[0_0_35px_rgba(250,204,21,0.35)]
-           hover:shadow-[0_0_55px_rgba(250,204,21,0.55)]
-           transition-all duration-300
+                   shadow-[0_0_30px_rgba(250,204,21,0.35)]
+                   hover:shadow-[0_0_45px_rgba(250,204,21,0.5)]
+                   transition-all duration-300
 
-           before:absolute before:inset-0
-           before:rounded-3xl
-           before:bg-gradient-to-br
-           before:from-amber-400/20
-           before:via-amber-400/5
-           before:to-transparent
-           before:pointer-events-none">
+                   before:absolute before:inset-0
+                   before:rounded-3xl
+                   before:bg-gradient-to-br
+                   before:from-amber-400/15
+                   before:to-transparent
+                   before:pointer-events-none">
 
-    <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
-        🎭 تفاصيل العرض
-    </h2>
+            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
+                🎭 تفاصيل العرض
+            </h2>
 
-    <p class="text-sm text-white font-medium leading-snug">
-        {{ $showTime->show->title }}
-    </p>
-
-    <div class="space-y-1 text-xs text-gray-300">
-        <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
-        <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
-        <p class="text-amber-300 font-semibold">
-            🎟️ {{ $showTime->ticket_price }} جنيه
-        </p>
-    </div>
-
-    <div class="h-px bg-white/10 my-2"></div>
-
-    <div
-        class="relative bg-black/60
-               border border-amber-400/40
-               rounded-2xl p-4 space-y-3
-
-               shadow-[0_0_25px_rgba(250,204,21,0.25)]
-               before:absolute before:inset-0
-               before:rounded-2xl
-               before:bg-gradient-to-br
-               before:from-amber-400/10
-               before:to-transparent
-               before:pointer-events-none">
-
-        <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
-            خطوة 1: حوّل قيمة التذكرة
-        </h3>
-
-        <p class="text-[11px] text-gray-300 leading-relaxed">
-            حوّل
-            <span class="text-white font-semibold">
-                {{ $showTime->ticket_price }} جنيه
-            </span>
-            على أحد الأرقام التالية:
-        </p>
-
-        <div class="bg-white/5 rounded-xl p-2">
-            <p class="text-[10px] text-gray-400">📱 محفظة</p>
-            <p class="text-sm font-bold text-white select-all tracking-wide">
-                {{ $transferWallet }}
+            <p class="text-sm text-white font-medium leading-snug">
+                {{ $showTime->show->title }}
             </p>
-        </div>
 
-        <div class="bg-white/5 rounded-xl p-2">
-            <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-            <p class="text-sm font-bold text-white select-all tracking-wide">
-                {{ $transferInsta }}
-            </p>
-        </div>
+            <div class="space-y-1 text-xs text-gray-300">
+                <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
+                <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
+                <p class="text-amber-300 font-semibold">
+                    🎟️ {{ $showTime->ticket_price }} جنيه
+                </p>
+            </div>
 
-    </div>
-</div>
+            <div class="h-px bg-white/10 my-2"></div>
 
+            {{-- Payment --}}
+            <div
+                class="relative bg-black/60
+                       border border-amber-400/40
+                       rounded-2xl p-4 space-y-3
+
+                       shadow-[0_0_20px_rgba(250,204,21,0.25)]
+                       before:absolute before:inset-0
+                       before:rounded-2xl
+                       before:bg-gradient-to-br
+                       before:from-amber-400/10
+                       before:to-transparent
+                       before:pointer-events-none">
+
+                <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
+                    خطوة 1: حوّل قيمة التذكرة
+                </h3>
+
+                <p class="text-[11px] text-gray-300 leading-relaxed">
+                    حوّل
+                    <span class="text-white font-semibold">
+                        {{ $showTime->ticket_price }} جنيه
+                    </span>
+                    على أحد الأرقام التالية:
+                </p>
+
+                <div class="bg-white/5 rounded-xl p-2">
+                    <p class="text-[10px] text-gray-400">📱 محفظة</p>
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
+                        {{ $transferWallet }}
+                    </p>
+                </div>
+
+                <div class="bg-white/5 rounded-xl p-2">
+                    <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
+                        {{ $transferInsta }}
+                    </p>
+                </div>
+
+            </div>
         </div>
 
         {{-- ======================
         | 📝 FORM
         ======================= --}}
         <div
-            class="md:col-span-2 relative bg-black/50 border border-white/10
+            class="md:col-span-2 relative
+                   bg-black/50
+                   border border-white/10
                    rounded-3xl p-6 space-y-4">
 
             <h2 class="text-sm font-semibold text-amber-300">
@@ -152,7 +152,9 @@
                 <button type="submit"
                         id="submitBtn"
                         disabled
-                        class="px-6 py-2.5 rounded-full bg-gray-600 text-black text-sm font-semibold cursor-not-allowed transition">
+                        class="px-6 py-2.5 rounded-full
+                               bg-gray-600 text-black text-sm font-semibold
+                               cursor-not-allowed transition">
                     إرسال طلب الحجز
                 </button>
             </form>
@@ -160,6 +162,7 @@
 
     </div>
 </section>
+
 
 {{-- ======================
 | BUTTON LOGIC
