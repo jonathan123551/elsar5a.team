@@ -134,6 +134,11 @@ Route::middleware('admin')
         ->name('shows.times.update');
     Route::delete('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'destroy'])
         ->name('shows.times.destroy');
+    // Update total tickets for a show time
+Route::patch(
+    '/show-times/{showTime}/update-tickets',
+    [AdminShowTimeController::class, 'updateTickets']
+)->name('show-times.update-tickets');
 
     // Bookings
     Route::prefix('bookings')->name('bookings.')->group(function () {
