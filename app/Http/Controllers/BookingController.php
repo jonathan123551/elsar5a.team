@@ -52,7 +52,7 @@ class BookingController extends Controller
         $request->validate([
             'full_name'          => 'required|string|max:255',
             'phone'              => 'required|string|min:8|max:20',
-            'payment_screenshot' => 'required|image|max:25600',
+            'payment_screenshot' => 'required|image|max:16384',
         ]);
 
         if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {

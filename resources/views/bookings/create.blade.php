@@ -137,7 +137,11 @@
                            accept="image/*"
                            class="w-full text-xs text-gray-300">
 
-                    
+                    <p class="text-[10px] text-gray-400">
+                        الحد الأقصى لحجم الصورة:
+                        <span class="text-white">16MB</span>
+                        (سيتم ضغط الصورة تلقائيًا)
+                    </p>
                 </div>
 
                 {{-- Submit --}}
@@ -160,7 +164,7 @@
 </section>
 
 {{-- ======================
-| SMART ENABLE + SIZE CHECK
+| ENABLE + 16MB LIMIT + COMPRESSION
 ====================== --}}
 <script>
     const nameInput = document.getElementById('full_name');
@@ -168,15 +172,14 @@
     const screenshotInput = document.getElementById('screenshot');
     const submitBtn = document.getElementById('submitBtn');
 
-    const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+    const MAX_UPLOAD_SIZE = 16 * 1024 * 1024; // 16MB
+    const COMPRESS_THRESHOLD = 4 * 1024 * 1024; // compress if > 4MB
 
     function checkForm() {
-        const hasFile = screenshotInput.files.length > 0;
-
         if (
-            nameInput.value.trim() !== '' &&
-            phoneInput.value.trim() !== '' &&
-            hasFile
+            nameInput.value.trim() &&
+            phoneInput.value.trim() &&
+            screenshotInput.files.length > 0
         ) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
@@ -200,12 +203,47 @@
         const file = this.files[0];
         if (!file) return;
 
-        if (file.size > MAX_SIZE) {
-            alert('⚠️ حجم الصورة كبير.\nمن فضلك ارفع صورة أقل من 25MB.');
+        if (file.size > MAX_UPLOAD_SIZE) {
+            alert('⚠️ حجم الصورة كبير جدًا.\nالحد الأقصى المسموح 16MB.');
             this.value = '';
+            checkForm();
+            return;
         }
 
-        checkForm();
+        if (file.size <= COMPRESS_THRESHOLD) {
+            checkForm();
+            return;
+        }
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1600;
+            const scale = Math.min(1, maxWidth / img.width);
+
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                const compressedFile = new File(
+                    [blob],
+                    file.name.replace(/\.(png|jpg|jpeg)$/i, '.jpg'),
+                    { type: 'image/jpeg', lastModified: Date.now() }
+                );
+
+                const dt = new DataTransfer();
+                dt.items.add(compressedFile);
+                screenshotInput.files = dt.files;
+
+                checkForm();
+            }, 'image/jpeg', 0.7);
+        };
     });
 
     nameInput.addEventListener('input', checkForm);
