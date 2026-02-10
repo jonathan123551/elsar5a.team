@@ -29,7 +29,6 @@
                 </p>
             </div>
 
-            {{-- soft divider --}}
             <div class="h-px bg-white/10 my-2"></div>
 
             {{-- Step 1 --}}
@@ -75,6 +74,7 @@
                 خطوة 2: ارفع Screenshot وكمّل البيانات
             </h2>
 
+            {{-- Errors --}}
             @if ($errors->any())
                 <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-xs rounded-xl p-3">
                     <ul class="space-y-1">
@@ -109,14 +109,21 @@
                 <input type="hidden" name="tickets_count" value="1">
 
                 {{-- Screenshot --}}
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2
                             hover:border-amber-400/30 transition">
                     <label class="text-xs font-semibold text-white tracking-wide">
                         📸 Screenshot التحويل
                     </label>
-                    <input type="file" name="payment_screenshot" id="screenshot"
+
+                    <input type="file"
+                           name="payment_screenshot"
+                           id="screenshot"
                            accept="image/*"
                            class="w-full text-xs text-gray-300">
+
+                    <p class="text-[10px] text-gray-400">
+                        الحد الأقصى لحجم الصورة: <span class="text-white">6MB</span>
+                    </p>
                 </div>
 
                 {{-- Submit --}}
@@ -139,7 +146,7 @@
 </section>
 
 {{-- ======================
-| SMART ENABLE SCRIPT
+| SMART ENABLE + SIZE CHECK
 ====================== --}}
 <script>
     const nameInput = document.getElementById('full_name');
@@ -147,11 +154,15 @@
     const screenshotInput = document.getElementById('screenshot');
     const submitBtn = document.getElementById('submitBtn');
 
+    const MAX_SIZE = 6 * 1024 * 1024; // 6MB
+
     function checkForm() {
+        const hasFile = screenshotInput.files.length > 0;
+
         if (
             nameInput.value.trim() !== '' &&
             phoneInput.value.trim() !== '' &&
-            screenshotInput.files.length > 0
+            hasFile
         ) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
@@ -171,8 +182,19 @@
         }
     }
 
+    screenshotInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (file.size > MAX_SIZE) {
+            alert('⚠️ حجم الصورة كبير.\nمن فضلك ارفع صورة أقل من 6MB.');
+            this.value = '';
+        }
+
+        checkForm();
+    });
+
     nameInput.addEventListener('input', checkForm);
     phoneInput.addEventListener('input', checkForm);
-    screenshotInput.addEventListener('change', checkForm);
 </script>
 @endsection
