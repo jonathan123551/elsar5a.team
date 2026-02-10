@@ -143,6 +143,8 @@ class BookingController extends Controller
             return $phone;
         }
 
-        throw new \Exception('رقم الموبايل غير صالح');
+        throw \Illuminate\Validation\ValidationException::withMessages([
+    'phone' => 'رقم الموبايل غير صحيح، من فضلك اكتبه بصيغة صحيحة (مثال: 010xxxxxxxx)',
+]);
     }
 }

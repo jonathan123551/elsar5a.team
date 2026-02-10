@@ -194,8 +194,9 @@
 
     let isSubmitting = false;
 
-    bookingForm.addEventListener('submit', function () {
+    bookingForm.addEventListener('submit', function (e) {
         if (isSubmitting) {
+            e.preventDefault(); // 🔥 يمنع أي submit تاني
             return false;
         }
 
