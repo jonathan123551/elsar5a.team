@@ -50,34 +50,29 @@
                 ⏳ الخطوة الجاية
             </div>
 
-       <ul class="space-y-3 text-xs sm:text-sm text-gray-200 leading-relaxed text-left">
+       <ul class="space-y-3 text-xs sm:text-sm text-gray-200 leading-relaxed text-right">
 
-    <li class="flex items-start gap-2">
-        <span class="mt-[6px] w-2 h-2 rounded-full bg-amber-300 flex-shrink-0"></span>
-        <span class="block">
-            يتم <span class="text-white font-semibold">مراجعة عملية الدفع</span>
-            والتأكد من التحويل.
-        </span>
+    <li class="relative pr-5 before:content-[''] before:absolute before:right-0 before:top-[0.55em]
+               before:w-2 before:h-2 before:rounded-full before:bg-amber-300">
+        يتم <span class="text-white font-semibold">مراجعة عملية الدفع</span>
+        والتأكد من التحويل.
     </li>
 
-    <li class="flex items-start gap-2">
-        <span class="mt-[6px] w-2 h-2 rounded-full bg-emerald-300 flex-shrink-0"></span>
-        <span class="block">
-            بعد <span class="text-emerald-300 font-semibold">تأكيد الحجز</span>،
-            سيتم إرسال <span class="text-white font-semibold">التذكرة</span>
-            مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
-        </span>
+    <li class="relative pr-5 before:content-[''] before:absolute before:right-0 before:top-[0.55em]
+               before:w-2 before:h-2 before:rounded-full before:bg-emerald-300">
+        بعد <span class="text-emerald-300 font-semibold">تأكيد الحجز</span>،
+        سيتم إرسال <span class="text-white font-semibold">التذكرة</span>
+        مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
     </li>
 
-    <li class="flex items-start gap-2">
-        <span class="mt-[6px] w-2 h-2 rounded-full bg-sky-300 flex-shrink-0"></span>
-        <span class="block">
-            عملية المراجعة قد تستغرق بحد أقصى
-            <span class="text-white font-semibold">24 ساعة</span>.
-        </span>
+    <li class="relative pr-5 before:content-[''] before:absolute before:right-0 before:top-[0.55em]
+               before:w-2 before:h-2 before:rounded-full before:bg-sky-300">
+        عملية المراجعة قد تستغرق بحد أقصى
+        <span class="text-white font-semibold">24 ساعة</span>.
     </li>
 
 </ul>
+
 
 
 
