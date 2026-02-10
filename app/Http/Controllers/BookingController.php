@@ -79,7 +79,14 @@ class BookingController extends Controller
             }
 
             // 📞 Normalize phone
-            $phone = $this->normalizeEgyptPhone($request->phone);
+            try {
+                $phone = $this->normalizeEgyptPhone($request->phone);
+            } catch (\Exception $e) {
+                Cache::forget($requestKey); // مهم جدًا علشان يفك القفل
+                return back()
+                    ->withErrors(['phone' => $e->getMessage()])
+                    ->withInput();
+            }
 
             // ☁️ Upload to Cloudinary (safe)
             $file = $request->file('payment_screenshot');
