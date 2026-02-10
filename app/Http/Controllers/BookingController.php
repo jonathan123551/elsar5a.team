@@ -21,9 +21,7 @@ class BookingController extends Controller
                 'api_key'    => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
-            'url' => [
-                'secure' => true,
-            ],
+            'url' => ['secure' => true],
         ]);
     }
 
@@ -34,55 +32,47 @@ class BookingController extends Controller
             404
         );
 
-        $transferWallet = Setting::get('transfer_wallet', '');
-        $transferInsta  = Setting::get('transfer_insta', '');
-
-        return view('bookings.create', compact(
-            'showTime',
-            'transferWallet',
-            'transferInsta'
-        ));
+        return view('bookings.create', [
+            'showTime'       => $showTime,
+            'transferWallet'=> Setting::get('transfer_wallet', ''),
+            'transferInsta' => Setting::get('transfer_insta', ''),
+        ]);
     }
 
     public function store(Request $request, ShowTime $showTime)
     {
         /* ======================================================
-        | 🛑 ANTI DOUBLE REQUEST (THE REAL FIX)
+        | 🛑 ANTI DOUBLE REQUEST (SAFE)
         ====================================================== */
-        $requestKey = 'booking_lock_' . sha1(
-            $request->ip() .
-            $request->full_name .
-            $request->phone .
-            $showTime->id
+        $lockKey = 'booking_lock_' . sha1(
+            $request->ip() . $request->phone . $showTime->id
         );
 
-        if (Cache::has($requestKey)) {
+        // لو الطلب شغال بالفعل
+        if (!Cache::add($lockKey, true, 20)) {
             return back()->withErrors([
                 'general' => '⏳ الطلب قيد المعالجة بالفعل، من فضلك انتظر.'
-            ]);
+            ])->withInput();
         }
 
-        Cache::put($requestKey, true, 30); // lock 30 sec
-
         try {
-            // 🎟️ عدد التذاكر ثابت
-            $ticketsCount = 1;
-
+            // ✅ Validation
             $request->validate([
                 'full_name'          => 'required|string|max:255',
                 'phone'              => 'required|string|min:8|max:20',
                 'payment_screenshot' => 'required|image|max:16000',
             ]);
 
-            if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {
-                throw new \Exception('عدد التذاكر غير متاح');
+            if ($showTime->is_sold_out || $showTime->available_tickets < 1) {
+                return back()->withErrors([
+                    'general' => 'عدد التذاكر غير متاح'
+                ])->withInput();
             }
 
-            // 📞 Normalize phone
+            // 📞 Normalize phone (هيطلع error تلقائي)
             $phone = $this->normalizeEgyptPhone($request->phone);
 
-
-            // ☁️ Upload to Cloudinary (safe)
+            // ☁️ Upload screenshot
             $file = $request->file('payment_screenshot');
             $tempPath = sys_get_temp_dir() . '/' . uniqid('payment_', true);
             file_put_contents($tempPath, file_get_contents($file->getRealPath()));
@@ -94,25 +84,25 @@ class BookingController extends Controller
 
             @unlink($tempPath);
 
-            // 💰 السعر
-            $totalPrice = $showTime->ticket_price * $ticketsCount;
-
             $booking = Booking::create([
                 'show_time_id'                  => $showTime->id,
                 'full_name'                     => $request->full_name,
                 'phone'                         => $phone,
-                'tickets_count'                 => $ticketsCount,
-                'total_price'                   => $totalPrice,
+                'tickets_count'                 => 1,
+                'total_price'                   => $showTime->ticket_price,
                 'transfer_screenshot_path'      => $upload['secure_url'],
                 'transfer_screenshot_public_id' => $upload['public_id'],
                 'status'                        => 'pending',
-                'reference_code'                => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
+                'reference_code'                =>
+                    'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
             ]);
 
             return view('bookings.thankyou', compact('booking'));
 
-        }Cache::put($requestKey, true, 30); // lock 30 sec
-
+        } finally {
+            // 🔓 فك القفل مهما حصل
+            Cache::forget($lockKey);
+        }
     }
 
     private function normalizeEgyptPhone(string $phone): string
@@ -132,7 +122,7 @@ class BookingController extends Controller
         }
 
         throw \Illuminate\Validation\ValidationException::withMessages([
-    'phone' => 'رقم الموبايل غير صحيح، من فضلك اكتبه بصيغة صحيحة (مثال: 010xxxxxxxx)',
-]);
+            'phone' => 'رقم الموبايل غير صحيح، من فضلك اكتبه بصيغة صحيحة (مثال: 010xxxxxxxx)',
+        ]);
     }
 }
