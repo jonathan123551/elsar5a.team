@@ -63,7 +63,7 @@
     <li class="flex items-start gap-1">
         <span class="text-2xl leading-none text-emerald-300">•</span>
         <span>
-            بعد             <span class="text-emerald-300 font-semibold">تأكيد</span>،
+            بعد <span class="text-emerald-300 font-semibold">تأكيد</span>،
  الحجز
             سيتم إرسال <span class="text-white font-semibold">التذكرة</span>
             مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
@@ -72,8 +72,7 @@
 
     <li class="flex items-start gap-1">
         <span class="text-2xl leading-none text-sky-300">•</span>
-        <span>
-            عملية المراجعة قد تستغرق بحد أقصى
+        <span> عملية المراجعة قد تستغرق بحد أقصى           
             <span class="text-white font-semibold">24 ساعة.</span>
         </span>
     </li>
