@@ -10,8 +10,13 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-        <div class="md:col-span-1 bg-black/40 border border-white/10 rounded-3xl p-5 space-y-4
-                    shadow-[0_0_30px_rgba(0,0,0,0.35)]">
+        <div
+            class="md:col-span-1 relative bg-black/50 border border-white/10
+                   rounded-3xl p-5 space-y-4
+                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
+                   before:absolute before:inset-0 before:rounded-3xl
+                   before:bg-gradient-to-br before:from-amber-400/10 before:to-transparent
+                   before:pointer-events-none">
 
             <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
                 🎭 تفاصيل العرض
@@ -32,8 +37,10 @@
             <div class="h-px bg-white/10 my-2"></div>
 
             {{-- Step 1 --}}
-            <div class="bg-black/50 border border-amber-400/25 rounded-2xl p-4 space-y-3
-                        shadow-[0_0_20px_rgba(250,204,21,0.08)]">
+            <div
+                class="relative bg-black/60 border border-amber-400/30
+                       rounded-2xl p-4 space-y-3
+                       shadow-[0_0_35px_rgba(250,204,21,0.15)]">
 
                 <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
                     خطوة 1: حوّل قيمة التذكرة
@@ -67,8 +74,13 @@
         {{-- ======================
         | 📝 FORM (STEP 2 & 3)
         ======================= --}}
-        <div class="md:col-span-2 bg-black/40 border border-white/10 rounded-3xl p-6 space-y-4
-                    shadow-[0_0_30px_rgba(0,0,0,0.35)]">
+        <div
+            class="md:col-span-2 relative bg-black/50 border border-white/10
+                   rounded-3xl p-6 space-y-4
+                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
+                   before:absolute before:inset-0 before:rounded-3xl
+                   before:bg-gradient-to-br before:from-amber-400/5 before:to-transparent
+                   before:pointer-events-none">
 
             <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
                 خطوة 2: ارفع Screenshot وكمّل البيانات
@@ -97,20 +109,25 @@
                            placeholder="الاسم بالكامل"
                            class="w-full rounded-xl bg-black/60 border border-white/15
                                   px-3 py-2 text-sm text-white
-                                  focus:outline-none focus:border-amber-400">
+                                  focus:outline-none focus:border-amber-400
+                                  focus:shadow-[0_0_15px_rgba(250,204,21,0.25)]">
 
                     <input type="text" name="phone" id="phone"
                            placeholder="رقم الموبايل (واتساب)"
                            class="w-full rounded-xl bg-black/60 border border-white/15
                                   px-3 py-2 text-sm text-white
-                                  focus:outline-none focus:border-amber-400">
+                                  focus:outline-none focus:border-amber-400
+                                  focus:shadow-[0_0_15px_rgba(250,204,21,0.25)]">
                 </div>
 
                 <input type="hidden" name="tickets_count" value="1">
 
                 {{-- Screenshot --}}
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2
-                            hover:border-amber-400/30 transition">
+                <div
+                    class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2
+                           hover:border-amber-400/40
+                           hover:shadow-[0_0_25px_rgba(250,204,21,0.25)]
+                           transition">
                     <label class="text-xs font-semibold text-white tracking-wide">
                         📸 Screenshot التحويل
                     </label>
@@ -169,7 +186,7 @@
             submitBtn.classList.add(
                 'bg-amber-400',
                 'hover:bg-amber-300',
-                'shadow-[0_0_15px_rgba(250,204,21,0.45)]'
+                'shadow-[0_0_20px_rgba(250,204,21,0.6)]'
             );
         } else {
             submitBtn.disabled = true;
@@ -177,7 +194,7 @@
             submitBtn.classList.remove(
                 'bg-amber-400',
                 'hover:bg-amber-300',
-                'shadow-[0_0_15px_rgba(250,204,21,0.45)]'
+                'shadow-[0_0_20px_rgba(250,204,21,0.6)]'
             );
         }
     }
