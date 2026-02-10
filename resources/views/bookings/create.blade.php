@@ -10,11 +10,14 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-        <div class="md:col-span-1 bg-black/40 border border-white/10 rounded-3xl p-5 space-y-4">
+        <div class="md:col-span-1 bg-black/40 border border-white/10 rounded-3xl p-5 space-y-4
+                    shadow-[0_0_30px_rgba(0,0,0,0.35)]">
 
-            <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
+            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
+                🎭 تفاصيل العرض
+            </h2>
 
-            <p class="text-sm text-white font-medium">
+            <p class="text-sm text-white font-medium leading-snug">
                 {{ $showTime->show->title }}
             </p>
 
@@ -26,44 +29,49 @@
                 </p>
             </div>
 
-            {{-- Step 1 --}}
-            <div class="bg-black/50 border border-amber-400/30 rounded-2xl p-4 space-y-3">
+            {{-- soft divider --}}
+            <div class="h-px bg-white/10 my-2"></div>
 
-                <h3 class="text-xs font-semibold text-amber-300">
+            {{-- Step 1 --}}
+            <div class="bg-black/50 border border-amber-400/25 rounded-2xl p-4 space-y-3
+                        shadow-[0_0_20px_rgba(250,204,21,0.08)]">
+
+                <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
                     خطوة 1: حوّل قيمة التذكرة
                 </h3>
 
-                <p class="text-[11px] text-gray-300">
-                    حوّل <span class="text-white font-semibold">{{ $showTime->ticket_price }} جنيه</span>
+                <p class="text-[11px] text-gray-300 leading-relaxed">
+                    حوّل
+                    <span class="text-white font-semibold">
+                        {{ $showTime->ticket_price }} جنيه
+                    </span>
                     على أحد الأرقام التالية:
                 </p>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                    <p class="text-sm font-bold text-white select-all">
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
                         {{ $transferWallet }}
                     </p>
                 </div>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                    <p class="text-sm font-bold text-white select-all">
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
                         {{ $transferInsta }}
                     </p>
                 </div>
 
-                <p class="text-[10px] text-gray-400">
-                    اكتب اسمك ورقمك أثناء التحويل.
-                </p>
             </div>
         </div>
 
         {{-- ======================
         | 📝 FORM (STEP 2 & 3)
         ======================= --}}
-        <div class="md:col-span-2 bg-black/40 border border-white/10 rounded-3xl p-6 space-y-4">
+        <div class="md:col-span-2 bg-black/40 border border-white/10 rounded-3xl p-6 space-y-4
+                    shadow-[0_0_30px_rgba(0,0,0,0.35)]">
 
-            <h2 class="text-sm font-semibold text-amber-300">
+            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
                 خطوة 2: ارفع Screenshot وكمّل البيانات
             </h2>
 
@@ -101,8 +109,9 @@
                 <input type="hidden" name="tickets_count" value="1">
 
                 {{-- Screenshot --}}
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
-                    <label class="text-xs font-semibold text-white">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1
+                            hover:border-amber-400/30 transition">
+                    <label class="text-xs font-semibold text-white tracking-wide">
                         📸 Screenshot التحويل
                     </label>
                     <input type="file" name="payment_screenshot" id="screenshot"
@@ -116,7 +125,7 @@
                         disabled
                         class="w-full sm:w-auto px-6 py-2.5 rounded-full
                                bg-gray-600 text-black text-sm font-semibold
-                               cursor-not-allowed transition">
+                               cursor-not-allowed transition-all duration-200">
                     إرسال طلب الحجز
                 </button>
 
@@ -146,11 +155,19 @@
         ) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
-            submitBtn.classList.add('bg-amber-400', 'hover:bg-amber-300');
+            submitBtn.classList.add(
+                'bg-amber-400',
+                'hover:bg-amber-300',
+                'shadow-[0_0_15px_rgba(250,204,21,0.45)]'
+            );
         } else {
             submitBtn.disabled = true;
             submitBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
-            submitBtn.classList.remove('bg-amber-400', 'hover:bg-amber-300');
+            submitBtn.classList.remove(
+                'bg-amber-400',
+                'hover:bg-amber-300',
+                'shadow-[0_0_15px_rgba(250,204,21,0.45)]'
+            );
         }
     }
 
