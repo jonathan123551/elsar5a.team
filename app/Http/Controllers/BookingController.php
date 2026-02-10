@@ -79,18 +79,8 @@ class BookingController extends Controller
             }
 
             // 📞 Normalize phone
-            try {
-                $phone = $this->normalizeEgyptPhone($request->phone);
-            } catch (\Exception $e) {
-                Cache::forget($requestKey); // مهم جدًا علشان يفك القفل
-                return redirect()
-                ->back()
-                ->withErrors([
-                    'phone' => $e->getMessage()
-                ])
-                ->withInput();
+            $phone = $this->normalizeEgyptPhone($request->phone);
 
-            }
 
             // ☁️ Upload to Cloudinary (safe)
             $file = $request->file('payment_screenshot');
@@ -121,10 +111,8 @@ class BookingController extends Controller
 
             return view('bookings.thankyou', compact('booking'));
 
-        } finally {
-            // 🔓 فك القفل مهما حصل
-            Cache::forget($requestKey);
-        }
+        }Cache::put($requestKey, true, 30); // lock 30 sec
+
     }
 
     private function normalizeEgyptPhone(string $phone): string
