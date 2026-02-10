@@ -60,7 +60,7 @@
         </span>
     </li>
 
-    <li class="flex items-start gap-1.5">
+    <li class="flex items-start gap-1">
         <span class="text-2xl leading-none text-emerald-300">•</span>
         <span>
             بعد             <span class="text-emerald-300 font-semibold">تأكيد</span>،
@@ -70,7 +70,7 @@
         </span>
     </li>
 
-    <li class="flex items-start gap-1.5">
+    <li class="flex items-start gap-1">
         <span class="text-2xl leading-none text-sky-300">•</span>
         <span>
             عملية المراجعة قد تستغرق بحد أقصى
