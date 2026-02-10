@@ -87,7 +87,7 @@
                 </div>
 
                 {{-- URL اللي هيتبعت للسيرفر --}}
-                <input type="hidden" name="payment_screenshot_url" id="screenshot_url">
+                <input type="hidden" name="payment_screenshot" id="screenshot_url">
 
                 <button type="submit"
                         id="submitBtn"
