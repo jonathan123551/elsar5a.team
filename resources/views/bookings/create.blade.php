@@ -12,21 +12,17 @@
         ======================= --}}
         <div
             class="md:col-span-1 relative bg-black/50 border border-white/10
-                   rounded-3xl p-5 space-y-4
-                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
-                   before:absolute before:inset-0 before:rounded-3xl
-                   before:bg-gradient-to-br before:from-amber-400/10 before:to-transparent
-                   before:pointer-events-none">
+                   rounded-3xl p-5 space-y-4">
 
             <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
                 🎭 تفاصيل العرض
             </h2>
 
-            <p class="text-sm text-white font-medium leading-snug">
+            <p class="text-sm text-white font-medium">
                 {{ $showTime->show->title }}
             </p>
 
-            <div class="space-y-1 text-xs text-gray-300">
+            <div class="text-xs text-gray-300 space-y-1">
                 <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
                 <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
                 <p class="text-amber-300 font-semibold">
@@ -36,37 +32,20 @@
 
             <div class="h-px bg-white/10 my-2"></div>
 
-            <div
-                class="relative bg-black/60 border border-amber-400/30
-                       rounded-2xl p-4 space-y-3
-                       shadow-[0_0_35px_rgba(250,204,21,0.15)]">
-
-                <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
+            <div class="bg-black/60 border border-amber-400/30 rounded-2xl p-4 space-y-3">
+                <h3 class="text-xs font-semibold text-amber-300">
                     خطوة 1: حوّل قيمة التذكرة
                 </h3>
 
-                <p class="text-[11px] text-gray-300 leading-relaxed">
-                    حوّل
-                    <span class="text-white font-semibold">
-                        {{ $showTime->ticket_price }} جنيه
-                    </span>
-                    على أحد الأرقام التالية:
-                </p>
-
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                    <p class="text-sm font-bold text-white select-all tracking-wide">
-                        {{ $transferWallet }}
-                    </p>
+                    <p class="text-sm font-bold text-white select-all">{{ $transferWallet }}</p>
                 </div>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                    <p class="text-sm font-bold text-white select-all tracking-wide">
-                        {{ $transferInsta }}
-                    </p>
+                    <p class="text-sm font-bold text-white select-all">{{ $transferInsta }}</p>
                 </div>
-
             </div>
         </div>
 
@@ -75,39 +54,49 @@
         ======================= --}}
         <div
             class="md:col-span-2 relative bg-black/50 border border-white/10
-                   rounded-3xl p-6 space-y-4
-                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
-                   before:absolute before:inset-0 before:rounded-3xl
-                   before:bg-gradient-to-br before:from-amber-400/5 before:to-transparent
-                   before:pointer-events-none">
+                   rounded-3xl p-6 space-y-4">
 
-            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
+            <h2 class="text-sm font-semibold text-amber-300">
                 خطوة 2: ارفع Screenshot وكمّل البيانات
             </h2>
+
+            {{-- 🔴 ERROR MESSAGES --}}
+            @if ($errors->any())
+                <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-xs rounded-xl p-3">
+                    <ul class="space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>• {{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <form action="{{ route('bookings.store', $showTime) }}"
                   method="POST"
                   enctype="multipart/form-data"
-                  class="space-y-4"
-                  id="bookingForm">
+                  id="bookingForm"
+                  class="space-y-4">
                 @csrf
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input type="text" name="full_name" id="full_name"
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <input type="text"
+                           name="full_name"
+                           id="full_name"
+                           value="{{ old('full_name') }}"
                            placeholder="الاسم بالكامل"
-                           class="w-full rounded-xl bg-black/60 border border-white/15
-                                  px-3 py-2 text-sm text-white">
+                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
 
-                    <input type="text" name="phone" id="phone"
+                    <input type="text"
+                           name="phone"
+                           id="phone"
+                           value="{{ old('phone') }}"
                            placeholder="رقم الموبايل (واتساب)"
-                           class="w-full rounded-xl bg-black/60 border border-white/15
-                                  px-3 py-2 text-sm text-white">
+                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
                 </div>
 
                 <input type="hidden" name="tickets_count" value="1">
 
-                <div
-                    class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                     <label class="text-xs font-semibold text-white">
                         📸 Screenshot التحويل
                     </label>
@@ -117,18 +106,12 @@
                            id="screenshot"
                            accept="image/*"
                            class="w-full text-xs text-gray-300">
-
-                    <p class="text-[10px] text-gray-400">
-                        الحد الأقصى لحجم الصورة: <span class="text-white">16MB</span>
-                    </p>
                 </div>
 
                 <button type="submit"
                         id="submitBtn"
                         disabled
-                        class="w-full sm:w-auto px-6 py-2.5 rounded-full
-                               bg-gray-600 text-black text-sm font-semibold
-                               cursor-not-allowed transition">
+                        class="px-6 py-2.5 rounded-full bg-gray-600 text-black text-sm font-semibold cursor-not-allowed transition">
                     إرسال طلب الحجز
                 </button>
             </form>
@@ -138,22 +121,24 @@
 </section>
 
 {{-- ======================
-| FIXED LOGIC (NO CONNECTION LOST)
+| BUTTON LOGIC
 ====================== --}}
 <script>
     const nameInput = document.getElementById('full_name');
     const phoneInput = document.getElementById('phone');
     const screenshotInput = document.getElementById('screenshot');
     const submitBtn = document.getElementById('submitBtn');
+    const bookingForm = document.getElementById('bookingForm');
 
-    const MAX_SIZE = 16 * 1024 * 1024; // 16MB
     let screenshotReady = false;
+    let isSubmitting = false;
 
     function updateButton() {
         if (
             screenshotReady &&
-            nameInput.value.trim() !== '' &&
-            phoneInput.value.trim() !== ''
+            nameInput.value.trim() &&
+            phoneInput.value.trim() &&
+            !isSubmitting
         ) {
             submitBtn.disabled = false;
             submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
@@ -166,46 +151,22 @@
     }
 
     screenshotInput.addEventListener('change', () => {
-        const file = screenshotInput.files[0];
-        if (!file) {
-            screenshotReady = false;
-            updateButton();
-            return;
-        }
-
-        if (file.size > MAX_SIZE) {
-            alert('⚠️ حجم الصورة كبير جدًا (الحد الأقصى 16MB)');
-            screenshotInput.value = '';
-            screenshotReady = false;
-            updateButton();
-            return;
-        }
-
-        screenshotReady = true;
+        screenshotReady = screenshotInput.files.length > 0;
         updateButton();
     });
 
     nameInput.addEventListener('input', updateButton);
     phoneInput.addEventListener('input', updateButton);
-</script>
-<script>
-    const bookingForm = document.getElementById('bookingForm');
-    const submitBtn   = document.getElementById('submitBtn');
-
-    let isSubmitting = false;
 
     bookingForm.addEventListener('submit', function (e) {
         if (isSubmitting) {
-            e.preventDefault(); // 🔥 يمنع أي submit تاني
+            e.preventDefault();
             return false;
         }
 
         isSubmitting = true;
-
         submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
         submitBtn.innerText = 'جاري الإرسال...';
     });
 </script>
-
 @endsection
