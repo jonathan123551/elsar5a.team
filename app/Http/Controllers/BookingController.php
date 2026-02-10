@@ -29,14 +29,12 @@ class BookingController extends Controller
 
     public function store(Request $request, ShowTime $showTime)
     {
-        // 🎟️ عدد التذاكر ثابت
         $ticketsCount = 1;
 
-        // ✅ Validation (URL مش File)
         $request->validate([
-            'full_name'               => 'required|string|max:255',
-            'phone'                   => 'required|string|min:8|max:20',
-            'payment_screenshot'  => 'required|url',
+            'full_name'              => 'required|string|max:255',
+            'phone'                  => 'required|string|min:8|max:20',
+            'payment_screenshot_url' => 'required|url',
         ]);
 
         if ($showTime->is_sold_out || $showTime->available_tickets < $ticketsCount) {
@@ -45,11 +43,6 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        /*
-        |------------------------------------------------------------------
-        | 📞 Normalize phone number (Egypt → WhatsApp E.164)
-        |------------------------------------------------------------------
-        */
         try {
             $phone = $this->normalizeEgyptPhone($request->phone);
         } catch (\Exception $e) {
@@ -58,25 +51,15 @@ class BookingController extends Controller
                 ->withInput();
         }
 
-        // 💰 السعر
-        $ticketPrice = $showTime->ticket_price;
-        $totalPrice  = $ticketPrice * $ticketsCount;
+        $totalPrice = $showTime->ticket_price * $ticketsCount;
 
-        /*
-        |------------------------------------------------------------------
-        | 🧾 Create booking (URL only)
-        |------------------------------------------------------------------
-        */
         $booking = Booking::create([
             'show_time_id'             => $showTime->id,
             'full_name'                => $request->full_name,
             'phone'                    => $phone,
             'tickets_count'            => $ticketsCount,
             'total_price'              => $totalPrice,
-
-            // ☁️ Cloudinary URL من الفرونت
             'transfer_screenshot_path' => $request->payment_screenshot_url,
-
             'status'                   => 'pending',
             'reference_code'           => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
         ]);
@@ -84,11 +67,6 @@ class BookingController extends Controller
         return view('bookings.thankyou', compact('booking'));
     }
 
-    /*
-    |------------------------------------------------------------------
-    | 🔧 Helpers
-    |------------------------------------------------------------------
-    */
     private function normalizeEgyptPhone(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);

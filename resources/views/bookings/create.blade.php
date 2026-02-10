@@ -37,12 +37,16 @@
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                    <p class="text-sm font-bold text-white select-all">{{ $transferWallet }}</p>
+                    <p class="text-sm font-bold text-white select-all">
+                        {{ $transferWallet }}
+                    </p>
                 </div>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                    <p class="text-sm font-bold text-white select-all">{{ $transferInsta }}</p>
+                    <p class="text-sm font-bold text-white select-all">
+                        {{ $transferInsta }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -72,7 +76,7 @@
 
                 <input type="hidden" name="tickets_count" value="1">
 
-                {{-- Screenshot UI --}}
+                {{-- Screenshot --}}
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                     <label class="text-xs font-semibold text-white">
                         📸 Screenshot التحويل
@@ -86,8 +90,10 @@
                     </p>
                 </div>
 
-                {{-- URL اللي هيتبعت للسيرفر --}}
-                <input type="hidden" name="payment_screenshot" id="screenshot_url">
+                {{-- Cloudinary URL --}}
+                <input type="hidden"
+                       name="payment_screenshot_url"
+                       id="screenshot_url">
 
                 <button type="submit"
                         id="submitBtn"
@@ -102,12 +108,13 @@
 </section>
 
 {{-- ======================
-| CLOUDINARY UPLOAD (FINAL)
+| CLOUDINARY DIRECT UPLOAD
 ====================== --}}
 <script>
 const screenshot = document.getElementById('screenshot');
 const urlInput   = document.getElementById('screenshot_url');
 const submitBtn  = document.getElementById('submitBtn');
+const form       = document.getElementById('bookingForm');
 
 const CLOUD_NAME = 'YOUR_CLOUD_NAME';
 const PRESET     = 'unsigned_upload';
@@ -123,16 +130,24 @@ screenshot.addEventListener('change', async () => {
     fd.append('file', file);
     fd.append('upload_preset', PRESET);
 
-    const res = await fetch(
+    const res  = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
         { method: 'POST', body: fd }
     );
 
     const data = await res.json();
+
     urlInput.value = data.secure_url;
 
     submitBtn.disabled = false;
     submitBtn.innerText = 'إرسال طلب الحجز';
+});
+
+form.addEventListener('submit', function (e) {
+    if (!urlInput.value) {
+        e.preventDefault();
+        alert('⚠️ من فضلك انتظر حتى يتم رفع الصورة قبل الإرسال');
+    }
 });
 </script>
 @endsection
