@@ -34,11 +34,7 @@
                 </span>
             </div>
 
-            <div class="flex justify-between">
-                <span class="text-gray-400">عدد التذاكر</span>
-                <span>{{ $booking->tickets_count }}</span>
-            </div>
-
+            
             <div class="flex justify-between">
                 <span class="text-gray-400">إجمالي المبلغ</span>
                 <span class="font-semibold text-emerald-300">
@@ -54,20 +50,37 @@
                 ⏳ الخطوة الجاية
             </div>
 
-            <p class="text-xs sm:text-sm text-gray-200 leading-relaxed">
-                دلوقتي <span class="text-white font-semibold">الأدمن هيقوم بمراجعة عملية الدفع</span>
-                والتأكد من التحويل.
-            </p>
+           <ul class="space-y-2 text-xs sm:text-sm text-gray-200 leading-relaxed text-left">
 
-            <p class="text-xs sm:text-sm text-gray-200 leading-relaxed">
-                أول ما الحجز يتحول إلى
-                <span class="text-emerald-300 font-semibold">Approved</span>،
-                <br class="sm:hidden">
-                <span class="text-white font-semibold">
-                    هنبعتلك التذكرة كـ QR Code مباشرة على واتساب
-                </span>
-                على الرقم اللي سجلته.
-            </p>
+    <li class="flex items-start gap-2">
+        <span class="mt-1 text-amber-300">•</span>
+        <span>
+            يتم <span class="text-white font-semibold">مراجعة عملية الدفع</span>
+            والتأكد من التحويل يدويًا مع الأدمن.
+        </span>
+    </li>
+
+    <li class="flex items-start gap-2">
+        <span class="mt-1 text-emerald-300">•</span>
+        <span>
+            بعد تأكيد الحجز وتحويل حالته إلى
+            <span class="text-emerald-300 font-semibold">Approved</span>،
+            سيتم إرسال <span class="text-white font-semibold">التذكرة </span>
+            مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
+        </span>
+    </li>
+
+    <li class="flex items-start gap-2">
+        <span class="mt-1 text-sky-300">•</span>
+        <span>
+            عملية المراجعة قد تستغرق بحد أقصى
+            <span class="text-white font-semibold">24 ساعة</span>
+            من وقت إرسال طلب الحجز.
+        </span>
+    </li>
+
+</ul>
+
         </div>
 
         {{-- Footer Note --}}
