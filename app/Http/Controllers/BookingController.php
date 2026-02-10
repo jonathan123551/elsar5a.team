@@ -83,9 +83,13 @@ class BookingController extends Controller
                 $phone = $this->normalizeEgyptPhone($request->phone);
             } catch (\Exception $e) {
                 Cache::forget($requestKey); // مهم جدًا علشان يفك القفل
-                return back()
-                    ->withErrors(['phone' => $e->getMessage()])
-                    ->withInput();
+                return redirect()
+                ->back()
+                ->withErrors([
+                    'phone' => $e->getMessage()
+                ])
+                ->withInput();
+
             }
 
             // ☁️ Upload to Cloudinary (safe)
