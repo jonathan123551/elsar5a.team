@@ -125,4 +125,4 @@ class BookingController extends Controller
             'phone' => 'رقم الموبايل غير صحيح، من فضلك اكتبه بصيغة صحيحة (مثال: 010xxxxxxxx)',
         ]);
     }
-}
+}//
