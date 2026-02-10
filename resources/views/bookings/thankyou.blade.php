@@ -50,28 +50,28 @@
                 ⏳ الخطوة الجاية
             </div>
 
-           <ul class="space-y-2 text-xs sm:text-sm text-gray-200 leading-relaxed text-left">
+          <ul class="space-y-2 text-xs sm:text-sm text-gray-200 leading-relaxed text-left">
 
-    <li class="flex items-start gap-2">
-        <span class="mt-1 text-amber-300">•</span>
+    <li class="flex items-start gap-1.5">
+        <span class="text-2xl leading-none text-amber-300">•</span>
         <span>
             يتم <span class="text-white font-semibold">مراجعة عملية الدفع</span>
             والتأكد من التحويل يدويًا مع الأدمن.
         </span>
     </li>
 
-    <li class="flex items-start gap-2">
-        <span class="mt-1 text-emerald-300">•</span>
+    <li class="flex items-start gap-1.5">
+        <span class="text-2xl leading-none text-emerald-300">•</span>
         <span>
             بعد تأكيد الحجز وتحويل حالته إلى
             <span class="text-emerald-300 font-semibold">Approved</span>،
-            سيتم إرسال <span class="text-white font-semibold">التذكرة </span>
+            سيتم إرسال <span class="text-white font-semibold">التذكرة</span>
             مباشرة على <span class="text-white font-semibold">رقم الواتساب المُسجَّل</span>.
         </span>
     </li>
 
-    <li class="flex items-start gap-2">
-        <span class="mt-1 text-sky-300">•</span>
+    <li class="flex items-start gap-1.5">
+        <span class="text-2xl leading-none text-sky-300">•</span>
         <span>
             عملية المراجعة قد تستغرق بحد أقصى
             <span class="text-white font-semibold">24 ساعة</span>
