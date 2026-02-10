@@ -7,15 +7,26 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {{-- 🎭 DETAILS --}}
-        <div class="md:col-span-1 bg-black/50 border border-white/10 rounded-3xl p-5 space-y-4">
-            <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
+        {{-- ======================
+        | 🎭 DETAILS + PAYMENT
+        ======================= --}}
+        <div
+            class="md:col-span-1 relative bg-black/50 border border-white/10
+                   rounded-3xl p-5 space-y-4
+                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
+                   before:absolute before:inset-0 before:rounded-3xl
+                   before:bg-gradient-to-br before:from-amber-400/10 before:to-transparent
+                   before:pointer-events-none">
 
-            <p class="text-sm text-white font-medium">
+            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
+                🎭 تفاصيل العرض
+            </h2>
+
+            <p class="text-sm text-white font-medium leading-snug">
                 {{ $showTime->show->title }}
             </p>
 
-            <div class="text-xs text-gray-300 space-y-1">
+            <div class="space-y-1 text-xs text-gray-300">
                 <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
                 <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
                 <p class="text-amber-300 font-semibold">
@@ -23,75 +34,101 @@
                 </p>
             </div>
 
-            <div class="h-px bg-white/10"></div>
+            <div class="h-px bg-white/10 my-2"></div>
 
-            <div class="bg-black/60 border border-amber-400/30 rounded-2xl p-4 space-y-3">
-                <h3 class="text-xs font-semibold text-amber-300">
+            <div
+                class="relative bg-black/60 border border-amber-400/30
+                       rounded-2xl p-4 space-y-3
+                       shadow-[0_0_35px_rgba(250,204,21,0.15)]">
+
+                <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
                     خطوة 1: حوّل قيمة التذكرة
                 </h3>
 
-                <p class="text-[11px] text-gray-300">
-                    حوّل <span class="text-white font-semibold">{{ $showTime->ticket_price }} جنيه</span> على:
+                <p class="text-[11px] text-gray-300 leading-relaxed">
+                    حوّل
+                    <span class="text-white font-semibold">
+                        {{ $showTime->ticket_price }} جنيه
+                    </span>
+                    على أحد الأرقام التالية:
                 </p>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                    <p class="text-sm font-bold text-white select-all">{{ $transferWallet }}</p>
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
+                        {{ $transferWallet }}
+                    </p>
                 </div>
 
                 <div class="bg-white/5 rounded-xl p-2">
                     <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                    <p class="text-sm font-bold text-white select-all">{{ $transferInsta }}</p>
+                    <p class="text-sm font-bold text-white select-all tracking-wide">
+                        {{ $transferInsta }}
+                    </p>
                 </div>
+
             </div>
         </div>
 
-        {{-- 📝 FORM --}}
-        <div class="md:col-span-2 bg-black/50 border border-white/10 rounded-3xl p-6 space-y-4">
+        {{-- ======================
+        | 📝 FORM
+        ======================= --}}
+        <div
+            class="md:col-span-2 relative bg-black/50 border border-white/10
+                   rounded-3xl p-6 space-y-4
+                   shadow-[0_20px_60px_rgba(0,0,0,0.55)]
+                   before:absolute before:inset-0 before:rounded-3xl
+                   before:bg-gradient-to-br before:from-amber-400/5 before:to-transparent
+                   before:pointer-events-none">
 
-            <h2 class="text-sm font-semibold text-amber-300">
+            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
                 خطوة 2: ارفع Screenshot وكمّل البيانات
             </h2>
 
             <form action="{{ route('bookings.store', $showTime) }}"
                   method="POST"
-                  id="bookingForm"
-                  class="space-y-4">
+                  enctype="multipart/form-data"
+                  class="space-y-4"
+                  id="bookingForm">
                 @csrf
 
-                {{-- Screenshot --}}
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                    <label class="text-xs font-semibold text-white">
-                        📸 Screenshot التحويل
-                    </label>
-
-                    <input type="file" id="screenshot" accept="image/*"
-                           class="w-full text-xs text-gray-300">
-
-                    <p class="text-[10px] text-gray-400">
-                        سيتم رفع الصورة وضغطها تلقائيًا (حتى 16MB).
-                    </p>
-                </div>
-
-                {{-- hidden URL --}}
-                <input type="hidden" name="payment_screenshot" id="screenshot_url">
-
-                <div class="grid sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <input type="text" name="full_name" id="full_name"
                            placeholder="الاسم بالكامل"
-                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
+                           class="w-full rounded-xl bg-black/60 border border-white/15
+                                  px-3 py-2 text-sm text-white">
 
                     <input type="text" name="phone" id="phone"
                            placeholder="رقم الموبايل (واتساب)"
-                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
+                           class="w-full rounded-xl bg-black/60 border border-white/15
+                                  px-3 py-2 text-sm text-white">
                 </div>
 
                 <input type="hidden" name="tickets_count" value="1">
 
+                <div
+                    class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                    <label class="text-xs font-semibold text-white">
+                        📸 Screenshot التحويل
+                    </label>
+
+                    <input type="file"
+                           name="payment_screenshot"
+                           id="screenshot"
+                           accept="image/*"
+                           class="w-full text-xs text-gray-300">
+
+                    <p class="text-[10px] text-gray-400">
+                        الحد الأقصى لحجم الصورة: <span class="text-white">16MB</span>
+                    </p>
+                </div>
+
                 <button type="submit"
                         id="submitBtn"
                         disabled
-                        class="px-6 py-2.5 rounded-full bg-gray-600 text-black text-sm font-semibold cursor-not-allowed">
+                        class="w-full sm:w-auto px-6 py-2.5 rounded-full
+                               bg-gray-600 text-black text-sm font-semibold
+                               cursor-not-allowed transition">
                     إرسال طلب الحجز
                 </button>
             </form>
@@ -101,66 +138,54 @@
 </section>
 
 {{-- ======================
-| CLOUDINARY + LOGIC FIX
+| FIXED LOGIC (NO CONNECTION LOST)
 ====================== --}}
 <script>
-const screenshot   = document.getElementById('screenshot');
-const urlInput     = document.getElementById('screenshot_url');
-const nameInput    = document.getElementById('full_name');
-const phoneInput   = document.getElementById('phone');
-const submitBtn    = document.getElementById('submitBtn');
+    const nameInput = document.getElementById('full_name');
+    const phoneInput = document.getElementById('phone');
+    const screenshotInput = document.getElementById('screenshot');
+    const submitBtn = document.getElementById('submitBtn');
 
-const CLOUD_NAME = 'YOUR_CLOUD_NAME';
-const PRESET     = 'unsigned_upload_preset';
+    const MAX_SIZE = 16 * 1024 * 1024; // 16MB
+    let screenshotReady = false;
 
-let imageUploaded = false;
-
-function checkForm() {
-    if (
-        imageUploaded &&
-        nameInput.value.trim() !== '' &&
-        phoneInput.value.trim() !== ''
-    ) {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('bg-gray-600','cursor-not-allowed');
-        submitBtn.classList.add('bg-amber-400');
-    } else {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('bg-gray-600','cursor-not-allowed');
-        submitBtn.classList.remove('bg-amber-400');
+    function updateButton() {
+        if (
+            screenshotReady &&
+            nameInput.value.trim() !== '' &&
+            phoneInput.value.trim() !== ''
+        ) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
+            submitBtn.classList.add('bg-amber-400');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+            submitBtn.classList.remove('bg-amber-400');
+        }
     }
-}
 
-screenshot.addEventListener('change', async () => {
-    const file = screenshot.files[0];
-    if (!file) return;
+    screenshotInput.addEventListener('change', () => {
+        const file = screenshotInput.files[0];
+        if (!file) {
+            screenshotReady = false;
+            updateButton();
+            return;
+        }
 
-    submitBtn.disabled = true;
-    submitBtn.innerText = 'جاري رفع الصورة...';
+        if (file.size > MAX_SIZE) {
+            alert('⚠️ حجم الصورة كبير جدًا (الحد الأقصى 16MB)');
+            screenshotInput.value = '';
+            screenshotReady = false;
+            updateButton();
+            return;
+        }
 
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', PRESET);
+        screenshotReady = true;
+        updateButton();
+    });
 
-    const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: fd }
-    );
-
-    const data = await res.json();
-
-    if (data.secure_url) {
-        urlInput.value = data.secure_url;
-        imageUploaded = true;
-        submitBtn.innerText = 'إرسال طلب الحجز';
-        checkForm();
-    } else {
-        alert('فشل رفع الصورة');
-        submitBtn.disabled = true;
-    }
-});
-
-nameInput.addEventListener('input', checkForm);
-phoneInput.addEventListener('input', checkForm);
+    nameInput.addEventListener('input', updateButton);
+    phoneInput.addEventListener('input', updateButton);
 </script>
 @endsection
