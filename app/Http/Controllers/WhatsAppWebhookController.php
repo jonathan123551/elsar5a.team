@@ -33,7 +33,6 @@ public function handle(Request $request)
 
     $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-    // ✅ دعم Text + Button
     $text = '';
     if (isset($message['text']['body'])) {
         $text = trim($message['text']['body']);
@@ -42,14 +41,16 @@ public function handle(Request $request)
         $text = trim($message['button']['text']);
     }
 
-    \Log::info('MESSAGE FROM USER', [
-        'phone' => $phone,
-        'text'  => $text,
-    ]);
-
     if ($text !== 'استلم التذكرة') {
         return response()->json(['ok' => true]);
     }
+
+    // 🔥 نرد فورًا قبل أي حاجة تقيلة
+    response()->json(['ok' => true])->send();
+
+    // نكمل التنفيذ بعد الرد
+    ignore_user_abort(true);
+    set_time_limit(30);
 
     $booking = Booking::with('showTime')
         ->where('phone', 'like', "%$phone%")
@@ -59,10 +60,9 @@ public function handle(Request $request)
         ->first();
 
     if (!$booking) {
-        return response()->json(['ok' => true]);
+        return;
     }
 
-    // ✅ تجهيز موعد الحفلة
     $showTimeText = $booking->showTime
         ? $booking->showTime->date->format('d/m/Y') . ' • ' .
           \Carbon\Carbon::parse($booking->showTime->time)->format('h:i A')
@@ -77,16 +77,14 @@ public function handle(Request $request)
             $showTimeText
         );
 
-    // تسجيل الاستلام
     if (!$booking->whatsapp_sent) {
         $booking->update([
             'whatsapp_sent'    => true,
             'whatsapp_sent_at' => now(),
         ]);
     }
-
-    return response()->json(['ok' => true]);
 }
+
 
 
 
