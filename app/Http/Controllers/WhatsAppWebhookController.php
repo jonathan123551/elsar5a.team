@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Booking;
-use App\Http\Controllers\Admin\BookingController;
-use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
+    /* =======================
+     |  VERIFY WEBHOOK
+     ======================= */
     public function verify(Request $request)
     {
         if (
@@ -21,73 +22,65 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
-public function handle(Request $request)
-{
-    \Log::info('WEBHOOK HIT', $request->all());
+    /* =======================
+     |  HANDLE INCOMING
+     ======================= */
+    public function handle(Request $request)
+    {
+        // جلب أول رسالة
+        $message = $request->input('entry.0.changes.0.value.messages.0');
 
-    $message = $request->input('entry.0.changes.0.value.messages.0');
+        if (!$message || !isset($message['from'])) {
+            return response()->json(['ok' => true]);
+        }
 
-    if (!$message || !isset($message['from'])) {
+        $phone = preg_replace('/[^0-9]/', '', $message['from']);
+
+        // دعم Text + Button
+        $text = $message['text']['body'] 
+            ?? $message['button']['text'] 
+            ?? '';
+
+        if (trim($text) !== 'استلم التذكرة') {
+            return response()->json(['ok' => true]);
+        }
+
+        // البحث عن آخر حجز معتمد
+        $booking = Booking::with('showTime')
+            ->where('phone', 'like', "%$phone%")
+            ->where('status', 'approved')
+            ->whereNotNull('qr_code_path')
+            ->latest()
+            ->first();
+
+        if (!$booking) {
+            return response()->json(['ok' => true]);
+        }
+
+        // تجهيز موعد العرض
+        $showTimeText = $booking->showTime
+            ? $booking->showTime->date->format('d/m/Y') . ' • ' .
+              \Carbon\Carbon::parse($booking->showTime->time)->format('h:i A')
+            : 'سيتم إبلاغك بالموعد';
+
+        // إرسال التذكرة
+        app(\App\Http\Controllers\Admin\BookingController::class)
+            ->sendWhatsAppTicket(
+                $booking->phone,
+                $booking->qr_code_path,
+                $booking->reference_code,
+                $booking->full_name,
+                $showTimeText
+            );
+
+        // تسجيل أنه تم الإرسال
+        if (!$booking->whatsapp_sent) {
+            $booking->update([
+                'whatsapp_sent'    => true,
+                'whatsapp_sent_at' => now(),
+            ]);
+        }
+
         return response()->json(['ok' => true]);
     }
-
-    $phone = preg_replace('/[^0-9]/', '', $message['from']);
-
-    $text = '';
-    if (isset($message['text']['body'])) {
-        $text = trim($message['text']['body']);
-    }
-    if (isset($message['button']['text'])) {
-        $text = trim($message['button']['text']);
-    }
-
-    if ($text !== 'استلم التذكرة') {
-        return response()->json(['ok' => true]);
-    }
-
-    // 🔥 نرد فورًا قبل أي حاجة تقيلة
-    response()->json(['ok' => true])->send();
-
-    // نكمل التنفيذ بعد الرد
-    ignore_user_abort(true);
-    set_time_limit(30);
-
-    $booking = Booking::with('showTime')
-        ->where('phone', 'like', "%$phone%")
-        ->where('status', 'approved')
-        ->whereNotNull('qr_code_path')
-        ->latest()
-        ->first();
-
-    if (!$booking) {
-        return;
-    }
-
-    $showTimeText = $booking->showTime
-        ? $booking->showTime->date->format('d/m/Y') . ' • ' .
-          \Carbon\Carbon::parse($booking->showTime->time)->format('h:i A')
-        : 'سيتم إبلاغك بالموعد';
-
-    app(\App\Http\Controllers\Admin\BookingController::class)
-        ->sendWhatsAppTicket(
-            $booking->phone,
-            $booking->qr_code_path,
-            $booking->reference_code,
-            $booking->full_name,
-            $showTimeText
-        );
-
-    if (!$booking->whatsapp_sent) {
-        $booking->update([
-            'whatsapp_sent'    => true,
-            'whatsapp_sent_at' => now(),
-        ]);
-    }
-}
-
-
-
-
-
-
 }

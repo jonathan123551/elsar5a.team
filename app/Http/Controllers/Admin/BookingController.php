@@ -10,6 +10,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -59,62 +60,75 @@ class BookingController extends Controller
             return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
         }
 
-        // approve
-        $booking->update([
-            'status'      => 'approved',
-            'approved_at' => now(),
-        ]);
+        try {
 
-        /* === Generate QR === */
-        $qr = Builder::create()
-            ->writer(new PngWriter())
-            ->data($booking->reference_code)
-            ->size($show->ticket_qr_size ?? 220)
-            ->margin(0)
-            ->build();
+            // approve
+            $booking->update([
+                'status'      => 'approved',
+                'approved_at' => now(),
+            ]);
 
-        $templateImage = imagecreatefromstring(
-            file_get_contents($show->ticket_template_path)
-        );
-        $qrImage = imagecreatefromstring($qr->getString());
+            /* === Generate QR === */
+            $qr = Builder::create()
+                ->writer(new PngWriter())
+                ->data($booking->reference_code)
+                ->size($show->ticket_qr_size ?? 220)
+                ->margin(0)
+                ->build();
 
-        imagecopy(
-            $templateImage,
-            $qrImage,
-            $show->ticket_qr_x ?? 0,
-            $show->ticket_qr_y ?? 0,
-            0,
-            0,
-            imagesx($qrImage),
-            imagesy($qrImage)
-        );
+            $templateImage = imagecreatefromstring(
+                file_get_contents($show->ticket_template_path)
+            );
 
-        $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
-        imagepng($templateImage, $tempPath);
+            $qrImage = imagecreatefromstring($qr->getString());
 
-        imagedestroy($templateImage);
-        imagedestroy($qrImage);
+            imagecopy(
+                $templateImage,
+                $qrImage,
+                $show->ticket_qr_x ?? 0,
+                $show->ticket_qr_y ?? 0,
+                0,
+                0,
+                imagesx($qrImage),
+                imagesy($qrImage)
+            );
 
-        /* === Upload === */
-        $upload = (new UploadApi())->upload($tempPath, [
-            'folder' => 'tickets/generated',
-        ]);
-        unlink($tempPath);
+            $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
+            imagepng($templateImage, $tempPath);
 
-        /* === Save === */
-        $booking->update([
-            'qr_code_path'      => $upload['secure_url'],
-            'qr_code_public_id' => $upload['public_id'],
-            'whatsapp_sent'     => false,
-            'whatsapp_sent_at'  => null,
-        ]);
+            imagedestroy($templateImage);
+            imagedestroy($qrImage);
 
-        /* === Send template message === */
-        $this->sendTicketTemplate($booking->phone);
+            /* === Upload to Cloudinary === */
+            $upload = (new UploadApi())->upload($tempPath, [
+                'folder' => 'tickets/generated',
+            ]);
 
-        return redirect()
-            ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
+            unlink($tempPath);
+
+            /* === Save === */
+            $booking->update([
+                'qr_code_path'      => $upload['secure_url'],
+                'qr_code_public_id' => $upload['public_id'],
+                'whatsapp_sent'     => false,
+                'whatsapp_sent_at'  => null,
+            ]);
+
+            /* === Send template message === */
+            $this->sendTicketTemplate($booking->phone);
+
+            return redirect()
+                ->route('admin.bookings.show', $booking->id)
+                ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
+
+        } catch (\Throwable $e) {
+
+            Log::error('APPROVE FAILED', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('status', 'حدث خطأ أثناء اعتماد الحجز');
+        }
     }
 
     /* =======================
@@ -124,82 +138,93 @@ class BookingController extends Controller
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))->post(
-            'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-            [
-                'messaging_product' => 'whatsapp',
-                'to' => $phone,
-                'type' => 'template',
-                'template' => [
-                    'name' => 'ticket',
-                    'language' => ['code' => 'ar_EG'],
-                ],
-            ]
-        );
+        try {
+
+            Http::timeout(10)
+                ->connectTimeout(5)
+                ->withToken(env('WHATSAPP_TOKEN'))
+                ->post(
+                    'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+                    [
+                        'messaging_product' => 'whatsapp',
+                        'to' => $phone,
+                        'type' => 'template',
+                        'template' => [
+                            'name' => 'ticket',
+                            'language' => ['code' => 'ar_EG'],
+                        ],
+                    ]
+                );
+
+        } catch (\Throwable $e) {
+
+            Log::error('WHATSAPP TEMPLATE FAILED', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /* =======================
      |  IMAGE SEND (WEBHOOK)
      ======================= */
-   public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name, $showTimeText)
-{
-    $phone = preg_replace('/[^0-9]/', '', $phone);
+    public function sendWhatsAppTicket($phone, $imageUrl, $reference, $full_name, $showTimeText)
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
 
-    $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
-        'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-        [
-            'messaging_product' => 'whatsapp',
-            'to' => $phone,
-            'type' => 'image',
-            'image' => [
-                'link' => $imageUrl,
-                'caption' =>
-                    "*🎟️ أهلاً {$full_name}*\n\n"
-                    ."يسعدنا وجودك معنا،\n"
-                    ."أنت الآن جزء من تجربة جديدة نصرخ فيها سويًا…\n\n"
-                    ."ليزداد العقل وعيًا.\n\n"
-                    ."نتمنى لك أمسية ثرية بالفن ✨\n\n"
-                    ."نحن لا نطلب منك سوى حواسك،\n"
-                    ."ولا ننتظر منك إلا أن تأتي إلى مصدر الصراخ…\n"
-                    ."فهو دائمًا على المسرح 🎭\n\n"
-                    ."نلتقي لنصرخ معًا،\n"
-                    ."فنغيّر ما فسد،\n"
-                    ."ونزرع بدلًا منه ثمرًا صالحًا ❤️\n\n"
-                    ."🗓️ *موعد الحفلة:*\n"
-                    ."{$showTimeText}\n\n"
-                    ."‼️ *يرجى إحضار هذه التذكرة عند الدخول*",
-            ],
-        ]
-    );
+        try {
 
-    \Log::info('WHATSAPP SEND RESPONSE', [
-        'status' => $response->status(),
-        'body'   => $response->json(),
-    ]);
-}
+            $response = Http::timeout(10)
+                ->connectTimeout(5)
+                ->withToken(env('WHATSAPP_TOKEN'))
+                ->post(
+                    'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+                    [
+                        'messaging_product' => 'whatsapp',
+                        'to' => $phone,
+                        'type' => 'image',
+                        'image' => [
+                            'link' => $imageUrl,
+                            'caption' =>
+                                "🎟️ أهلاً {$full_name}\n\n"
+                                ."موعد الحفلة:\n{$showTimeText}\n\n"
+                                ."يرجى إحضار هذه التذكرة عند الدخول.",
+                        ],
+                    ]
+                );
 
-/* =======================
- |  REJECT BOOKING
- ======================= */
-public function reject(Booking $booking)
-{
-    if ($booking->status === 'rejected') {
-        return back()->with('status', 'الحجز مرفوض بالفعل');
+            Log::info('WHATSAPP SEND RESPONSE', [
+                'status' => $response->status(),
+                'body'   => $response->json(),
+            ]);
+
+        } catch (\Throwable $e) {
+
+            Log::error('WHATSAPP IMAGE FAILED', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
-    // لو كان Approved قبل كده (اختياري)
-    if ($booking->status === 'approved') {
-        return back()->with('status', 'لا يمكن رفض حجز تم اعتماده');
+    /* =======================
+     |  REJECT BOOKING
+     ======================= */
+    public function reject(Booking $booking)
+    {
+        if ($booking->status === 'rejected') {
+            return back()->with('status', 'الحجز مرفوض بالفعل');
+        }
+
+        if ($booking->status === 'approved') {
+            return back()->with('status', 'لا يمكن رفض حجز تم اعتماده');
+        }
+
+        $booking->update([
+            'status' => 'rejected',
+            'rejected_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('admin.bookings.index')
+            ->with('status', 'تم رفض الحجز بنجاح ❌');
     }
-
-    $booking->update([
-        'status' => 'rejected',
-        'rejected_at' => now(), // لو عندك العمود
-    ]);
-
-    return redirect()
-        ->route('admin.bookings.index')
-        ->with('status', 'تم رفض الحجز بنجاح ❌');
-}
-
 }
