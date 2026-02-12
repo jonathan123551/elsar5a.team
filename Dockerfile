@@ -40,20 +40,12 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # =========================
-# FIX PERMISSIONS
+# Fix permissions
 # =========================
 RUN chmod -R 775 storage bootstrap/cache
 
 # =========================
-# 🔥 CLEAR ALL CACHES
-# =========================
-RUN php artisan config:clear \
- && php artisan cache:clear \
- && php artisan route:clear \
- && php artisan view:clear
-
-# =========================
-# Expose Port
+# Expose port
 # =========================
 EXPOSE 8080
 
