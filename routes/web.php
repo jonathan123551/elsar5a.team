@@ -70,7 +70,7 @@ Route::post('/join-team', [TeamApplicationController::class, 'store'])
 
 /*
 |--------------------------------------------------------------------------
-| WhatsApp Webhook (IMPORTANT)
+| WhatsApp Webhook (Meta → Laravel)
 |--------------------------------------------------------------------------
 */
 
@@ -80,6 +80,20 @@ Route::get('/webhook/whatsapp', [WhatsAppWebhookController::class, 'verify']);
 // Incoming messages (POST)
 Route::post('/webhook/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 
+
+/*
+|--------------------------------------------------------------------------
+| Chatwoot Webhook (Chatwoot → Laravel)
+|--------------------------------------------------------------------------
+| مهم: ده علشان ميطلعش 404
+| هنرجع OK بس حالياً
+*/
+Route::post('/chatwoot-webhook', function () {
+    \Log::info('Chatwoot Webhook Hit');
+    return response()->json(['ok' => true]);
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | Authentication
@@ -88,6 +102,7 @@ Route::post('/webhook/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 Route::get('/login', [AuthController::class, 'show'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -134,11 +149,11 @@ Route::middleware('admin')
         ->name('shows.times.update');
     Route::delete('/shows/{show}/times/{showTime}', [AdminShowTimeController::class, 'destroy'])
         ->name('shows.times.destroy');
-    // Update total tickets for a show time
-Route::patch(
-    '/show-times/{showTime}/update-tickets',
-    [AdminShowTimeController::class, 'updateTickets']
-)->name('show-times.update-tickets');
+
+    Route::patch(
+        '/show-times/{showTime}/update-tickets',
+        [AdminShowTimeController::class, 'updateTickets']
+    )->name('show-times.update-tickets');
 
     // Bookings
     Route::prefix('bookings')->name('bookings.')->group(function () {

@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class WhatsAppWebhookController extends Controller
 {
     /* =======================
-     |  VERIFY WEBHOOK
-     ======================= */
+       VERIFY WEBHOOK
+    ======================= */
     public function verify(Request $request)
     {
         if (
@@ -25,8 +26,8 @@ class WhatsAppWebhookController extends Controller
     }
 
     /* =======================
-     |  HANDLE INCOMING
-     ======================= */
+       HANDLE INCOMING
+    ======================= */
     public function handle(Request $request)
     {
         $message = $request->input('entry.0.changes.0.value.messages.0');
@@ -48,49 +49,71 @@ class WhatsAppWebhookController extends Controller
 
         try {
 
-            $baseUrl   = env('CHATWOOT_BASE_URL');
+            $baseUrl   = rtrim(env('CHATWOOT_BASE_URL'), '/');
             $accountId = env('CHATWOOT_ACCOUNT_ID');
             $apiToken  = env('CHATWOOT_API_TOKEN');
+            $inboxId   = env('CHATWOOT_INBOX_ID');
 
-            // 1️⃣ Create or get contact
-            $contactResponse = Http::withHeaders([
+            $headers = [
                 'api_access_token' => $apiToken,
-                'Content-Type' => 'application/json'
-            ])->post("$baseUrl/api/v1/accounts/$accountId/contacts", [
-                'identifier' => $phone,
-                'name'       => $phone,
-                'phone_number' => $phone
-            ]);
+                'Content-Type'     => 'application/json'
+            ];
 
-            $contactId = $contactResponse->json()['payload']['contact']['id'] ?? null;
+            /*
+            1️⃣ SEARCH CONTACT
+            */
+            $search = Http::withHeaders($headers)
+                ->get("$baseUrl/api/v1/accounts/$accountId/contacts/search", [
+                    'q' => $phone
+                ]);
+
+            $contactId = $search->json()['payload'][0]['id'] ?? null;
+
+            /*
+            2️⃣ CREATE CONTACT IF NOT EXISTS
+            */
+            if (!$contactId) {
+
+                $createContact = Http::withHeaders($headers)
+                    ->post("$baseUrl/api/v1/accounts/$accountId/contacts", [
+                        'identifier'   => $phone,
+                        'name'         => $phone,
+                        'phone_number' => $phone
+                    ]);
+
+                $contactId = $createContact->json()['payload']['contact']['id'] ?? null;
+            }
 
             if ($contactId) {
 
-                // 2️⃣ Create conversation
-                $conversation = Http::withHeaders([
-                    'api_access_token' => $apiToken,
-                    'Content-Type' => 'application/json'
-                ])->post("$baseUrl/api/v1/accounts/$accountId/conversations", [
-                    'contact_id' => $contactId,
-                    'inbox_id'   => 1
-                ]);
+                /*
+                3️⃣ CREATE CONVERSATION
+                */
+                $conversation = Http::withHeaders($headers)
+                    ->post("$baseUrl/api/v1/accounts/$accountId/conversations", [
+                        'source_id'  => $phone,
+                        'inbox_id'   => (int)$inboxId,
+                        'contact_id' => (int)$contactId,
+                        'status'     => 'open'
+                    ]);
 
                 $conversationId = $conversation->json()['id'] ?? null;
 
                 if ($conversationId) {
-                    // 3️⃣ Add message to conversation
-                    Http::withHeaders([
-                        'api_access_token' => $apiToken,
-                        'Content-Type' => 'application/json'
-                    ])->post("$baseUrl/api/v1/accounts/$accountId/conversations/$conversationId/messages", [
-                        'content' => $text ?: 'رسالة واردة',
-                        'message_type' => 'incoming'
-                    ]);
+
+                    /*
+                    4️⃣ ADD INCOMING MESSAGE
+                    */
+                    Http::withHeaders($headers)
+                        ->post("$baseUrl/api/v1/accounts/$accountId/conversations/$conversationId/messages", [
+                            'content'      => $text ?: 'رسالة واردة',
+                            'message_type' => 'incoming'
+                        ]);
                 }
             }
 
         } catch (\Exception $e) {
-            \Log::error('Chatwoot Error: ' . $e->getMessage());
+            Log::error('Chatwoot Error: ' . $e->getMessage());
         }
 
         /* ==========================
