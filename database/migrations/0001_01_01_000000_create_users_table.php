@@ -37,8 +37,8 @@ return new class extends Migration
         });
         DB::table('users')->insert([
     'name' => 'Admin',
-    'email' => 'admin@elsar5a.com',
-    'password' => bcrypt('12345678'),
+    'email' => 'elsar5ateam2026@gmail.com',
+    'password' => bcrypt('elsar5a@admin'),
     'created_at' => now(),
     'updated_at' => now(),
 ]);
