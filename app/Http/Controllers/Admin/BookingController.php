@@ -47,75 +47,111 @@ class BookingController extends Controller
      |  APPROVE BOOKING
      ======================= */
     public function approve(Booking $booking)
-    {
-        if ($booking->status === 'approved') {
-            return back()->with('status', 'الحجز معتمد بالفعل');
-        }
-
-        $booking->load('showTime.show');
-        $show = $booking->showTime?->show;
-
-        if (!$show || !$show->ticket_template_path) {
-            return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
-        }
-
-        // approve
-        $booking->update([
-            'status'      => 'approved',
-            'approved_at' => now(),
-        ]);
-
-        /* === Generate QR === */
-        $qr = Builder::create()
-            ->writer(new PngWriter())
-            ->data($booking->reference_code)
-            ->size($show->ticket_qr_size ?? 220)
-            ->margin(0)
-            ->build();
-
-        $templateImage = imagecreatefromstring(
-            file_get_contents($show->ticket_template_path)
-        );
-        $qrImage = imagecreatefromstring($qr->getString());
-
-        imagecopy(
-            $templateImage,
-            $qrImage,
-            $show->ticket_qr_x ?? 0,
-            $show->ticket_qr_y ?? 0,
-            0,
-            0,
-            imagesx($qrImage),
-            imagesy($qrImage)
-        );
-
-        $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
-        imagepng($templateImage, $tempPath);
-
-        imagedestroy($templateImage);
-        imagedestroy($qrImage);
-
-        /* === Upload === */
-        $upload = (new UploadApi())->upload($tempPath, [
-            'folder' => 'tickets/generated',
-        ]);
-        unlink($tempPath);
-
-        /* === Save === */
-        $booking->update([
-            'qr_code_path'      => $upload['secure_url'],
-            'qr_code_public_id' => $upload['public_id'],
-            'whatsapp_sent'     => false,
-            'whatsapp_sent_at'  => null,
-        ]);
-
-        /* === Send template message === */
-        $this->sendTicketTemplate($booking->phone);
-
-        return redirect()
-            ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
+{
+    if ($booking->status === 'approved') {
+        return back()->with('status', 'الحجز معتمد بالفعل');
     }
+
+    $booking->load('showTime.show');
+
+    $showTime = $booking->showTime;
+    $show     = $showTime?->show;
+
+    if (!$showTime || !$show || !$show->ticket_template_path) {
+        return back()->with('status', 'بيانات العرض غير مكتملة');
+    }
+
+    /*
+    =====================================================
+    ✅ IMPORTANT: CHECK AVAILABLE SEATS (Approved + Pending)
+    =====================================================
+    */
+
+    $reservedCount = Booking::where('show_time_id', $showTime->id)
+        ->whereIn('status', ['approved', 'pending'])
+        ->count();
+
+    if ($reservedCount >= $showTime->total_tickets) {
+        return back()->with('status', '❌ لا توجد تذاكر متاحة لهذا الموعد');
+    }
+
+    /*
+    =====================================================
+    ✅ APPROVE BOOKING
+    =====================================================
+    */
+
+    $booking->update([
+        'status'      => 'approved',
+        'approved_at' => now(),
+    ]);
+
+    /* =======================
+       GENERATE QR
+    ======================= */
+
+    $qr = Builder::create()
+        ->writer(new PngWriter())
+        ->data($booking->reference_code)
+        ->size($show->ticket_qr_size ?? 220)
+        ->margin(0)
+        ->build();
+
+    $templateImage = imagecreatefromstring(
+        file_get_contents($show->ticket_template_path)
+    );
+
+    $qrImage = imagecreatefromstring($qr->getString());
+
+    imagecopy(
+        $templateImage,
+        $qrImage,
+        $show->ticket_qr_x ?? 0,
+        $show->ticket_qr_y ?? 0,
+        0,
+        0,
+        imagesx($qrImage),
+        imagesy($qrImage)
+    );
+
+    $tempPath = sys_get_temp_dir() . '/' . $booking->reference_code . '.png';
+    imagepng($templateImage, $tempPath);
+
+    imagedestroy($templateImage);
+    imagedestroy($qrImage);
+
+    /* =======================
+       UPLOAD TO CLOUDINARY
+    ======================= */
+
+    $upload = (new UploadApi())->upload($tempPath, [
+        'folder' => 'tickets/generated',
+    ]);
+
+    unlink($tempPath);
+
+    /* =======================
+       SAVE TICKET DATA
+    ======================= */
+
+    $booking->update([
+        'qr_code_path'      => $upload['secure_url'],
+        'qr_code_public_id' => $upload['public_id'],
+        'whatsapp_sent'     => false,
+        'whatsapp_sent_at'  => null,
+    ]);
+
+    /* =======================
+       SEND TEMPLATE MESSAGE
+    ======================= */
+
+    $this->sendTicketTemplate($booking->phone);
+
+    return redirect()
+        ->route('admin.bookings.show', $booking->id)
+        ->with('status', 'تم اعتماد الحجز وتم إرسال رسالة واتساب');
+}
+
 
     /* =======================
      |  TEMPLATE MESSAGE
