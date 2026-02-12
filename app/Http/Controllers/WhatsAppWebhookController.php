@@ -33,6 +33,10 @@ class WhatsAppWebhookController extends Controller
         $message = $request->input('entry.0.changes.0.value.messages.0');
 
         if (!$message || !isset($message['from'])) {
+
+            // Forward even if no message (for delivery events etc)
+            $this->forwardToChatwoot($request);
+
             return response()->json(['ok' => true]);
         }
 
@@ -44,118 +48,67 @@ class WhatsAppWebhookController extends Controller
             ?? '';
 
         /* ==========================
-           🟢 SEND MESSAGE TO CHATWOOT
+           🎟 ORIGINAL TICKET LOGIC
         ========================== */
 
-        try {
+        if (trim($text) === 'استلم التذكرة') {
 
-            $baseUrl   = rtrim(env('CHATWOOT_BASE_URL'), '/');
-            $accountId = env('CHATWOOT_ACCOUNT_ID');
-            $apiToken  = env('CHATWOOT_API_TOKEN');
-            $inboxId   = env('CHATWOOT_INBOX_ID');
+            $booking = Booking::with('showTime')
+                ->where('phone', 'like', "%$phone%")
+                ->where('status', 'approved')
+                ->whereNotNull('qr_code_path')
+                ->latest()
+                ->first();
 
-            $headers = [
-                'api_access_token' => $apiToken,
-                'Content-Type'     => 'application/json'
-            ];
+            if ($booking) {
 
-            /*
-            1️⃣ SEARCH CONTACT
-            */
-            $search = Http::withHeaders($headers)
-                ->get("$baseUrl/api/v1/accounts/$accountId/contacts/search", [
-                    'q' => $phone
-                ]);
+                $showTimeText = $booking->showTime
+                    ? $booking->showTime->date->format('d/m/Y') . ' • ' .
+                      Carbon::parse($booking->showTime->time)->format('h:i A')
+                    : 'سيتم إبلاغك بالموعد';
 
-            $contactId = $search->json()['payload'][0]['id'] ?? null;
+                app(\App\Http\Controllers\Admin\BookingController::class)
+                    ->sendWhatsAppTicket(
+                        $booking->phone,
+                        $booking->qr_code_path,
+                        $booking->reference_code,
+                        $booking->full_name,
+                        $showTimeText
+                    );
 
-            /*
-            2️⃣ CREATE CONTACT IF NOT EXISTS
-            */
-            if (!$contactId) {
-
-                $createContact = Http::withHeaders($headers)
-                    ->post("$baseUrl/api/v1/accounts/$accountId/contacts", [
-                        'identifier'   => $phone,
-                        'name'         => $phone,
-                        'phone_number' => $phone
+                if (!$booking->whatsapp_sent) {
+                    $booking->update([
+                        'whatsapp_sent'    => true,
+                        'whatsapp_sent_at' => now(),
                     ]);
-
-                $contactId = $createContact->json()['payload']['contact']['id'] ?? null;
-            }
-
-            if ($contactId) {
-
-                /*
-                3️⃣ CREATE CONVERSATION
-                */
-                $conversation = Http::withHeaders($headers)
-                    ->post("$baseUrl/api/v1/accounts/$accountId/conversations", [
-                        'source_id'  => $phone,
-                        'inbox_id'   => (int)$inboxId,
-                        'contact_id' => (int)$contactId,
-                        'status'     => 'open'
-                    ]);
-
-                $conversationId = $conversation->json()['id'] ?? null;
-
-                if ($conversationId) {
-
-                    /*
-                    4️⃣ ADD INCOMING MESSAGE
-                    */
-                    Http::withHeaders($headers)
-                        ->post("$baseUrl/api/v1/accounts/$accountId/conversations/$conversationId/messages", [
-                            'content'      => $text ?: 'رسالة واردة',
-                            'message_type' => 'incoming'
-                        ]);
                 }
             }
-
-        } catch (\Exception $e) {
-            Log::error('Chatwoot Error: ' . $e->getMessage());
         }
 
         /* ==========================
-           🟢 ORIGINAL TICKET LOGIC
+           🔁 FORWARD TO CHATWOOT
         ========================== */
 
-        if (trim($text) !== 'استلم التذكرة') {
-            return response()->json(['ok' => true]);
-        }
-
-        $booking = Booking::with('showTime')
-            ->where('phone', 'like', "%$phone%")
-            ->where('status', 'approved')
-            ->whereNotNull('qr_code_path')
-            ->latest()
-            ->first();
-
-        if (!$booking) {
-            return response()->json(['ok' => true]);
-        }
-
-        $showTimeText = $booking->showTime
-            ? $booking->showTime->date->format('d/m/Y') . ' • ' .
-              Carbon::parse($booking->showTime->time)->format('h:i A')
-            : 'سيتم إبلاغك بالموعد';
-
-        app(\App\Http\Controllers\Admin\BookingController::class)
-            ->sendWhatsAppTicket(
-                $booking->phone,
-                $booking->qr_code_path,
-                $booking->reference_code,
-                $booking->full_name,
-                $showTimeText
-            );
-
-        if (!$booking->whatsapp_sent) {
-            $booking->update([
-                'whatsapp_sent'    => true,
-                'whatsapp_sent_at' => now(),
-            ]);
-        }
+        $this->forwardToChatwoot($request);
 
         return response()->json(['ok' => true]);
+    }
+
+    private function forwardToChatwoot(Request $request)
+    {
+        try {
+
+            $chatwootWebhookUrl = env('CHATWOOT_WHATSAPP_WEBHOOK_URL');
+
+            if (!$chatwootWebhookUrl) {
+                Log::error('Chatwoot webhook URL not set');
+                return;
+            }
+
+            Http::timeout(10)->post($chatwootWebhookUrl, $request->all());
+
+        } catch (\Exception $e) {
+            Log::error('Forward to Chatwoot failed: ' . $e->getMessage());
+        }
     }
 }
