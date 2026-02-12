@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Booking;
+use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -27,7 +29,6 @@ class WhatsAppWebhookController extends Controller
      ======================= */
     public function handle(Request $request)
     {
-        // جلب أول رسالة
         $message = $request->input('entry.0.changes.0.value.messages.0');
 
         if (!$message || !isset($message['from'])) {
@@ -36,16 +37,70 @@ class WhatsAppWebhookController extends Controller
 
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        // دعم Text + Button
-        $text = $message['text']['body'] 
-            ?? $message['button']['text'] 
+        $text = $message['text']['body']
+            ?? $message['button']['text']
+            ?? $message['interactive']['button_reply']['title']
             ?? '';
+
+        /* ==========================
+           🟢 SEND MESSAGE TO CHATWOOT
+        ========================== */
+
+        try {
+
+            $baseUrl   = env('CHATWOOT_BASE_URL');
+            $accountId = env('CHATWOOT_ACCOUNT_ID');
+            $apiToken  = env('CHATWOOT_API_TOKEN');
+
+            // 1️⃣ Create or get contact
+            $contactResponse = Http::withHeaders([
+                'api_access_token' => $apiToken,
+                'Content-Type' => 'application/json'
+            ])->post("$baseUrl/api/v1/accounts/$accountId/contacts", [
+                'identifier' => $phone,
+                'name'       => $phone,
+                'phone_number' => $phone
+            ]);
+
+            $contactId = $contactResponse->json()['payload']['contact']['id'] ?? null;
+
+            if ($contactId) {
+
+                // 2️⃣ Create conversation
+                $conversation = Http::withHeaders([
+                    'api_access_token' => $apiToken,
+                    'Content-Type' => 'application/json'
+                ])->post("$baseUrl/api/v1/accounts/$accountId/conversations", [
+                    'contact_id' => $contactId,
+                    'inbox_id'   => 1
+                ]);
+
+                $conversationId = $conversation->json()['id'] ?? null;
+
+                if ($conversationId) {
+                    // 3️⃣ Add message to conversation
+                    Http::withHeaders([
+                        'api_access_token' => $apiToken,
+                        'Content-Type' => 'application/json'
+                    ])->post("$baseUrl/api/v1/accounts/$accountId/conversations/$conversationId/messages", [
+                        'content' => $text ?: 'رسالة واردة',
+                        'message_type' => 'incoming'
+                    ]);
+                }
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Chatwoot Error: ' . $e->getMessage());
+        }
+
+        /* ==========================
+           🟢 ORIGINAL TICKET LOGIC
+        ========================== */
 
         if (trim($text) !== 'استلم التذكرة') {
             return response()->json(['ok' => true]);
         }
 
-        // البحث عن آخر حجز معتمد
         $booking = Booking::with('showTime')
             ->where('phone', 'like', "%$phone%")
             ->where('status', 'approved')
@@ -57,13 +112,11 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // تجهيز موعد العرض
         $showTimeText = $booking->showTime
             ? $booking->showTime->date->format('d/m/Y') . ' • ' .
-              \Carbon\Carbon::parse($booking->showTime->time)->format('h:i A')
+              Carbon::parse($booking->showTime->time)->format('h:i A')
             : 'سيتم إبلاغك بالموعد';
 
-        // إرسال التذكرة
         app(\App\Http\Controllers\Admin\BookingController::class)
             ->sendWhatsAppTicket(
                 $booking->phone,
@@ -73,7 +126,6 @@ class WhatsAppWebhookController extends Controller
                 $showTimeText
             );
 
-        // تسجيل أنه تم الإرسال
         if (!$booking->whatsapp_sent) {
             $booking->update([
                 'whatsapp_sent'    => true,
