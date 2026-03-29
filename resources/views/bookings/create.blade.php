@@ -10,7 +10,11 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-<div class="md:col-span-1 bg-black/50 border border-amber-400/30 rounded-3xl p-5 space-y-4">
+<div class="md:col-span-1 relative
+    bg-black/50
+    border border-amber-400/40
+    rounded-3xl p-5 space-y-4
+    shadow-[0_0_100px_rgba(250,204,21,0.3)]">
 
     <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
 
@@ -26,14 +30,27 @@
         </p>
     </div>
 
-    <div class="bg-white/5 rounded-xl p-2">
-        <p class="text-[10px] text-gray-400">📱 محفظة</p>
-        <p class="text-sm font-bold text-white">{{ $transferWallet }}</p>
-    </div>
+    {{-- خطوة 1 --}}
+    <div class="bg-black/40 border border-amber-400/20 rounded-2xl p-4 space-y-2">
 
-    <div class="bg-white/5 rounded-xl p-2">
-        <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-        <p class="text-sm font-bold text-white">{{ $transferInsta }}</p>
+        <h3 class="text-xs text-amber-300 font-semibold">
+            خطوة 1: حوّل قيمة التذكرة
+        </h3>
+
+        <p class="text-[11px] text-gray-400">
+            حوّل {{ $showTime->ticket_price }} جنيه على أحد الأرقام التالية:
+        </p>
+
+        <div class="bg-white/5 rounded-xl p-2">
+            <p class="text-[10px] text-gray-400">📱 محفظة</p>
+            <p class="text-sm font-bold text-white">{{ $transferWallet }}</p>
+        </div>
+
+        <div class="bg-white/5 rounded-xl p-2">
+            <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
+            <p class="text-sm font-bold text-white">{{ $transferInsta }}</p>
+        </div>
+
     </div>
 
 </div>
