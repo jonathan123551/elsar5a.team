@@ -10,46 +10,37 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-<div
-    class="md:col-span-2 relative
-           bg-black/50
-           border border-amber-400/30
-           rounded-3xl p-6 space-y-4
+<div class="md:col-span-2
+    bg-black/50
+    border border-amber-400/30
+    rounded-3xl p-6 space-y-4
+    shadow-[0_0_25px_rgba(250,204,21,0.2)]">
 
-           shadow-[0_0_30px_rgba(250,204,21,0.35)]
-           hover:shadow-[0_0_45px_rgba(250,204,21,0.5)]
-           transition-all duration-300
+    <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
 
-           before:absolute before:inset-0
-           before:rounded-3xl
-           before:bg-gradient-to-br
-           before:from-amber-400/15
-           before:to-transparent
-           before:pointer-events-none">
-            <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
+    <p class="text-sm text-white font-medium">
+        {{ $showTime->show->title }}
+    </p>
 
-            <p class="text-sm text-white font-medium">
-                {{ $showTime->show->title }}
-            </p>
+    <div class="space-y-1 text-xs text-gray-300">
+        <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
+        <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
+        <p class="text-amber-300 font-semibold">
+            🎟️ {{ $showTime->ticket_price }} جنيه
+        </p>
+    </div>
 
-            <div class="space-y-1 text-xs text-gray-300">
-                <p>📅 {{ \Carbon\Carbon::parse($showTime->date)->format('d-m-Y') }}</p>
-                <p>⏰ {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}</p>
-                <p class="text-amber-300 font-semibold">
-                    🎟️ {{ $showTime->ticket_price }} جنيه
-                </p>
-            </div>
+    <div class="bg-white/5 rounded-xl p-2">
+        <p class="text-[10px] text-gray-400">📱 محفظة</p>
+        <p class="text-sm font-bold text-white">{{ $transferWallet }}</p>
+    </div>
 
-            <div class="bg-white/5 rounded-xl p-2">
-                <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                <p class="text-sm font-bold text-white">{{ $transferWallet }}</p>
-            </div>
+    <div class="bg-white/5 rounded-xl p-2">
+        <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
+        <p class="text-sm font-bold text-white">{{ $transferInsta }}</p>
+    </div>
 
-            <div class="bg-white/5 rounded-xl p-2">
-                <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                <p class="text-sm font-bold text-white">{{ $transferInsta }}</p>
-            </div>
-        </div>
+</div>
 
         {{-- ======================
         | 📝 FORM
