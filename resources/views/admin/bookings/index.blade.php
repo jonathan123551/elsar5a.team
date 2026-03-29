@@ -81,7 +81,13 @@
                         data-datetime="{{ $dt }}">
 
                         <td class="px-3 py-2">
-                            {{ $booking->full_name }}<br>
+                             <div>
+                                <p class="font-bold">{{ $booking->full_name }}</p>
+
+                                <p class="text-xs text-amber-400">
+                                    🎟️ {{ $booking->tickets_count }} تذكرة
+                                </p>
+                            </div><br>
                             <span class="text-gray-400">{{ $booking->phone }}</span>
                         </td>
 
