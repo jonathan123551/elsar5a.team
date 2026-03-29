@@ -10,11 +10,7 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-<div class="md:col-span-2
-    bg-black/50
-    border border-amber-400/30
-    rounded-3xl p-6 space-y-4
-    shadow-[0_0_25px_rgba(250,204,21,0.2)]">
+<div class="md:col-span-1 bg-black/50 border border-amber-400/30 rounded-3xl p-5 space-y-4">
 
     <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
 
@@ -41,7 +37,6 @@
     </div>
 
 </div>
-
         {{-- ======================
         | 📝 FORM
         ======================= --}}
