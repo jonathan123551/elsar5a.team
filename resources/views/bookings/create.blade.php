@@ -119,21 +119,7 @@
                   class="space-y-4">
                 @csrf
 
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <input type="text"
-                           name="full_name"
-                           id="full_name"
-                           value="{{ old('full_name') }}"
-                           placeholder="الاسم بالكامل"
-                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
-
-                    <input type="text"
-                           name="phone"
-                           id="phone"
-                           value="{{ old('phone') }}"
-                           placeholder="رقم الموبايل (واتساب)"
-                           class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
-                </div>
+                
 
                                 {{-- 👥 عدد التذاكر --}}
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
@@ -244,8 +230,8 @@ function renderNames() {
 
     for (let i = 1; i <= count; i++) {
         namesContainer.innerHTML += `
-            <div class="grid sm:grid-cols-2 gap-3">
-                
+            <div class="space-y-2">
+
                 <input type="text"
                     name="names[]"
                     placeholder="اسم الشخص ${i}"
@@ -254,7 +240,7 @@ function renderNames() {
 
                 <input type="text"
                     name="phones[]"
-                    placeholder="رقم موبايل الشخص ${i}"
+                    placeholder="رقم موبايل واتساب ${i}"
                     class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white"
                     required>
 
