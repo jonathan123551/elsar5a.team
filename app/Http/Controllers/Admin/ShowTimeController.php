@@ -36,13 +36,12 @@ class ShowTimeController extends Controller
     ]);
 
     $show->showTimes()->create([
-        'date'               => $data['date'],  // من input type="date"
-        'time'               => $data['time'],  // من input type="time"
-        'ticket_price'       => $data['ticket_price'],
-        'total_tickets'      => $data['total_tickets'],
-        'available_tickets'  => $data['available_tickets'] ?? $data['total_tickets'],
-        'is_sold_out'        => $request->boolean('is_sold_out'),
-    ]);
+    'date'         => $data['date'],
+    'time'         => $data['time'],
+    'ticket_price' => $data['ticket_price'],
+    'total_tickets'=> $data['total_tickets'],
+    'is_sold_out'  => $request->boolean('is_sold_out'),
+]);
 
     return redirect()
         ->route('admin.shows.times.index', $show)
@@ -75,7 +74,6 @@ class ShowTimeController extends Controller
         $showTime->total_tickets = $data['total_tickets'];
 
         // لو الإدمن ما كتبش رقم متاح → نخلي المتاح = الإجمالي
-        $showTime->available_tickets = $data['available_tickets'] ?? $data['total_tickets'];
         $showTime->is_sold_out = $request->has('is_sold_out');
 
         $showTime->save();
@@ -101,8 +99,8 @@ class ShowTimeController extends Controller
 
         // نحدّث الإجمالي والمتاح
         $showTime->total_tickets     = $newTotal;
-        $showTime->available_tickets = max(0, $newTotal - $reserved);
-        $showTime->is_sold_out       = ($showTime->available_tickets <= 0);
+        $remaining = max(0, $newTotal - $reserved);
+        $showTime->is_sold_out = ($remaining <= 0);
 
         $showTime->save();
 
