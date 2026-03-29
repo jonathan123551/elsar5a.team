@@ -34,8 +34,8 @@ class BookingController extends Controller
 
         return view('bookings.create', [
             'showTime'       => $showTime,
-            'transferWallet'=> Setting::get('transfer_wallet', ''),
-            'transferInsta' => Setting::get('transfer_insta', ''),
+            'transferWallet' => Setting::get('transfer_wallet', ''),
+            'transferInsta'  => Setting::get('transfer_insta', ''),
         ]);
     }
 
@@ -45,10 +45,9 @@ class BookingController extends Controller
         | 🛑 ANTI DOUBLE REQUEST (SAFE)
         ====================================================== */
         $lockKey = 'booking_lock_' . sha1(
-            $request->ip() . $request->phone . $showTime->id
+            $request->ip() . json_encode($request->phones ?? []) . $showTime->id
         );
 
-        // لو الطلب شغال بالفعل
         if (!Cache::add($lockKey, true, 20)) {
             return back()->withErrors([
                 'general' => '⏳ الطلب قيد المعالجة بالفعل، من فضلك انتظر.'
@@ -56,10 +55,14 @@ class BookingController extends Controller
         }
 
         try {
-            // ✅ Validation
+            // ✅ Validation (الجديد)
             $request->validate([
-                'full_name'          => 'required|string|max:255',
-                'phone'              => 'required|string|min:8|max:20',
+                'names'  => ['required', 'array'],
+                'names.*' => ['required', 'string', 'max:255'],
+
+                'phones'  => ['required', 'array'],
+                'phones.*' => ['required', 'string', 'min:8', 'max:20'],
+
                 'payment_screenshot' => 'required|image|max:16000',
             ]);
 
@@ -69,8 +72,17 @@ class BookingController extends Controller
                 ])->withInput();
             }
 
-            // 📞 Normalize phone (هيطلع error تلقائي)
-            $phone = $this->normalizeEgyptPhone($request->phone);
+            // 🧠 عدد التذاكر
+            $ticketsCount = count($request->names);
+
+            if ($showTime->available_tickets < $ticketsCount) {
+                return back()->withErrors([
+                    'general' => 'عدد التذاكر المطلوب أكبر من المتاح'
+                ])->withInput();
+            }
+
+            // 📞 Normalize أول رقم (بنستخدمه للـ booking)
+            $mainPhone = $this->normalizeEgyptPhone($request->phones[0]);
 
             // ☁️ Upload screenshot
             $file = $request->file('payment_screenshot');
@@ -84,12 +96,13 @@ class BookingController extends Controller
 
             @unlink($tempPath);
 
+            // ✅ Create booking (نفس القديم تقريبًا)
             $booking = Booking::create([
                 'show_time_id'                  => $showTime->id,
-                'full_name'                     => $request->full_name,
-                'phone'                         => $phone,
-                'tickets_count'                 => 1,
-                'total_price'                   => $showTime->ticket_price,
+                'full_name'                     => $request->names[0], // أول شخص
+                'phone'                         => $mainPhone,         // أول رقم
+                'tickets_count'                 => $ticketsCount,
+                'total_price'                   => $showTime->ticket_price * $ticketsCount,
                 'transfer_screenshot_path'      => $upload['secure_url'],
                 'transfer_screenshot_public_id' => $upload['public_id'],
                 'status'                        => 'pending',
@@ -100,7 +113,6 @@ class BookingController extends Controller
             return view('bookings.thankyou', compact('booking'));
 
         } finally {
-            // 🔓 فك القفل مهما حصل
             Cache::forget($lockKey);
         }
     }
@@ -125,4 +137,4 @@ class BookingController extends Controller
             'phone' => 'رقم الموبايل غير صحيح، من فضلك اكتبه بصيغة صحيحة (مثال: 010xxxxxxxx)',
         ]);
     }
-}//
+}
