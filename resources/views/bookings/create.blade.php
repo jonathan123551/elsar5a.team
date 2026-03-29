@@ -244,11 +244,21 @@ function renderNames() {
 
     for (let i = 1; i <= count; i++) {
         namesContainer.innerHTML += `
-            <input type="text"
-                name="names[]"
-                placeholder="اسم الشخص ${i}"
-                class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white"
-                required>
+            <div class="grid sm:grid-cols-2 gap-3">
+                
+                <input type="text"
+                    name="names[]"
+                    placeholder="اسم الشخص ${i}"
+                    class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white"
+                    required>
+
+                <input type="text"
+                    name="phones[]"
+                    placeholder="رقم موبايل الشخص ${i}"
+                    class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white"
+                    required>
+
+            </div>
         `;
     }
 }
