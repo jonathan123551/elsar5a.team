@@ -41,7 +41,6 @@
         </div>
     @else
 
-        {{-- ✅ Scrollable Table Wrapper --}}
         <div class="bg-black/40 border border-white/10 rounded-2xl">
             <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
                 <table class="min-w-[720px] w-full text-sm text-gray-200">
@@ -59,8 +58,15 @@
 
                     <tbody>
                     @foreach($times as $time)
+
                         @php
-                            $fewTickets = $time->available_tickets > 0 && $time->available_tickets <= 10;
+                            $reserved = $time->bookings()
+                                ->whereIn('status', ['approved','pending'])
+                                ->sum('tickets_count');
+
+                            $remaining = max(0, $time->total_tickets - $reserved);
+
+                            $fewTickets = $remaining > 0 && $remaining <= 10;
                         @endphp
 
                         <tr class="border-t border-white/5">
@@ -82,12 +88,12 @@
 
                             {{-- التذاكر --}}
                             <td class="px-3 py-2 text-xs whitespace-nowrap">
-                                {{ $time->available_tickets }} / {{ $time->total_tickets }}
+                                {{ $remaining }} / {{ $time->total_tickets }}
                             </td>
 
                             {{-- الحالة --}}
                             <td class="px-3 py-2 text-xs whitespace-nowrap">
-                                @if($time->is_sold_out || $time->available_tickets <= 0)
+                                @if($time->is_sold_out || $remaining <= 0)
                                     <span class="px-2 py-1 rounded-full bg-red-500/20 text-red-200 border border-red-500/40">
                                         Sold Out
                                     </span>
