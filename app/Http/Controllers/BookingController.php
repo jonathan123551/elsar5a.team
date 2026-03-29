@@ -39,83 +39,93 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request, ShowTime $showTime)
-    {
-        /* ======================================================
-        | 🛑 ANTI DOUBLE REQUEST (SAFE)
-        ====================================================== */
-        $lockKey = 'booking_lock_' . sha1(
-            $request->ip() . json_encode($request->phones ?? []) . $showTime->id
-        );
+   public function store(Request $request, ShowTime $showTime)
+{
+    $lockKey = 'booking_lock_' . sha1(
+        $request->ip() . json_encode($request->phones ?? []) . $showTime->id
+    );
 
-        if (!Cache::add($lockKey, true, 20)) {
+    if (!Cache::add($lockKey, true, 20)) {
+        return back()->withErrors([
+            'general' => '⏳ الطلب قيد المعالجة بالفعل، من فضلك انتظر.'
+        ])->withInput();
+    }
+
+    try {
+
+        // ✅ Validation
+        $request->validate([
+            'names'  => ['required', 'array'],
+            'names.*' => ['required', 'string', 'max:255'],
+
+            'phones'  => ['required', 'array'],
+            'phones.*' => ['required', 'string', 'min:8', 'max:20'],
+
+            'payment_screenshot' => 'required|image|max:16000',
+        ]);
+
+        if ($showTime->is_sold_out || $showTime->available_tickets < 1) {
             return back()->withErrors([
-                'general' => '⏳ الطلب قيد المعالجة بالفعل، من فضلك انتظر.'
+                'general' => 'عدد التذاكر غير متاح'
             ])->withInput();
         }
 
-        try {
-            // ✅ Validation (الجديد)
-            $request->validate([
-                'names'  => ['required', 'array'],
-                'names.*' => ['required', 'string', 'max:255'],
+        $ticketsCount = count($request->names);
 
-                'phones'  => ['required', 'array'],
-                'phones.*' => ['required', 'string', 'min:8', 'max:20'],
-
-                'payment_screenshot' => 'required|image|max:16000',
-            ]);
-
-            if ($showTime->is_sold_out || $showTime->available_tickets < 1) {
-                return back()->withErrors([
-                    'general' => 'عدد التذاكر غير متاح'
-                ])->withInput();
-            }
-
-            // 🧠 عدد التذاكر
-            $ticketsCount = count($request->names);
-
-            if ($showTime->available_tickets < $ticketsCount) {
-                return back()->withErrors([
-                    'general' => 'عدد التذاكر المطلوب أكبر من المتاح'
-                ])->withInput();
-            }
-
-            // 📞 Normalize أول رقم (بنستخدمه للـ booking)
-            $mainPhone = $this->normalizeEgyptPhone($request->phones[0]);
-
-            // ☁️ Upload screenshot
-            $file = $request->file('payment_screenshot');
-            $tempPath = sys_get_temp_dir() . '/' . uniqid('payment_', true);
-            file_put_contents($tempPath, file_get_contents($file->getRealPath()));
-
-            $upload = (new UploadApi())->upload(
-                $tempPath,
-                ['folder' => 'payments/screenshots']
-            );
-
-            @unlink($tempPath);
-
-            // ✅ Create booking (نفس القديم تقريبًا)
-            $booking = Booking::create([
-                'show_time_id'                  => $showTime->id,
-                'full_name'                     => $request->names[0], // أول شخص
-                'phone'                         => $mainPhone,         // أول رقم
-                'tickets_count'                 => $ticketsCount,
-                'total_price'                   => $showTime->ticket_price * $ticketsCount,
-                'transfer_screenshot_path'      => $upload['secure_url'],
-                'transfer_screenshot_public_id' => $upload['public_id'],
-                'status'                        => 'pending',
-                'reference_code'                =>
-                    'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
-            ]);
-
-            return view('bookings.thankyou', compact('booking'));
-
-        } finally {
-            Cache::forget($lockKey);
+        if ($showTime->available_tickets < $ticketsCount) {
+            return back()->withErrors([
+                'general' => 'عدد التذاكر المطلوب أكبر من المتاح'
+            ])->withInput();
         }
+
+        // 📞 أول رقم
+        $mainPhone = $this->normalizeEgyptPhone($request->phones[0]);
+
+        // ☁️ Upload screenshot
+        $file = $request->file('payment_screenshot');
+        $tempPath = sys_get_temp_dir() . '/' . uniqid('payment_', true);
+        file_put_contents($tempPath, file_get_contents($file->getRealPath()));
+
+        $upload = (new UploadApi())->upload(
+            $tempPath,
+            ['folder' => 'payments/screenshots']
+        );
+
+        @unlink($tempPath);
+
+        // ✅ Create booking
+        $booking = Booking::create([
+            'show_time_id'                  => $showTime->id,
+            'full_name'                     => $request->names[0],
+            'phone'                         => $mainPhone,
+            'tickets_count'                 => $ticketsCount,
+            'total_price'                   => $showTime->ticket_price * $ticketsCount,
+            'transfer_screenshot_path'      => $upload['secure_url'],
+            'transfer_screenshot_public_id' => $upload['public_id'],
+            'status'                        => 'pending',
+            'reference_code'                =>
+                'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
+        ]);
+
+        // 💀 إنشاء التذاكر لكل شخص
+        foreach ($request->names as $index => $name) {
+
+            \App\Models\Ticket::create([
+                'booking_id' => $booking->id,
+
+                'name'  => $name,
+                'phone' => $this->normalizeEgyptPhone($request->phones[$index]),
+
+                'ticket_code' => 'TIC-' . strtoupper(Str::random(6)),
+            ]);
+        }
+
+        return view('bookings.thankyou', compact('booking'));
+
+    } finally {
+        Cache::forget($lockKey);
     }
+}
 
     private function normalizeEgyptPhone(string $phone): string
     {
