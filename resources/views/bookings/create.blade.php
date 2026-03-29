@@ -10,28 +10,11 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-        <div
-            class="md:col-span-1 relative
-                   bg-black/50
-                   border border-amber-400/30
-                   rounded-3xl p-5 space-y-4
+        <div class="md:col-span-1 relative bg-black/50 border border-amber-400/30 rounded-3xl p-5 space-y-4">
 
-                   shadow-[0_0_30px_rgba(250,204,21,0.35)]
-                   hover:shadow-[0_0_45px_rgba(250,204,21,0.5)]
-                   transition-all duration-300
+            <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
 
-                   before:absolute before:inset-0
-                   before:rounded-3xl
-                   before:bg-gradient-to-br
-                   before:from-amber-400/15
-                   before:to-transparent
-                   before:pointer-events-none">
-
-            <h2 class="text-sm font-semibold text-amber-300 tracking-wide">
-                🎭 تفاصيل العرض
-            </h2>
-
-            <p class="text-sm text-white font-medium leading-snug">
+            <p class="text-sm text-white font-medium">
                 {{ $showTime->show->title }}
             </p>
 
@@ -43,65 +26,26 @@
                 </p>
             </div>
 
-            <div class="h-px bg-white/10 my-2"></div>
+            <div class="bg-white/5 rounded-xl p-2">
+                <p class="text-[10px] text-gray-400">📱 محفظة</p>
+                <p class="text-sm font-bold text-white">{{ $transferWallet }}</p>
+            </div>
 
-            {{-- Payment --}}
-            <div
-                class="relative bg-black/60
-                       border border-amber-400/40
-                       rounded-2xl p-4 space-y-3
-
-                       shadow-[0_0_20px_rgba(250,204,21,0.25)]
-                       before:absolute before:inset-0
-                       before:rounded-2xl
-                       before:bg-gradient-to-br
-                       before:from-amber-400/10
-                       before:to-transparent
-                       before:pointer-events-none">
-
-                <h3 class="text-xs font-semibold text-amber-300 tracking-wide">
-                    خطوة 1: حوّل قيمة التذكرة
-                </h3>
-
-                <p class="text-[11px] text-gray-300 leading-relaxed">
-                    حوّل
-                    <span class="text-white font-semibold">
-                        {{ $showTime->ticket_price }} جنيه
-                    </span>
-                    على أحد الأرقام التالية:
-                </p>
-
-                <div class="bg-white/5 rounded-xl p-2">
-                    <p class="text-[10px] text-gray-400">📱 محفظة</p>
-                    <p class="text-sm font-bold text-white select-all tracking-wide">
-                        {{ $transferWallet }}
-                    </p>
-                </div>
-
-                <div class="bg-white/5 rounded-xl p-2">
-                    <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
-                    <p class="text-sm font-bold text-white select-all tracking-wide">
-                        {{ $transferInsta }}
-                    </p>
-                </div>
-
+            <div class="bg-white/5 rounded-xl p-2">
+                <p class="text-[10px] text-gray-400">⚡ InstaPay</p>
+                <p class="text-sm font-bold text-white">{{ $transferInsta }}</p>
             </div>
         </div>
 
         {{-- ======================
         | 📝 FORM
         ======================= --}}
-        <div
-            class="md:col-span-2 relative
-                   bg-black/50
-                   border border-white/10
-                   rounded-3xl p-6 space-y-4">
+        <div class="md:col-span-2 bg-black/50 border border-white/10 rounded-3xl p-6 space-y-4">
 
             <h2 class="text-sm font-semibold text-amber-300">
                 خطوة 2: ارفع Screenshot وكمّل البيانات
             </h2>
 
-            {{-- 🔴 ERROR MESSAGES --}}
             @if ($errors->any())
                 <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-xs rounded-xl p-3">
                     <ul class="space-y-1">
@@ -119,29 +63,27 @@
                   class="space-y-4">
                 @csrf
 
-                
-
-                                {{-- 👥 عدد التذاكر --}}
+                {{-- 👥 عدد التذاكر --}}
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
                     <label class="text-xs font-semibold text-white">
                         👥 عدد التذاكر
                     </label>
 
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="changeCount(-1)"
-                            class="px-3 py-1 rounded bg-white/10">-</button>
+                        <button type="button" onclick="changeCount(-1)" class="px-3 py-1 rounded bg-white/10">-</button>
 
                         <span id="ticketsCount" class="text-white font-bold">1</span>
 
-                        <button type="button" onclick="changeCount(1)"
-                            class="px-3 py-1 rounded bg-white/10">+</button>
+                        <button type="button" onclick="changeCount(1)" class="px-3 py-1 rounded bg-white/10">+</button>
                     </div>
 
                     <input type="hidden" name="tickets_count" id="tickets_count" value="1">
                 </div>
 
-                {{-- 👤 أسماء الأشخاص --}}
-                <div id="namesContainer" class="space-y-2"></div>
+                {{-- 👤 الأشخاص --}}
+                <div id="namesContainer" class="space-y-3"></div>
+
+                {{-- Screenshot --}}
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                     <label class="text-xs font-semibold text-white">
                         📸 Screenshot التحويل
@@ -170,54 +112,10 @@
 
 
 {{-- ======================
-| BUTTON LOGIC
+| SCRIPT
 ====================== --}}
 <script>
-    const nameInput = document.getElementById('full_name');
-    const phoneInput = document.getElementById('phone');
-    const screenshotInput = document.getElementById('screenshot');
-    const submitBtn = document.getElementById('submitBtn');
-    const bookingForm = document.getElementById('bookingForm');
 
-    let screenshotReady = false;
-    let isSubmitting = false;
-
-    function updateButton() {
-        if (
-            screenshotReady &&
-            nameInput.value.trim() &&
-            phoneInput.value.trim() &&
-            !isSubmitting
-        ) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
-            submitBtn.classList.add('bg-amber-400');
-        } else {
-            submitBtn.disabled = true;
-            submitBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
-            submitBtn.classList.remove('bg-amber-400');
-        }
-    }
-
-    screenshotInput.addEventListener('change', () => {
-        screenshotReady = screenshotInput.files.length > 0;
-        updateButton();
-    });
-
-    nameInput.addEventListener('input', updateButton);
-    phoneInput.addEventListener('input', updateButton);
-
-    bookingForm.addEventListener('submit', function (e) {
-        if (isSubmitting) {
-            e.preventDefault();
-            return false;
-        }
-
-        isSubmitting = true;
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'جاري الإرسال...';
-    });
-    // 👇 NEW CODE (مايلمسش القديم)
 let count = 1;
 const maxTickets = 10;
 
@@ -230,7 +128,7 @@ function renderNames() {
 
     for (let i = 1; i <= count; i++) {
         namesContainer.innerHTML += `
-            <div class="space-y-2">
+            <div class="space-y-2 bg-black/40 border border-white/10 rounded-xl p-3">
 
                 <input type="text"
                     name="names[]"
@@ -261,7 +159,43 @@ function changeCount(val) {
     renderNames();
 }
 
-// أول تحميل
 renderNames();
+
+
+// ===== زرار الإرسال =====
+const screenshotInput = document.getElementById('screenshot');
+const submitBtn = document.getElementById('submitBtn');
+const bookingForm = document.getElementById('bookingForm');
+
+let screenshotReady = false;
+let isSubmitting = false;
+
+function updateButton() {
+    if (screenshotReady && !isSubmitting) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
+        submitBtn.classList.add('bg-amber-400');
+    } else {
+        submitBtn.disabled = true;
+    }
+}
+
+screenshotInput.addEventListener('change', () => {
+    screenshotReady = screenshotInput.files.length > 0;
+    updateButton();
+});
+
+bookingForm.addEventListener('submit', function (e) {
+    if (isSubmitting) {
+        e.preventDefault();
+        return false;
+    }
+
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'جاري الإرسال...';
+});
+
 </script>
+
 @endsection
