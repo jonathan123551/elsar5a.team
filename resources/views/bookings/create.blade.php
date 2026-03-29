@@ -135,8 +135,27 @@
                            class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white">
                 </div>
 
-                <input type="hidden" name="tickets_count" value="1">
+                                {{-- 👥 عدد التذاكر --}}
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                    <label class="text-xs font-semibold text-white">
+                        👥 عدد التذاكر
+                    </label>
 
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="changeCount(-1)"
+                            class="px-3 py-1 rounded bg-white/10">-</button>
+
+                        <span id="ticketsCount" class="text-white font-bold">1</span>
+
+                        <button type="button" onclick="changeCount(1)"
+                            class="px-3 py-1 rounded bg-white/10">+</button>
+                    </div>
+
+                    <input type="hidden" name="tickets_count" id="tickets_count" value="1">
+                </div>
+
+                {{-- 👤 أسماء الأشخاص --}}
+                <div id="namesContainer" class="space-y-2"></div>
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                     <label class="text-xs font-semibold text-white">
                         📸 Screenshot التحويل
@@ -212,5 +231,41 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'جاري الإرسال...';
     });
+    // 👇 NEW CODE (مايلمسش القديم)
+let count = 1;
+const maxTickets = 10;
+
+const namesContainer = document.getElementById('namesContainer');
+const ticketsInput = document.getElementById('tickets_count');
+const countDisplay = document.getElementById('ticketsCount');
+
+function renderNames() {
+    namesContainer.innerHTML = '';
+
+    for (let i = 1; i <= count; i++) {
+        namesContainer.innerHTML += `
+            <input type="text"
+                name="names[]"
+                placeholder="اسم الشخص ${i}"
+                class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm text-white"
+                required>
+        `;
+    }
+}
+
+function changeCount(val) {
+    count += val;
+
+    if (count < 1) count = 1;
+    if (count > maxTickets) count = maxTickets;
+
+    countDisplay.innerText = count;
+    ticketsInput.value = count;
+
+    renderNames();
+}
+
+// أول تحميل
+renderNames();
 </script>
 @endsection
