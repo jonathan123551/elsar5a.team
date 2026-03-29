@@ -81,14 +81,22 @@
                         data-datetime="{{ $dt }}">
 
                         <td class="px-3 py-2">
-                             <div>
+                            <div>
                                 <p class="font-bold">{{ $booking->full_name }}</p>
 
                                 <p class="text-xs text-amber-400">
                                     🎟️ {{ $booking->tickets_count }} تذكرة
                                 </p>
-                            </div><br>
-                            <span class="text-gray-400">{{ $booking->phone }}</span>
+                            </div>
+
+                            <span class="text-gray-400 block mb-1">{{ $booking->phone }}</span>
+
+                            {{-- 👇 عرض كل الأشخاص --}}
+                            @foreach($booking->tickets as $ticket)
+                                <div class="text-xs text-gray-400 mr-2">
+                                    👤 {{ $ticket->name }} - 📱 {{ $ticket->phone }}
+                                </div>
+                            @endforeach
                         </td>
 
                         <td class="px-3 py-2">
@@ -142,6 +150,19 @@
                 <div class="flex justify-between mb-2">
                     <div>
                         <div class="font-semibold text-sm">{{ $booking->full_name }}</div>
+
+                        <div class="text-amber-400 text-xs mb-1">
+                            🎟️ {{ $booking->tickets_count }} تذكرة
+                        </div>
+
+                        <div class="text-gray-400">{{ $booking->phone }}</div>
+
+                        {{-- 👇 الأشخاص --}}
+                        @foreach($booking->tickets as $ticket)
+                            <div class="text-[11px] text-gray-400">
+                                👤 {{ $ticket->name }} - 📱 {{ $ticket->phone }}
+                            </div>
+                        @endforeach
                         <div class="text-gray-400">{{ $booking->phone }}</div>
                     </div>
                     <span class="font-mono bg-white/5 px-2 py-1 rounded">
