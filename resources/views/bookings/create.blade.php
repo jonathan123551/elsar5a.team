@@ -10,8 +10,22 @@
         {{-- ======================
         | 🎭 DETAILS + PAYMENT
         ======================= --}}
-        <div class="md:col-span-1 relative bg-black/50 border border-amber-400/30 rounded-3xl p-5 space-y-4">
+<div
+    class="md:col-span-2 relative
+           bg-black/50
+           border border-amber-400/30
+           rounded-3xl p-6 space-y-4
 
+           shadow-[0_0_30px_rgba(250,204,21,0.35)]
+           hover:shadow-[0_0_45px_rgba(250,204,21,0.5)]
+           transition-all duration-300
+
+           before:absolute before:inset-0
+           before:rounded-3xl
+           before:bg-gradient-to-br
+           before:from-amber-400/15
+           before:to-transparent
+           before:pointer-events-none">
             <h2 class="text-sm font-semibold text-amber-300">🎭 تفاصيل العرض</h2>
 
             <p class="text-sm text-white font-medium">
