@@ -61,7 +61,7 @@
 
                         $remaining = $totalTickets - $reserved;
 
-                        $isSoldOut = $remaining <= 0;
+                        $isSoldOut = $time->is_sold_out || $remaining <= 0;
                         $fewTickets = $remaining > 0 && $remaining <= 10;
                     @endphp
 
