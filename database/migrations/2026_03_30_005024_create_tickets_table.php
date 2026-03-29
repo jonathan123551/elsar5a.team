@@ -12,9 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tickets', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+    $table->id();
+    $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
+
+    $table->string('name');
+    $table->string('phone');
+
+    $table->string('qr_code')->nullable();
+    $table->boolean('is_sent')->default(false);
+
+    $table->timestamps();
+});
     }
 
     /**
