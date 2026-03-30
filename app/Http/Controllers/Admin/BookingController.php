@@ -199,40 +199,7 @@ public function sendTicketTemplate($phone, $reference)
      ======================= */
 public function sendTicketsByReference($reference)
 {
-    $booking = Booking::where('reference_code', $reference)
-        ->where('status', 'approved')
-        ->first();
-
-    if (!$booking) {
-        return response('Booking not found', 404);
-    }
-
-    $tickets = $booking->tickets()
-        ->whereNotNull('qr_image_path')
-        ->where('whatsapp_sent', false)
-        ->get();
-
-    foreach ($tickets as $ticket) {
-
-        $this->sendWhatsAppTicket(
-            $booking->phone,
-            $ticket->qr_image_path,
-            $ticket->ticket_code,
-            $ticket->name,
-            ''
-        );
-
-        $ticket->update([
-            'whatsapp_sent' => true
-        ]);
-    }
-
-    // 👇 المهم ده
-    return response("
-        <h2 style='text-align:center;margin-top:50px'>
-            ✅ تم إرسال التذاكر على واتساب
-        </h2>
-    ");
+    dd($reference);
 }
 
     /* =======================
