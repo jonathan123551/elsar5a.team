@@ -137,8 +137,8 @@ public function sendTicketTemplate($phone, $reference)
             'template' => [
                 'name' => 'ticket',
                 'language' => [
-                    'code' => 'ar'
-                ],
+                'code' => 'ar_EG'
+            ],
                 'components' => [
                     [
                         'type' => 'button',
