@@ -52,7 +52,7 @@ class BookingController extends Controller
         return back()->with('status', 'الحجز معتمد بالفعل');
     }
 
-    $booking->load('showTime.show', 'tickets'); // 👈 مهم
+    $booking->load('showTime.show', 'tickets');
 
     $show = $booking->showTime?->show;
 
@@ -68,10 +68,19 @@ class BookingController extends Controller
 
     foreach ($booking->tickets as $ticket) {
 
-        /* === Generate QR لكل Ticket === */
+        /* =========================
+         | 1. SEND TEMPLATE FIRST
+         ========================= */
+        $this->sendTicketTemplate($ticket->phone);
+
+        sleep(1); // مهم عشان يفتح session
+
+        /* =========================
+         | 2. GENERATE QR لكل Ticket
+         ========================= */
         $qr = Builder::create()
             ->writer(new PngWriter())
-            ->data($ticket->ticket_code) // 👈 بدل reference_code
+            ->data($ticket->ticket_code)
             ->size($show->ticket_qr_size ?? 220)
             ->margin(0)
             ->build();
@@ -100,30 +109,37 @@ class BookingController extends Controller
         imagedestroy($templateImage);
         imagedestroy($qrImage);
 
-        /* === Upload === */
+        /* =========================
+         | 3. UPLOAD
+         ========================= */
         $upload = (new UploadApi())->upload($tempPath, [
             'folder' => 'tickets/generated',
         ]);
 
         unlink($tempPath);
 
-        /* === Save لكل Ticket === */
+        /* =========================
+         | 4. SAVE
+         ========================= */
         $ticket->update([
             'qr_image_path' => $upload['secure_url'],
         ]);
 
-        /* === Send WhatsApp لكل شخص === */
+        /* =========================
+         | 5. SEND IMAGE
+         ========================= */
         $this->sendWhatsAppTicket(
             $ticket->phone,
             $upload['secure_url'],
             $ticket->ticket_code,
             $ticket->name,
-            $booking->showTime?->date->format('d/m/Y') . ' • ' .
+            \Carbon\Carbon::parse($booking->showTime?->date)->format('d/m/Y')
+            . ' • ' .
             \Carbon\Carbon::parse($booking->showTime?->time)->format('g:i A')
         );
     }
 
-    // تحديث حالة الإرسال على مستوى booking
+    // update booking status
     $booking->update([
         'whatsapp_sent'     => true,
         'whatsapp_sent_at'  => now(),
