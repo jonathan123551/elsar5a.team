@@ -200,8 +200,10 @@ class BookingController extends Controller
         return;
     }
 
-    $tickets = $booking->tickets()->whereNotNull('qr_image_path')->get();
-
+$tickets = $booking->tickets()
+    ->whereNotNull('qr_image_path')
+    ->orderByDesc('id') // الأحدث الأول
+    ->get();
     // 🟢 افتح session
    foreach ($tickets as $ticket) {
 
