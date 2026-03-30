@@ -8,6 +8,8 @@ class Ticket extends Model
 {
     protected $fillable = [
         'booking_id',
+        'name',
+        'phone',
         'ticket_code',
         'qr_image_path',
         'is_scanned',
@@ -15,12 +17,8 @@ class Ticket extends Model
         'scanned_by_admin_id',
     ];
 
-    protected $casts = [
-        'scanned_at' => 'datetime',
-    ];
-
     public function booking()
     {
-        return $this->belongsTo(Booking::class);
+        return $this->belongsTo(\App\Models\Booking::class);
     }
 }
