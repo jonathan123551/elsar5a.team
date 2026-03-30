@@ -134,7 +134,7 @@ class BookingController extends Controller
     /* =======================
      | TEMPLATE
      ======================= */
-   private function sendTicketTemplate($phone, $reference)
+ private function sendTicketTemplate($phone, $reference)
 {
     $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -147,17 +147,6 @@ class BookingController extends Controller
             'template' => [
                 'name' => 'ticket',
                 'language' => ['code' => 'ar_EG'],
-                'components' => [
-                    [
-                        'type' => 'body',
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => $reference // 👈 مهم جدًا
-                            ]
-                        ]
-                    ]
-                ]
             ],
         ]
     );
