@@ -199,14 +199,22 @@ public function sendTicketTemplate($phone, $reference)
      ======================= */
 public function sendTicketsByReference($reference)
 {
+    // 🧼 تنظيف الريفرنس
+    $reference = urldecode($reference);
     $reference = trim($reference);
 
-    $booking = Booking::where('reference_code', $reference)
-        ->where('status', 'approved')
-        ->first();
+    // 🧪 Debug (مؤقت)
+    \Log::info('REFERENCE:', ['ref' => $reference]);
+
+    $booking = Booking::where('reference_code', $reference)->first();
 
     if (!$booking) {
-        return response("<h2>❌ Booking not found</h2>");
+        return response("
+            <h2 style='text-align:center;margin-top:50px'>
+                ❌ Booking not found <br>
+                REF: {$reference}
+            </h2>
+        ");
     }
 
     $tickets = $booking->tickets()
@@ -217,7 +225,7 @@ public function sendTicketsByReference($reference)
     foreach ($tickets as $ticket) {
 
         $this->sendWhatsAppTicket(
-            $booking->phone, // ✅ مهم
+            $booking->phone,
             $ticket->qr_image_path,
             $ticket->ticket_code,
             $ticket->name,
