@@ -118,16 +118,7 @@ class BookingController extends Controller
                 'qr_image_path' => $upload['secure_url'],
             ]);
 
-            /* === 5. Send Image === */
-            $this->sendWhatsAppTicket(
-                $ticket->phone,
-                $upload['secure_url'],
-                $ticket->ticket_code,
-                $ticket->name,
-                \Carbon\Carbon::parse($booking->showTime?->date)->format('d/m/Y')
-                . ' • ' .
-                \Carbon\Carbon::parse($booking->showTime?->time)->format('g:i A')
-            );
+            
         }
 
         $booking->update([
