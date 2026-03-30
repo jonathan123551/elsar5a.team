@@ -204,7 +204,7 @@ public function sendTicketsByReference($reference)
         ->first();
 
     if (!$booking) {
-        return;
+        return response('Booking not found', 404);
     }
 
     $tickets = $booking->tickets()
@@ -215,7 +215,7 @@ public function sendTicketsByReference($reference)
     foreach ($tickets as $ticket) {
 
         $this->sendWhatsAppTicket(
-            $ticket->phone,
+            $booking->phone,
             $ticket->qr_image_path,
             $ticket->ticket_code,
             $ticket->name,
@@ -227,7 +227,12 @@ public function sendTicketsByReference($reference)
         ]);
     }
 
-    return "Tickets sent";
+    // 👇 المهم ده
+    return response("
+        <h2 style='text-align:center;margin-top:50px'>
+            ✅ تم إرسال التذاكر على واتساب
+        </h2>
+    ");
 }
 
     /* =======================
