@@ -137,8 +137,8 @@ public function sendTicketTemplate($phone, $reference)
             'template' => [
                 'name' => 'ticket_final',
                 'language' => [
-                'code' => 'ar_EG'
-            ],
+                    'code' => 'ar_EG'
+                ],
                 'components' => [
                     [
                         'type' => 'button',
@@ -147,7 +147,7 @@ public function sendTicketTemplate($phone, $reference)
                         'parameters' => [
                             [
                                 'type' => 'text',
-                                'text' => $reference
+                                'text' => (string) $reference
                             ]
                         ]
                     ]
@@ -156,7 +156,8 @@ public function sendTicketTemplate($phone, $reference)
         ]
     );
 
-   
+    // 🔥 أهم سطر debugging
+    dd($response->json());
 }
 
     /* =======================
