@@ -191,7 +191,8 @@ class BookingController extends Controller
      | WEBHOOK (استلام التذاكر)
      ======================= */
    public function sendTicketsByReference($reference)
-{
+{     dd($reference);
+
     $booking = Booking::where('reference_code', $reference)
         ->where('status', 'approved')
         ->first();
