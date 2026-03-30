@@ -156,7 +156,7 @@ public function sendTicketTemplate($phone, $reference)
         ]
     );
 
-    dd($response->body()); // 💣 أهم سطر
+   
 }
 
     /* =======================
