@@ -128,7 +128,7 @@ public function sendTicketTemplate($phone, $reference)
 {
     $phone = preg_replace('/[^0-9]/', '', $phone);
 
-    Http::withToken(env('WHATSAPP_TOKEN'))->post(
+    $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
         'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
         [
             'messaging_product' => 'whatsapp',
@@ -155,6 +155,8 @@ public function sendTicketTemplate($phone, $reference)
             ]
         ]
     );
+
+    dd($response->body()); // 💣 أهم سطر
 }
 
     /* =======================
