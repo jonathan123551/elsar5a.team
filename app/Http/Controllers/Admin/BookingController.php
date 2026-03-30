@@ -135,7 +135,7 @@ public function sendTicketTemplate($phone, $reference)
             'to' => $phone,
             'type' => 'template',
             'template' => [
-                'name' => 'ticket',
+                'name' => 'ticket_new',
                 'language' => [
                 'code' => 'ar_EG'
             ],
@@ -199,7 +199,41 @@ public function sendTicketTemplate($phone, $reference)
      ======================= */
 public function sendTicketsByReference($reference)
 {
-    dd($reference);
+    $reference = trim($reference);
+
+    $booking = Booking::where('reference_code', $reference)
+        ->where('status', 'approved')
+        ->first();
+
+    if (!$booking) {
+        return response("<h2>❌ Booking not found</h2>");
+    }
+
+    $tickets = $booking->tickets()
+        ->whereNotNull('qr_image_path')
+        ->where('whatsapp_sent', false)
+        ->get();
+
+    foreach ($tickets as $ticket) {
+
+        $this->sendWhatsAppTicket(
+            $booking->phone, // ✅ مهم
+            $ticket->qr_image_path,
+            $ticket->ticket_code,
+            $ticket->name,
+            ''
+        );
+
+        $ticket->update([
+            'whatsapp_sent' => true
+        ]);
+    }
+
+    return response("
+        <h2 style='text-align:center;margin-top:50px'>
+            ✅ تم إرسال التذاكر على واتساب
+        </h2>
+    ");
 }
 
     /* =======================
