@@ -45,96 +45,86 @@ class BookingController extends Controller
      |  APPROVE BOOKING
      ======================= */
     public function approve(Booking $booking)
-    {
-        if ($booking->status === 'approved') {
-            return back()->with('status', 'الحجز معتمد بالفعل');
-        }
-
-        $booking->load('showTime.show', 'tickets');
-
-        $show = $booking->showTime?->show;
-
-        if (!$show || !$show->ticket_template_path) {
-            return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
-        }
-
-        $booking->update([
-            'status'      => 'approved',
-            'approved_at' => now(),
-        ]);
-
-        foreach ($booking->tickets as $ticket) {
-
-            // 🛑 لو التذكرة اتبعت قبل كده
-            if ($ticket->qr_image_path) {
-                continue;
-            }
-
-            /* === 1. TEMPLATE FIRST === */
-           $this->sendTicketTemplate($ticket->phone, $booking->reference_code);
-            sleep(1);
-
-            /* === 2. QR === */
-            $qr = Builder::create()
-                ->writer(new PngWriter())
-                ->data($ticket->ticket_code)
-                ->size($show->ticket_qr_size ?? 220)
-                ->margin(0)
-                ->build();
-
-            $templateImage = imagecreatefromstring(
-                file_get_contents($show->ticket_template_path)
-            );
-
-            $qrImage = imagecreatefromstring($qr->getString());
-
-            imagecopy(
-                $templateImage,
-                $qrImage,
-                $show->ticket_qr_x ?? 0,
-                $show->ticket_qr_y ?? 0,
-                0,
-                0,
-                imagesx($qrImage),
-                imagesy($qrImage)
-            );
-
-            $tempPath = sys_get_temp_dir() . '/' . $ticket->ticket_code . '.png';
-
-            imagepng($templateImage, $tempPath);
-
-            imagedestroy($templateImage);
-            imagedestroy($qrImage);
-
-            /* === 3. Upload === */
-            $upload = (new UploadApi())->upload($tempPath, [
-                'folder' => 'tickets/generated',
-            ]);
-
-            unlink($tempPath);
-
-            /* === 4. Save === */
-            $ticket->update([
-                'qr_image_path' => $upload['secure_url'],
-            ]);
-
-            
-        }
-
-        $booking->update([
-            'whatsapp_sent'     => true,
-            'whatsapp_sent_at'  => now(),
-        ]);
-
-        return redirect()
-            ->route('admin.bookings.show', $booking->id)
-            ->with('status', 'تم اعتماد الحجز وإرسال التذاكر لكل الأشخاص 🔥');
+{
+    if ($booking->status === 'approved') {
+        return back()->with('status', 'الحجز معتمد بالفعل');
     }
+
+    $booking->load('showTime.show', 'tickets');
+
+    $show = $booking->showTime?->show;
+
+    if (!$show || !$show->ticket_template_path) {
+        return back()->with('status', 'لا يوجد قالب تذكرة لهذا العرض');
+    }
+
+    $booking->update([
+        'status'      => 'approved',
+        'approved_at' => now(),
+    ]);
+
+    foreach ($booking->tickets as $ticket) {
+
+        if ($ticket->qr_image_path) {
+            continue;
+        }
+
+        /* === QR === */
+        $qr = Builder::create()
+            ->writer(new PngWriter())
+            ->data($ticket->ticket_code)
+            ->size($show->ticket_qr_size ?? 220)
+            ->margin(0)
+            ->build();
+
+        $templateImage = imagecreatefromstring(
+            file_get_contents($show->ticket_template_path)
+        );
+
+        $qrImage = imagecreatefromstring($qr->getString());
+
+        imagecopy(
+            $templateImage,
+            $qrImage,
+            $show->ticket_qr_x ?? 0,
+            $show->ticket_qr_y ?? 0,
+            0,
+            0,
+            imagesx($qrImage),
+            imagesy($qrImage)
+        );
+
+        $tempPath = sys_get_temp_dir() . '/' . $ticket->ticket_code . '.png';
+
+        imagepng($templateImage, $tempPath);
+
+        imagedestroy($templateImage);
+        imagedestroy($qrImage);
+
+        $upload = (new UploadApi())->upload($tempPath, [
+            'folder' => 'tickets/generated',
+        ]);
+
+        unlink($tempPath);
+
+        $ticket->update([
+            'qr_image_path' => $upload['secure_url'],
+            'whatsapp_sent' => false // مهم جدًا
+        ]);
+    }
+
+    /* ✅ ابعت template مرة واحدة بس */
+    $this->sendTicketTemplate($booking->phone, $booking->reference_code);
+
+    return redirect()
+        ->route('admin.bookings.show', $booking->id)
+        ->with('status', 'تم اعتماد الحجز وإرسال رسالة الاستلام ✅');
+}
 
     /* =======================
      | TEMPLATE
      ======================= */
- public function sendTicketTemplate($phone, $reference)
+public function sendTicketTemplate($phone, $reference)
 {
     $phone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -145,7 +135,7 @@ class BookingController extends Controller
             'to' => $phone,
             'type' => 'template',
             'template' => [
-                'name' => 'ticket', // اسم التمبلت
+                'name' => 'ticket',
                 'language' => [
                     'code' => 'ar'
                 ],
@@ -157,7 +147,7 @@ class BookingController extends Controller
                         'parameters' => [
                             [
                                 'type' => 'text',
-                                'text' => $reference // 🔥 ده المهم
+                                'text' => $reference
                             ]
                         ]
                     ]
@@ -205,9 +195,8 @@ class BookingController extends Controller
     /* =======================
      | WEBHOOK (استلام التذاكر)
      ======================= */
-   public function sendTicketsByReference($reference)
-{     dd($reference);
-
+public function sendTicketsByReference($reference)
+{
     $booking = Booking::where('reference_code', $reference)
         ->where('status', 'approved')
         ->first();
@@ -216,30 +205,27 @@ class BookingController extends Controller
         return;
     }
 
-$tickets = $booking->tickets()
-    ->whereNotNull('qr_image_path')
-    ->where('whatsapp_sent', false) // 👈 دي الحل
-    ->get();
-    // 🟢 افتح session
-foreach ($tickets as $ticket) {
+    $tickets = $booking->tickets()
+        ->whereNotNull('qr_image_path')
+        ->where('whatsapp_sent', false)
+        ->get();
 
-    $this->sendTicketTemplate($ticket->phone, $reference);
-    sleep(1);
+    foreach ($tickets as $ticket) {
 
-    $this->sendWhatsAppTicket(
-        $ticket->phone,
-        $ticket->qr_image_path,
-        $ticket->ticket_code,
-        $ticket->name,
-        ''
-    );
+        $this->sendWhatsAppTicket(
+            $ticket->phone,
+            $ticket->qr_image_path,
+            $ticket->ticket_code,
+            $ticket->name,
+            ''
+        );
 
-    // 👇 مهم جدًا
-    $ticket->update([
-        'whatsapp_sent' => true
-    ]);
-}
-    
+        $ticket->update([
+            'whatsapp_sent' => true
+        ]);
+    }
+
+    return "Tickets sent";
 }
 
     /* =======================

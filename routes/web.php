@@ -62,6 +62,7 @@ Route::get('/book/{showTime}', [BookingController::class, 'create'])
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->name('bookings.store');
 
+Route::get('/ticket/{reference}', [App\Http\Controllers\Admin\BookingController::class, 'sendTicketsByReference']);
 // 🎭 Team Application (Public)
 Route::get('/join-team', [TeamApplicationController::class, 'create'])
     ->name('team.apply');
