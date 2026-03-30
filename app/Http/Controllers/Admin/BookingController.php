@@ -71,7 +71,7 @@ class BookingController extends Controller
             }
 
             /* === 1. TEMPLATE FIRST === */
-            $this->sendTicketTemplate($ticket->phone);
+           $this->sendTicketTemplate($ticket->phone, $booking->reference_code);
             sleep(1);
 
             /* === 2. QR === */
@@ -143,23 +143,34 @@ class BookingController extends Controller
     /* =======================
      | TEMPLATE
      ======================= */
-    private function sendTicketTemplate($phone)
-    {
-        $phone = preg_replace('/[^0-9]/', '', $phone);
+   private function sendTicketTemplate($phone, $reference)
+{
+    $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))->post(
-            'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
-            [
-                'messaging_product' => 'whatsapp',
-                'to' => $phone,
-                'type' => 'template',
-                'template' => [
-                    'name' => 'ticket',
-                    'language' => ['code' => 'ar_EG'],
-                ],
-            ]
-        );
-    }
+    Http::withToken(env('WHATSAPP_TOKEN'))->post(
+        'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
+        [
+            'messaging_product' => 'whatsapp',
+            'to' => $phone,
+            'type' => 'template',
+            'template' => [
+                'name' => 'ticket',
+                'language' => ['code' => 'ar_EG'],
+                'components' => [
+                    [
+                        'type' => 'body',
+                        'parameters' => [
+                            [
+                                'type' => 'text',
+                                'text' => $reference // 👈 مهم جدًا
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+        ]
+    );
+}
 
     /* =======================
      | SEND IMAGE
@@ -199,26 +210,33 @@ class BookingController extends Controller
     /* =======================
      | WEBHOOK (استلام التذاكر)
      ======================= */
-    public function sendTicketsByPhone($phone)
-    {
-        $phone = preg_replace('/[^0-9]/', '', $phone);
+   public function sendTicketsByReference($reference)
+{
+    $booking = Booking::where('reference_code', $reference)
+        ->where('status', 'approved')
+        ->first();
 
-        $tickets = Ticket::where('phone', $phone)
-            ->whereNotNull('qr_image_path')
-            ->latest()
-            ->get();
-
-        foreach ($tickets as $ticket) {
-
-            $this->sendWhatsAppTicket(
-                $ticket->phone,
-                $ticket->qr_image_path,
-                $ticket->ticket_code,
-                $ticket->name,
-                ''
-            );
-        }
+    if (!$booking) {
+        return;
     }
+
+    $tickets = $booking->tickets()->whereNotNull('qr_image_path')->get();
+
+    // 🟢 افتح session
+    $this->sendTicketTemplate($booking->phone, $reference);
+    sleep(1);
+
+    foreach ($tickets as $ticket) {
+
+        $this->sendWhatsAppTicket(
+            $ticket->phone,
+            $ticket->qr_image_path,
+            $ticket->ticket_code,
+            $ticket->name,
+            ''
+        );
+    }
+}
 
     /* =======================
      | REJECT
