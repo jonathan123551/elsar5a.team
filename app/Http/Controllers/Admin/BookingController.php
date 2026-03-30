@@ -214,19 +214,23 @@ class BookingController extends Controller
     $tickets = $booking->tickets()->whereNotNull('qr_image_path')->get();
 
     // 🟢 افتح session
-    $this->sendTicketTemplate($booking->phone, $reference);
+   foreach ($tickets as $ticket) {
+
+    // 🟢 افتح session لكل رقم
+    $this->sendTicketTemplate($ticket->phone, $reference);
     sleep(1);
 
-    foreach ($tickets as $ticket) {
+    // 📩 ابعت التذكرة
+    $this->sendWhatsAppTicket(
+        $ticket->phone,
+        $ticket->qr_image_path,
+        $ticket->ticket_code,
+        $ticket->name,
+        ''
+    );
+}
 
-        $this->sendWhatsAppTicket(
-            $ticket->phone,
-            $ticket->qr_image_path,
-            $ticket->ticket_code,
-            $ticket->name,
-            ''
-        );
-    }
+    
 }
 
     /* =======================
