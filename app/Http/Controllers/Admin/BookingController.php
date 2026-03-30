@@ -202,16 +202,14 @@ class BookingController extends Controller
 
 $tickets = $booking->tickets()
     ->whereNotNull('qr_image_path')
-    ->orderByDesc('id') // الأحدث الأول
+    ->where('whatsapp_sent', false) // 👈 دي الحل
     ->get();
     // 🟢 افتح session
-   foreach ($tickets as $ticket) {
+foreach ($tickets as $ticket) {
 
-    // 🟢 افتح session لكل رقم
     $this->sendTicketTemplate($ticket->phone, $reference);
     sleep(1);
 
-    // 📩 ابعت التذكرة
     $this->sendWhatsAppTicket(
         $ticket->phone,
         $ticket->qr_image_path,
@@ -219,8 +217,12 @@ $tickets = $booking->tickets()
         $ticket->name,
         ''
     );
-}
 
+    // 👇 مهم جدًا
+    $ticket->update([
+        'whatsapp_sent' => true
+    ]);
+}
     
 }
 
