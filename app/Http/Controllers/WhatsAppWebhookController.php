@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Booking;
+use App\Models\Ticket;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -33,56 +32,72 @@ class WhatsAppWebhookController extends Controller
         $message = $request->input('entry.0.changes.0.value.messages.0');
 
         if (!$message || !isset($message['from'])) {
-
-            // Forward even if no message (for delivery events etc)
             $this->forwardToChatwoot($request);
-
             return response()->json(['ok' => true]);
         }
 
+        // 📱 Normalize phone
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
+        // 📝 Get message text (supports buttons + quick reply)
         $text = $message['text']['body']
             ?? $message['button']['text']
             ?? $message['interactive']['button_reply']['title']
             ?? '';
 
+        Log::info('INCOMING MESSAGE', [
+            'phone' => $phone,
+            'text'  => $text
+        ]);
+
         /* ==========================
-           🎟 ORIGINAL TICKET LOGIC
+           🎟 SEND TICKET LOGIC
         ========================== */
 
         if (trim($text) === 'أستلام التذكرة') {
 
-            $booking = Booking::with('showTime')
-            ->where('phone', 'like', "%$phone%")
-            ->where('status', 'approved')
-            ->whereNotNull('qr_code_path')
-            ->where('whatsapp_sent', false) // 👈 المهم
-            ->oldest() // 👈 مش latest
-            ->first();
+            // 🧠 نجيب أول تذكرة لسه متبعتتش
+            $ticket = Ticket::where('phone', 'like', "%$phone%")
+                ->whereNotNull('qr_image_path')
+                ->where('whatsapp_sent', false)
+                ->oldest()
+                ->first();
 
-            if ($booking) {
+            if (!$ticket) {
+                Log::info('NO TICKET FOUND', ['phone' => $phone]);
+                return response()->json(['status' => 'no ticket']);
+            }
 
-                $showTimeText = $booking->showTime
-                    ? $booking->showTime->date->format('d/m/Y') . ' • ' .
-                      Carbon::parse($booking->showTime->time)->format('h:i A')
-                    : 'سيتم إبلاغك بالموعد';
+            Log::info('SENDING TICKET', [
+                'ticket_id' => $ticket->id,
+                'code' => $ticket->ticket_code
+            ]);
+
+            try {
 
                 app(\App\Http\Controllers\Admin\BookingController::class)
                     ->sendWhatsAppTicket(
-                        $booking->phone,
-                        $booking->qr_code_path,
-                        $booking->reference_code,
-                        $booking->full_name,
-                        $showTimeText
+                        $ticket->phone,
+                        $ticket->qr_image_path,
+                        $ticket->ticket_code,
+                        $ticket->name,
+                        ''
                     );
 
-                if (!$booking->whatsapp_sent) {
-                    $booking->update([
-                        'whatsapp_sent'    => true,
-                        'whatsapp_sent_at' => now(),
-                    ]);
-                }
+                // ✅ تحديث الحالة
+                $ticket->update([
+                    'whatsapp_sent' => true
+                ]);
+
+                Log::info('TICKET SENT SUCCESS', [
+                    'ticket_id' => $ticket->id
+                ]);
+
+            } catch (\Exception $e) {
+
+                Log::error('SEND FAILED', [
+                    'error' => $e->getMessage()
+                ]);
             }
         }
 
