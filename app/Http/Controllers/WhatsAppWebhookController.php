@@ -54,11 +54,12 @@ class WhatsAppWebhookController extends Controller
         if (trim($text) === 'أستلام التذكرة') {
 
             $booking = Booking::with('showTime')
-                ->where('phone', 'like', "%$phone%")
-                ->where('status', 'approved')
-                ->whereNotNull('qr_code_path')
-                ->latest()
-                ->first();
+            ->where('phone', 'like', "%$phone%")
+            ->where('status', 'approved')
+            ->whereNotNull('qr_code_path')
+            ->where('whatsapp_sent', false) // 👈 المهم
+            ->oldest() // 👈 مش latest
+            ->first();
 
             if ($booking) {
 
