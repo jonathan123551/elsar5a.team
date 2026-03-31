@@ -113,11 +113,10 @@ class BookingController extends Controller
         ]);
     }
 
-    foreach ($booking->tickets as $ticket) {
+  foreach ($booking->tickets as $ticket) {
 
     $this->sendTicketTemplate(
-        $ticket->phone,        // 👈 رقم كل شخص
-        $ticket->ticket_code   // 👈 كود التذكرة مش booking
+        $ticket->phone
     );
 
     sleep(1);
@@ -130,11 +129,11 @@ class BookingController extends Controller
     /* =======================
      | TEMPLATE
      ======================= */
-public function sendTicketTemplate($phone, $reference)
+public function sendTicketTemplate($phone)
 { 
     $phone = preg_replace('/[^0-9]/', '', $phone);
 
-    $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
+    Http::withToken(env('WHATSAPP_TOKEN'))->post(
         'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
         [
             'messaging_product' => 'whatsapp',
@@ -145,23 +144,10 @@ public function sendTicketTemplate($phone, $reference)
                 'language' => [
                     'code' => 'ar_EG'
                 ],
-                'components' => [
-                    [
-                        'type' => 'button',
-                        'sub_type' => 'url',
-                        'index' => '0',
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => (string) $reference
-                            ]
-                        ]
-                    ]
-                ]
+                'components' => [] // 🔥 مهم جداً
             ]
         ]
     );
-
 }
 
     /* =======================
@@ -202,62 +188,44 @@ public function sendTicketTemplate($phone, $reference)
     /* =======================
      | WEBHOOK (استلام التذاكر)
      ======================= */
-public function sendTicketsByReference($reference)
+public function receiveTicket(Request $request)
 {
-    // 🧼 تنظيف
-    $reference = urldecode($reference);
-    $reference = trim($reference);
+    $phone = $request['from'];
 
-    \Log::info('REFERENCE:', ['ref' => $reference]);
+    // تنظيف الرقم
+    $phone = preg_replace('/[^0-9]/', '', $phone);
 
-    // ✅ نجيب التذكرة نفسها مش الـ booking
-    $ticket = Ticket::where('ticket_code', $reference)->first();
+    \Log::info('USER CLICKED', ['phone' => $phone]);
 
-    if (!$ticket) {
-        return response("
-            <h2 style='text-align:center;margin-top:50px'>
-                ❌ Ticket not found <br>
-                REF: {$reference}
-            </h2>
-        ");
+    // هات كل التذاكر اللي لسه متبعتتش لنفس الرقم
+    $tickets = Ticket::where('phone', $phone)
+        ->where('whatsapp_sent', false)
+        ->get();
+
+    if ($tickets->isEmpty()) {
+        return response()->json(['status' => 'no tickets']);
     }
 
-    // ⛔ لو اتبعت قبل كده
-    if ($ticket->whatsapp_sent) {
-        return response("
-            <h2 style='text-align:center;margin-top:50px'>
-                ⚠️ التذكرة تم إرسالها بالفعل
-            </h2>
-        ");
+    foreach ($tickets as $ticket) {
+
+        if (!$ticket->qr_image_path) {
+            continue;
+        }
+
+        $this->sendWhatsAppTicket(
+            $ticket->phone,
+            $ticket->qr_image_path,
+            $ticket->ticket_code,
+            $ticket->name,
+            ''
+        );
+
+        $ticket->update([
+            'whatsapp_sent' => true
+        ]);
     }
 
-    // ⛔ لو QR لسه مش جاهز
-    if (!$ticket->qr_image_path) {
-        return response("
-            <h2 style='text-align:center;margin-top:50px'>
-                ⏳ التذكرة لم يتم تجهيزها بعد
-            </h2>
-        ");
-    }
-
-    // ✅ نبعت التذكرة لرقم صاحبها
-    $this->sendWhatsAppTicket(
-        $ticket->phone,          // 🔥 أهم تعديل
-        $ticket->qr_image_path,
-        $ticket->ticket_code,
-        $ticket->name,
-        ''
-    );
-
-    $ticket->update([
-        'whatsapp_sent' => true
-    ]);
-
-    return response("
-        <h2 style='text-align:center;margin-top:50px'>
-            ✅ تم إرسال التذكرة بنجاح 🎟️
-        </h2>
-    ");
+    return response()->json(['status' => 'sent']);
 }
     /* =======================
      | REJECT
