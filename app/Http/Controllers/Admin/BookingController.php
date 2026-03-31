@@ -135,7 +135,7 @@ public function sendTicketTemplate($phone, $reference)
             'to' => $phone,
             'type' => 'template',
             'template' => [
-                'name' => 'ticket_clean_final',
+                'name' => 'ticket_new',
                 'language' => [
                     'code' => 'ar_EG'
                 ],
