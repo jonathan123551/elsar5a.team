@@ -164,6 +164,8 @@ Route::middleware('admin')
         Route::get('/{booking}', [AdminBookingController::class, 'show'])->name('show');
     });
 
+    Route::post('/admin/resend-ticket/{id}', [BookingController::class, 'resendTicket'])
+    ->name('admin.resend.ticket');
     // Archive
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
     Route::get('/archive/create', [ArchiveController::class, 'create'])->name('archive.create');
