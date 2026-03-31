@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -39,7 +40,7 @@ class WhatsAppWebhookController extends Controller
         // 📱 Normalize phone
         $phone = preg_replace('/[^0-9]/', '', $message['from']);
 
-        // 📝 Get message text (supports buttons + quick reply)
+        // 📝 Get message text
         $text = $message['text']['body']
             ?? $message['button']['text']
             ?? $message['interactive']['button_reply']['title']
@@ -56,11 +57,11 @@ class WhatsAppWebhookController extends Controller
 
         if (trim($text) === 'أستلام التذكرة') {
 
-            // 🧠 نجيب أول تذكرة لسه متبعتتش
-            $ticket = Ticket::where('phone', 'like', "%$phone%")
+            // ✅ نجيب أول تذكرة لنفس الرقم ولسه متبعتتش
+            $ticket = Ticket::where('phone', $phone)
                 ->whereNotNull('qr_image_path')
                 ->where('whatsapp_sent', false)
-                ->oldest()
+                ->orderBy('id') // مهم عشان الترتيب
                 ->first();
 
             if (!$ticket) {
@@ -75,16 +76,28 @@ class WhatsAppWebhookController extends Controller
 
             try {
 
+                // 🎭 نجيب ميعاد الحفلة
+                $showTimeText = '';
+
+                if ($ticket->booking && $ticket->booking->showTime) {
+                    $showTime = $ticket->booking->showTime;
+
+                    $showTimeText =
+                        $showTime->date->format('d/m/Y') . ' • ' .
+                        Carbon::parse($showTime->time)->format('h:i A');
+                }
+
+                // 📤 إرسال التذكرة
                 app(\App\Http\Controllers\Admin\BookingController::class)
                     ->sendWhatsAppTicket(
                         $ticket->phone,
                         $ticket->qr_image_path,
                         $ticket->ticket_code,
                         $ticket->name,
-                        ''
+                        $showTimeText
                     );
 
-                // ✅ تحديث الحالة
+                // ✅ تحديث الحالة (دي أهم نقطة)
                 $ticket->update([
                     'whatsapp_sent' => true
                 ]);
