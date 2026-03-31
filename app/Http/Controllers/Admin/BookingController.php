@@ -125,7 +125,7 @@ class BookingController extends Controller
      | TEMPLATE
      ======================= */
 public function sendTicketTemplate($phone, $reference)
-{ dd($reference);
+{ 
     $phone = preg_replace('/[^0-9]/', '', $phone);
 
     $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
@@ -156,8 +156,6 @@ public function sendTicketTemplate($phone, $reference)
         ]
     );
 
-    // 🔥 أهم سطر debugging
-    dd($response->json());
 }
 
     /* =======================
