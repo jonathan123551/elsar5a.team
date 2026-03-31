@@ -15,6 +15,7 @@ class Ticket extends Model
         'is_scanned',
         'scanned_at',
         'scanned_by_admin_id',
+        'whatsapp_sent',
     ];
 
     public function booking()
