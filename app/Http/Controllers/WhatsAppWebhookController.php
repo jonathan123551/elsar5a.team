@@ -51,7 +51,7 @@ class WhatsAppWebhookController extends Controller
            🎟 ORIGINAL TICKET LOGIC
         ========================== */
 
-        if (trim($text) === 'استلم التذكرة') {
+        if (trim($text) === 'أستلام التذكرة') {
 
             $booking = Booking::with('showTime')
                 ->where('phone', 'like', "%$phone%")
