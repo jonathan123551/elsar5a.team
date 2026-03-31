@@ -113,9 +113,15 @@ class BookingController extends Controller
         ]);
     }
 
-    /* ✅ ابعت template مرة واحدة بس */
-    $this->sendTicketTemplate($booking->phone, $booking->reference_code);
+    foreach ($booking->tickets as $ticket) {
 
+    $this->sendTicketTemplate(
+        $ticket->phone,        // 👈 رقم كل شخص
+        $ticket->ticket_code   // 👈 كود التذكرة مش booking
+    );
+
+    sleep(1);
+}
     return redirect()
         ->route('admin.bookings.show', $booking->id)
         ->with('status', 'تم اعتماد الحجز وإرسال رسالة الاستلام ✅');
@@ -198,51 +204,61 @@ public function sendTicketTemplate($phone, $reference)
      ======================= */
 public function sendTicketsByReference($reference)
 {
-    // 🧼 تنظيف الريفرنس
+    // 🧼 تنظيف
     $reference = urldecode($reference);
     $reference = trim($reference);
 
-    // 🧪 Debug (مؤقت)
     \Log::info('REFERENCE:', ['ref' => $reference]);
 
-    $booking = Booking::where('reference_code', $reference)->first();
+    // ✅ نجيب التذكرة نفسها مش الـ booking
+    $ticket = Ticket::where('ticket_code', $reference)->first();
 
-    if (!$booking) {
+    if (!$ticket) {
         return response("
             <h2 style='text-align:center;margin-top:50px'>
-                ❌ Booking not found <br>
+                ❌ Ticket not found <br>
                 REF: {$reference}
             </h2>
         ");
     }
 
-    $tickets = $booking->tickets()
-        ->whereNotNull('qr_image_path')
-        ->where('whatsapp_sent', false)
-        ->get();
-
-    foreach ($tickets as $ticket) {
-
-        $this->sendWhatsAppTicket(
-            $booking->phone,
-            $ticket->qr_image_path,
-            $ticket->ticket_code,
-            $ticket->name,
-            ''
-        );
-
-        $ticket->update([
-            'whatsapp_sent' => true
-        ]);
+    // ⛔ لو اتبعت قبل كده
+    if ($ticket->whatsapp_sent) {
+        return response("
+            <h2 style='text-align:center;margin-top:50px'>
+                ⚠️ التذكرة تم إرسالها بالفعل
+            </h2>
+        ");
     }
+
+    // ⛔ لو QR لسه مش جاهز
+    if (!$ticket->qr_image_path) {
+        return response("
+            <h2 style='text-align:center;margin-top:50px'>
+                ⏳ التذكرة لم يتم تجهيزها بعد
+            </h2>
+        ");
+    }
+
+    // ✅ نبعت التذكرة لرقم صاحبها
+    $this->sendWhatsAppTicket(
+        $ticket->phone,          // 🔥 أهم تعديل
+        $ticket->qr_image_path,
+        $ticket->ticket_code,
+        $ticket->name,
+        ''
+    );
+
+    $ticket->update([
+        'whatsapp_sent' => true
+    ]);
 
     return response("
         <h2 style='text-align:center;margin-top:50px'>
-            ✅ تم إرسال التذاكر على واتساب
+            ✅ تم إرسال التذكرة بنجاح 🎟️
         </h2>
     ");
 }
-
     /* =======================
      | REJECT
      ======================= */
