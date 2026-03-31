@@ -249,4 +249,25 @@ public function receiveTicket(Request $request)
             ->route('admin.bookings.index')
             ->with('status', 'تم رفض الحجز بنجاح ❌');
     }
+    /* =======================
+ | RESEND TICKET
+ ======================= */
+public function resendTicket($id)
+{
+    $ticket = Ticket::findOrFail($id);
+
+    if (!$ticket->qr_image_path) {
+        return back()->with('status', '❌ التذكرة لم يتم إنشاؤها بعد');
+    }
+
+    $this->sendWhatsAppTicket(
+        $ticket->phone,
+        $ticket->qr_image_path,
+        $ticket->ticket_code,
+        $ticket->name,
+        ''
+    );
+
+    return back()->with('status', '✅ تم إعادة إرسال التذكرة');
+}
 }
