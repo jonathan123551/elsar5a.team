@@ -14,7 +14,10 @@
             ← رجوع
         </a>
     </div>
-
+    {{-- RESULT --}}
+    <div id="card"
+         class="hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-3 text-sm space-y-2 backdrop-blur">
+    </div>
     {{-- SCANNER --}}
     <div class="relative bg-black/70 border border-white/10 rounded-3xl p-3 overflow-hidden">
 
@@ -52,10 +55,7 @@
         جاهز للفحص
     </div>
 
-    {{-- RESULT --}}
-    <div id="card"
-         class="hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-3 text-sm space-y-2 backdrop-blur">
-    </div>
+    
 
 </section>
 
