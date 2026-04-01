@@ -18,26 +18,28 @@
     <div id="card"
          class="hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-3 text-sm space-y-2 backdrop-blur">
     </div>
-       {{-- STATUS --}}
-     <div id="status"
-         class="text-center py-3 rounded-xl bg-white/5 border border-white/10 text-sm">
+       {{-- SCANNER --}}
+<div class="relative bg-black/70 border border-white/10 rounded-3xl p-3 overflow-hidden">
+
+    <div id="qr-reader"
+         class="rounded-2xl overflow-hidden border border-white/10"></div>
+
+    {{-- FRAME --}}
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="scan-frame"></div>
+    </div>
+
+    {{-- LINE --}}
+    <div class="scan-line"></div>
+
+    {{-- 🔥 STATUS OVERLAY --}}
+    <div id="status"
+         class="absolute bottom-3 left-3 right-3 text-center py-2 rounded-xl 
+                bg-black/70 backdrop-blur text-sm text-white transition-all duration-300">
         جاهز للفحص
     </div>
-    {{-- SCANNER --}}
-    <div class="relative bg-black/70 border border-white/10 rounded-3xl p-3 overflow-hidden">
 
-        <div id="qr-reader"
-             class="rounded-2xl overflow-hidden border border-white/10"></div>
-
-        {{-- FRAME --}}
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="scan-frame"></div>
-        </div>
-
-        {{-- LINE --}}
-        <div class="scan-line"></div>
-
-    </div>
+</div>
 
     {{-- CONTROLS --}}
     <div class="flex gap-2">
@@ -161,19 +163,23 @@ function setStatus(text,type){
     const s = document.getElementById('status');
 
     s.textContent = text;
-    s.className = "text-center py-3 rounded-xl text-sm transition-all";
+
+    s.className = "absolute bottom-3 left-3 right-3 text-center py-2 rounded-xl text-sm transition-all duration-300";
 
     if(type==='ok'){
-        s.classList.add('bg-green-500/10','text-green-400','glow-green');
+        s.classList.add('bg-green-500/80','text-white');
     }
     else if(type==='used'){
-        s.classList.add('bg-yellow-500/10','text-yellow-400','glow-yellow');
+        s.classList.add('bg-yellow-400/90','text-black');
     }
     else{
-        s.classList.add('bg-red-500/10','text-red-400','glow-red');
+        s.classList.add('bg-red-500/80','text-white');
     }
-}
 
+    // 🔥 animation خفيفة
+    s.style.transform = "scale(1.05)";
+    setTimeout(()=> s.style.transform = "scale(1)", 150);
+}
 // 📊 render
 function render(d){
     const c = document.getElementById('card');
