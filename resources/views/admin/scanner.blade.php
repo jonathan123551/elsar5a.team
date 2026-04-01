@@ -99,101 +99,61 @@
 .glow-yellow{ box-shadow:0 0 25px rgba(250,204,21,.6); }
 .glow-red{ box-shadow:0 0 25px rgba(239,68,68,.6); }
 </style>
-
+<script src="https://docs.opencv.org/4.x/opencv.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script></script>
 <script>
-const qr = new Html5Qrcode("qr-reader");
+let video = document.createElement('video');
+let canvas = document.createElement('canvas');
+let ctx = canvas.getContext('2d');
+
+let codeReader = new ZXing.BrowserQRCodeReader();
 
 let busy = false;
 let lastCode = null;
-let lastScanTime = 0;
+let lastTime = 0;
 
 const COOLDOWN = 3000;
 
-// 🔊 SOUND (fixed)
+/* =========================
+   🔊 SOUND
+========================= */
 let audioCtx;
-function beep(type){
+function beep(){
     try{
         if(!audioCtx){
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-
         const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.frequency.value =
-            type === 'ok' ? 950 :
-            type === 'used' ? 500 : 250;
-
-        gain.gain.value = 0.25;
-
+        osc.frequency.value = 900;
+        osc.connect(audioCtx.destination);
         osc.start();
-        setTimeout(()=>osc.stop(),150);
-
+        setTimeout(()=>osc.stop(),120);
     }catch(e){}
 }
 
-// 📳 vibration
-function vibrate(type){
-    if(type==='ok') navigator.vibrate?.(120);
-    else if(type==='used') navigator.vibrate?.([100,50,100]);
-    else navigator.vibrate?.(200);
+/* =========================
+   📳 VIBRATION
+========================= */
+function vibrate(){
+    navigator.vibrate?.(120);
 }
 
-// 💡 flash overlay
-function flash(type){
-    const f = document.getElementById('flash');
-    const i = document.getElementById('flashIcon');
+/* =========================
+   🎯 SEND TO BACKEND
+========================= */
+function handleScan(code){
 
-    f.classList.remove('hidden');
+    const now = Date.now();
 
-    if(type==='ok'){ i.textContent='✓'; i.className='flash-ok'; }
-    if(type==='used'){ i.textContent='!'; i.className='flash-used'; }
-    if(type==='error'){ i.textContent='✕'; i.className='flash-error'; }
-
-    setTimeout(()=>f.classList.add('hidden'),700);
-}
-
-// 🎯 UI
-function setStatus(text,type){
-    const s = document.getElementById('status');
-
-    s.textContent = text;
-    s.className = "text-center py-3 rounded-xl text-sm transition-all";
-
-    if(type==='ok'){
-        s.classList.add('bg-green-500/10','text-green-400','glow-green');
+    if(code === lastCode && now - lastTime < COOLDOWN){
+        return;
     }
-    else if(type==='used'){
-        s.classList.add('bg-yellow-500/10','text-yellow-400','glow-yellow');
-    }
-    else{
-        s.classList.add('bg-red-500/10','text-red-400','glow-red');
-    }
-}
 
-// 📊 render
-function render(d){
-    const c = document.getElementById('card');
-    c.classList.remove('hidden');
+    if(busy) return;
 
-    c.innerHTML = `
-        <div class="text-white font-bold text-base">${d.name}</div>
-        <div class="text-gray-400 text-xs">${d.phone}</div>
-
-        <div class="border-t border-white/10 pt-2"></div>
-
-        <div>🎭 ${d.show_title}</div>
-        <div>🕒 ${d.date} • ${d.time}</div>
-
-        ${d.scanned_at ? `<div class="text-green-400">✅ ${d.scanned_at}</div>` : ''}
-    `;
-}
-
-// 🚀 request
-function check(code){
+    busy = true;
+    lastCode = code;
+    lastTime = now;
 
     fetch('/admin/scanner/check',{
         method:'POST',
@@ -205,69 +165,132 @@ function check(code){
     })
     .then(r=>r.json())
     .then(d=>{
+        console.log("RESULT:", d);
 
-        if(d.status==='ok'){
-            setStatus('✅ دخول مسموح','ok');
-            vibrate('ok');
-            beep('ok');
-            flash('ok');
-            render(d);
-        }
-        else if(d.status==='used'){
-            setStatus('⚠️ مستخدمة','used');
-            vibrate('used');
-            beep('used');
-            flash('used');
-            render(d);
-        }
-        else{
-            setStatus('❌ غير صالح','error');
-            vibrate('error');
-            beep('error');
-            flash('error');
-        }
+        beep();
+        vibrate();
 
+        // ممكن تربط هنا UI بتاعك
     })
     .finally(()=>{
-        setTimeout(()=>busy=false,800);
+        setTimeout(()=>busy=false,700);
     });
 }
 
-// 📸 START (FAST + STABLE)
-qr.start(
-    { facingMode: "environment" },
-    {
-        fps: 12,
-        qrbox: 260
-    },
-    text=>{
-        const now = Date.now();
+/* =========================
+   🚀 START CAMERA
+========================= */
+async function startCamera(){
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+    });
 
-        if(text === lastCode && now - lastScanTime < COOLDOWN){
-            return;
+    video.srcObject = stream;
+    video.setAttribute("playsinline", true);
+    video.play();
+
+    requestAnimationFrame(processFrame);
+}
+
+/* =========================
+   🧠 AI PROCESSING
+========================= */
+function processFrame(){
+
+    if(video.readyState === video.HAVE_ENOUGH_DATA){
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        ctx.drawImage(video, 0, 0);
+
+        let src = cv.imread(canvas);
+
+        // 🧠 grayscale
+        let gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+        // 🧠 blur fix
+        let blur = new cv.Mat();
+        cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
+
+        // 🧠 contrast boost
+        let thresh = new cv.Mat();
+        cv.adaptiveThreshold(
+            blur,
+            thresh,
+            255,
+            cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv.THRESH_BINARY,
+            11,
+            2
+        );
+
+        // 🔍 detect QR
+        let detector = new cv.QRCodeDetector();
+        let points = new cv.Mat();
+
+        let data = detector.detectAndDecode(thresh, points);
+
+        if(data){
+
+            console.log("RAW QR:", data);
+
+            // 🔥 لو مائل → نصلحه
+            if(points.rows === 4){
+
+                let dst = new cv.Mat();
+
+                let srcTri = cv.matFromArray(4,1,cv.CV_32FC2, [
+                    points.data32F[0], points.data32F[1],
+                    points.data32F[2], points.data32F[3],
+                    points.data32F[4], points.data32F[5],
+                    points.data32F[6], points.data32F[7],
+                ]);
+
+                let dstTri = cv.matFromArray(4,1,cv.CV_32FC2, [
+                    0,0,
+                    300,0,
+                    300,300,
+                    0,300
+                ]);
+
+                let M = cv.getPerspectiveTransform(srcTri, dstTri);
+
+                cv.warpPerspective(src, dst, M, new cv.Size(300,300));
+
+                // 🧠 decode بعد التصحيح
+                let tempCanvas = document.createElement('canvas');
+                cv.imshow(tempCanvas, dst);
+
+                codeReader.decodeFromCanvas(tempCanvas)
+                    .then(result=>{
+                        handleScan(result.text);
+                    })
+                    .catch(()=>{});
+
+                dst.delete();
+            }
+            else{
+                handleScan(data);
+            }
         }
 
-        if(busy) return;
-
-        busy = true;
-        lastCode = text;
-        lastScanTime = now;
-
-        check(text);
+        src.delete();
+        gray.delete();
+        blur.delete();
+        thresh.delete();
+        points.delete();
     }
-);
 
-// 🔦 Flash control
-let flashOn = false;
-document.getElementById('flashBtn').onclick = async () => {
-    try{
-        flashOn = !flashOn;
-        await qr.applyVideoConstraints({
-            advanced: [{ torch: flashOn }]
-        });
-    }catch(e){
-        alert('الفلاش غير مدعوم');
-    }
+    requestAnimationFrame(processFrame);
+}
+
+/* =========================
+   🔥 INIT
+========================= */
+window.onload = () => {
+    startCamera();
 };
 </script>
 @endsection
