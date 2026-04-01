@@ -16,76 +16,64 @@ class ScannerController extends Controller
     }
 
     public function check(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'code' => ['required', 'string'],
+{
+    $data = $request->validate([
+        'code' => ['required', 'string'],
+    ]);
+
+    $code = trim($data['code']);
+
+    $ticket = \App\Models\Ticket::with('booking.showTime.show')
+        ->where('ticket_code', $code)
+        ->first();
+
+    if (!$ticket) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'غير موجود',
         ]);
+    }
 
-        $raw = trim($data['code']);
-        $code = $raw;
-
-        if (str_starts_with($raw, 'REF=')) {
-            $code = trim(substr($raw, 4));
-        }
-
-        $ticket = Ticket::with('booking.showTime.show')
-            ->where('ticket_code', $code)
-            ->first();
-
-        if (!$ticket) {
-            return response()->json([
-                'status' => 'error',
-                'message' => '❌ غير موجود',
-            ]);
-        }
-
-        if ($ticket->booking->status !== 'approved') {
-            return response()->json([
-                'status' => 'error',
-                'message' => '❌ غير معتمد',
-            ]);
-        }
-
-        $time = $ticket->booking->showTime;
-
-        $payload = [
-            'name' => $ticket->name,
-            'phone' => $ticket->phone,
-            'show_title' => optional($time->show)->title ?? '',
-            'date' => optional($time->date)->format('d/m/Y'),
-            'time' => $time->time
-                ? Carbon::parse($time->time)->format('g:i A')
-                : '',
-            'scanned_at' => $ticket->scanned_at,
-        ];
-
-        // 🔥 GRACE PERIOD (20 ثانية)
-        if ($ticket->scanned_at) {
-
-            $diff = now()->diffInSeconds($ticket->scanned_at);
-
-            if ($diff <= 20) {
-                return response()->json(array_merge([
-                    'status' => 'ok',
-                    'message' => '✅ تأكيد سريع',
-                ], $payload));
-            }
-
-            return response()->json(array_merge([
-                'status' => 'used',
-                'message' => '⚠️ مستخدمة قبل كده',
-            ], $payload));
-        }
-
-        // ✅ أول مرة
-        $ticket->update([
-            'is_scanned' => true,
-            'scanned_at' => now(),
+    if ($ticket->booking->status !== 'approved') {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'غير معتمد',
         ]);
+    }
 
+    $time = $ticket->booking->showTime;
+
+    $payload = [
+        'name' => $ticket->name,
+        'phone' => $ticket->phone,
+        'show_title' => optional($time->show)->title ?? '',
+        'date' => optional($time->date)->format('d/m/Y'),
+        'time' => $time->time
+            ? \Carbon\Carbon::parse($time->time)->format('g:i A')
+            : '',
+        'scanned_at' => $ticket->scanned_at
+            ? \Carbon\Carbon::parse($ticket->scanned_at)->format('H:i:s')
+            : null,
+    ];
+
+    // ✅ لو مستخدمة قبل كده
+    if ($ticket->scanned_at) {
         return response()->json(array_merge([
-            'status' => 'ok',
-            'message' => '✅ دخول',
+            'status' => 'used',
+            'message' => 'تم استخدامها',
         ], $payload));
     }
+
+    // ✅ أول مرة
+    $ticket->scanned_at = now();
+    $ticket->is_scanned = true;
+    $ticket->save();
+
+    $payload['scanned_at'] = now()->format('H:i:s');
+
+    return response()->json(array_merge([
+        'status' => 'ok',
+        'message' => 'دخول مسموح',
+    ], $payload));
+}
 }
