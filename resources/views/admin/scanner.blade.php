@@ -87,54 +87,64 @@
 const qr = new Html5Qrcode("qr-reader");
 
 let busy = false;
-let last = null;
-let lastTime = 0;
+let lastCode = null;
+let lastScanTime = 0;
 
-// 🔊 SOUND PRO
+// ⏱️ منع التكرار الحقيقي
+const COOLDOWN = 3000; // 3 ثواني
+
+// 🔊 SOUND (fix iPhone)
+let audioCtx;
 function beep(type){
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try{
+        if(!audioCtx){
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-    if(type==='ok'){
-        osc.frequency.value = 900;
-    } else if(type==='used'){
-        osc.frequency.value = 500;
-    } else {
-        osc.frequency.value = 250;
-    }
+        osc.frequency.value =
+            type === 'ok' ? 900 :
+            type === 'used' ? 500 : 250;
 
-    gain.gain.value = 0.2;
+        gain.gain.value = 0.2;
 
-    osc.start();
-    setTimeout(()=>osc.stop(),120);
+        osc.start();
+        setTimeout(()=>osc.stop(),120);
+
+    }catch(e){}
 }
 
-// 💡 FLASH EFFECT
-function flash(type){
-    const f = document.getElementById('flash');
-    const i = document.getElementById('flashIcon');
-
-    f.classList.remove('hidden');
-
-    if(type==='ok'){ i.textContent='✓'; i.className='flash-ok'; }
-    if(type==='used'){ i.textContent='!'; i.className='flash-used'; }
-    if(type==='error'){ i.textContent='✕'; i.className='flash-error'; }
-
-    setTimeout(()=>f.classList.add('hidden'),700);
+// 📳 vibration
+function vibrate(type){
+    if(type==='ok') navigator.vibrate?.(120);
+    else if(type==='used') navigator.vibrate?.([100,50,100]);
+    else navigator.vibrate?.(200);
 }
 
-// 📊 RENDER
+// 💡 UI
+function setStatus(text,type){
+    const s = document.getElementById('status');
+
+    s.textContent = text;
+    s.className = "text-center py-3 rounded-xl text-sm";
+
+    if(type==='ok') s.classList.add('bg-green-500/10','text-green-400');
+    else if(type==='used') s.classList.add('bg-yellow-500/10','text-yellow-400');
+    else s.classList.add('bg-red-500/10','text-red-400');
+}
+
+// 🎯 render
 function render(d){
     const c = document.getElementById('card');
     c.classList.remove('hidden');
 
     c.innerHTML = `
-        <div class="text-white font-bold text-base">${d.name}</div>
+        <div class="text-white font-bold">${d.name}</div>
         <div class="text-gray-400 text-xs">${d.phone}</div>
 
         <div class="border-t border-white/10 pt-2"></div>
@@ -142,29 +152,11 @@ function render(d){
         <div>🎭 ${d.show_title}</div>
         <div>🕒 ${d.date} • ${d.time}</div>
 
-        ${d.scanned_at ? `<div class="text-green-400">✅ دخل: ${d.scanned_at}</div>` : ''}
+        ${d.scanned_at ? `<div class="text-green-400">✅ ${d.scanned_at}</div>` : ''}
     `;
 }
 
-// 🎯 STATUS
-function setStatus(text,type){
-    const s = document.getElementById('status');
-
-    s.textContent = text;
-    s.className = "text-center py-3 rounded-xl text-sm transition-all";
-
-    if(type==='ok'){
-        s.classList.add('bg-green-500/10','text-green-400','glow-green');
-    }
-    else if(type==='used'){
-        s.classList.add('bg-yellow-500/10','text-yellow-400','glow-yellow');
-    }
-    else{
-        s.classList.add('bg-red-500/10','text-red-400','glow-red');
-    }
-}
-
-// 🚀 CHECK
+// 🚀 request
 function check(code){
 
     fetch('/admin/scanner/check',{
@@ -180,45 +172,48 @@ function check(code){
 
         if(d.status==='ok'){
             setStatus('✅ دخول مسموح','ok');
-            navigator.vibrate?.(120);
-            flash('ok');
+            vibrate('ok');
             beep('ok');
             render(d);
         }
         else if(d.status==='used'){
             setStatus('⚠️ مستخدمة قبل كده','used');
-            navigator.vibrate?.([100,50,100]);
-            flash('used');
+            vibrate('used');
             beep('used');
             render(d);
         }
         else{
-            setStatus('❌ كود غير صالح','error');
-            flash('error');
+            setStatus('❌ غير صالح','error');
+            vibrate('error');
             beep('error');
         }
 
     })
-    .finally(()=>setTimeout(()=>busy=false,120));
+    .finally(()=>{
+        setTimeout(()=>busy=false, 800); // 👈 مهم
+    });
 }
 
-// 📸 START SCAN (زاوية أقوى)
+// ⚡ START (optimized)
 qr.start(
-    { facingMode: { exact: "environment" } },
+    { facingMode: "environment" },
     {
-        fps: 20,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
+        fps: 12, // 👈 أسرع وثابت
+        qrbox: 250
     },
     text=>{
         const now = Date.now();
 
-        if(text === last && now - lastTime < 1000) return;
+        // 🚫 نفس الكود خلال cooldown → ignore
+        if(text === lastCode && now - lastScanTime < COOLDOWN){
+            return;
+        }
+
         if(busy) return;
 
         busy = true;
-        last = text;
-        lastTime = now;
+        lastCode = text;
+        lastScanTime = now;
 
         check(text);
     }
