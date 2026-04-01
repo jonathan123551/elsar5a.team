@@ -34,10 +34,14 @@
 
     {{-- 🔥 STATUS OVERLAY TOP --}}
     <div id="status"
-         class="absolute top-3 left-3 right-3 z-50 text-center py-2 rounded-xl 
-                bg-black/70 backdrop-blur text-sm text-white transition-all duration-300">
-        جاهز للفحص
-    </div>
+     class="absolute top-5 left-1/2 -translate-x-1/2 z-50 
+            px-4 py-2 rounded-full 
+            bg-black/80 backdrop-blur-md 
+            text-sm text-white 
+            shadow-lg border border-white/10
+            transition-all duration-300">
+    جاهز للفحص
+</div>
 
 </div>
 
@@ -164,23 +168,25 @@ function flash(type){
 function setStatus(text,type){
     const s = document.getElementById('status');
 
-    s.textContent = text;
+    s.innerText = text;
 
-    s.className = "absolute bottom-3 left-3 right-3 text-center py-2 rounded-xl text-sm transition-all duration-300";
+    s.className = "absolute top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-sm border transition-all duration-300";
 
     if(type==='ok'){
-        s.classList.add('bg-green-500/80','text-white');
+        s.classList.add('bg-green-500/90','text-white','border-green-300');
     }
     else if(type==='used'){
-        s.classList.add('bg-yellow-400/90','text-black');
+        s.classList.add('bg-yellow-400/90','text-black','border-yellow-200');
     }
     else{
-        s.classList.add('bg-red-500/80','text-white');
+        s.classList.add('bg-red-500/90','text-white','border-red-300');
     }
 
-    // 🔥 animation خفيفة
-    s.style.transform = "scale(1.05)";
-    setTimeout(()=> s.style.transform = "scale(1)", 150);
+    // 🔥 pop animation
+    s.style.transform = "translate(-50%, -5px) scale(1.1)";
+    setTimeout(()=>{
+        s.style.transform = "translate(-50%, 0) scale(1)";
+    },150);
 }
 // 📊 render
 function render(d){
