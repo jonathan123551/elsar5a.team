@@ -52,7 +52,7 @@ class ScannerController extends Controller
             ? \Carbon\Carbon::parse($time->time)->format('g:i A')
             : '',
         'scanned_at' => $ticket->scanned_at
-            ? \Carbon\Carbon::parse($ticket->scanned_at)->format('H:i:s')
+            ? \Carbon\Carbon::parse($ticket->scanned_at)->format('g:i A')
             : null,
     ];
 
@@ -69,7 +69,7 @@ class ScannerController extends Controller
     $ticket->is_scanned = true;
     $ticket->save();
 
-    $payload['scanned_at'] = now()->format('H:i:s');
+    $payload['scanned_at'] = now()->format('g:i A');
 
     return response()->json(array_merge([
         'status' => 'ok',
