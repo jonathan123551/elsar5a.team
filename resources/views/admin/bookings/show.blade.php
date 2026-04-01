@@ -47,49 +47,7 @@
     {{-- بيانات --}}
     <div class="grid sm:grid-cols-2 gap-3 text-sm">
 
-        <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
-            <h2 class="text-xs font-semibold text-gray-300">العميل</h2>
-            <p class="text-sm">{{ $booking->full_name }}</p>
-            <p class="text-xs text-gray-400">{{ $booking->phone }}</p>
-        </div>
-
-        <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
-            <h2 class="text-xs font-semibold text-gray-300">الحجز</h2>
-
-            <p class="text-xs">
-                عدد التذاكر:
-                <span class="text-white font-semibold">{{ $booking->tickets_count }}</span>
-            </p>
-
-            <p class="text-xs">
-                السعر:
-                <span class="text-amber-300 font-semibold">{{ $booking->total_price }} جنيه</span>
-            </p>
-
-            <p class="text-xs">
-                الحالة:
-                @if($booking->status === 'approved')
-                    <span class="text-emerald-400">✔ مقبول</span>
-                @elseif($booking->status === 'rejected')
-                    <span class="text-red-400">✖ مرفوض</span>
-                @else
-                    <span class="text-sky-400">⏳ pending</span>
-                @endif
-            </p>
-        </div>
-    </div>
-
-    {{-- Screenshot --}}
-    @if($booking->transfer_screenshot_path)
-        <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
-            <h2 class="text-xs text-gray-300">Screenshot</h2>
-
-            <img src="{{ $booking->transfer_screenshot_path }}"
-                 class="w-full rounded-xl border border-white/10">
-        </div>
-    @endif
-
-    {{-- 🎟️ التذاكر --}}
+        {{-- 🎟️ التذاكر --}}
     <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
         <h2 class="text-sm font-semibold text-amber-300">التذاكر</h2>
 
@@ -149,6 +107,44 @@
 
         </div>
     </div>
+
+        <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
+            <h2 class="text-xs font-semibold text-gray-300">الحجز</h2>
+
+            <p class="text-xs">
+                عدد التذاكر:
+                <span class="text-white font-semibold">{{ $booking->tickets_count }}</span>
+            </p>
+
+            <p class="text-xs">
+                السعر:
+                <span class="text-amber-300 font-semibold">{{ $booking->total_price }} جنيه</span>
+            </p>
+
+            <p class="text-xs">
+                الحالة:
+                @if($booking->status === 'approved')
+                    <span class="text-emerald-400">✔ مقبول</span>
+                @elseif($booking->status === 'rejected')
+                    <span class="text-red-400">✖ مرفوض</span>
+                @else
+                    <span class="text-sky-400">⏳ pending</span>
+                @endif
+            </p>
+        </div>
+    </div>
+
+    {{-- Screenshot --}}
+    @if($booking->transfer_screenshot_path)
+        <div class="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
+            <h2 class="text-xs text-gray-300">Screenshot</h2>
+
+            <img src="{{ $booking->transfer_screenshot_path }}"
+                 class="w-full rounded-xl border border-white/10">
+        </div>
+    @endif
+
+    
 
     {{-- Buttons --}}
     <div class="flex gap-3 justify-center">
