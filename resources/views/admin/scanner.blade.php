@@ -1,3 +1,7 @@
+@extends('layouts.app')
+
+@section('title', 'Scanner')
+
 @section('content')
 <section class="max-w-md mx-auto space-y-4 px-3">
 
