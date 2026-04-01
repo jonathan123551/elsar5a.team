@@ -116,9 +116,29 @@
                             </span>
                         </td>
 
-                        <td class="px-3 py-2 text-center">
-                            <span class="inline-block w-3 h-3 rounded-full {{ $booking->whatsapp_sent ? 'bg-emerald-400' : 'bg-red-500' }}"></span>
-                        </td>
+                       <td class="px-3 py-2 text-center">
+
+    @php
+        $allSent = $booking->tickets->every(fn($t) => $t->whatsapp_sent);
+        $total   = $booking->tickets->count();
+        $sent    = $booking->tickets->where('whatsapp_sent', true)->count();
+    @endphp
+
+    <div class="flex flex-col items-center gap-1">
+
+        {{-- الدوت --}}
+        <span class="inline-block w-3 h-3 rounded-full 
+            {{ $allSent ? 'bg-emerald-400' : 'bg-red-500' }}">
+        </span>
+
+        {{-- عدد التذاكر --}}
+        <span class="text-[10px] text-gray-400">
+            {{ $sent }}/{{ $total }}
+        </span>
+
+    </div>
+
+</td>
 
                         <td class="px-3 py-2">
                             <a href="{{ route('admin.bookings.show',$booking) }}"
