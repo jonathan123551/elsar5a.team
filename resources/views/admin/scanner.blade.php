@@ -18,13 +18,7 @@
     <div id="card"
          class="hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-3 text-sm space-y-2 backdrop-blur">
     </div>
-    {{-- 🔥 STATUS OVERLAY --}}
-    <div id="status"
-         class="absolute bottom-3 left-3 right-3 text-center py-2 rounded-xl 
-                bg-black/70 backdrop-blur text-sm text-white transition-all duration-300">
-        جاهز للفحص
-    </div>
-       {{-- SCANNER --}}
+  {{-- SCANNER --}}
 <div class="relative bg-black/70 border border-white/10 rounded-3xl p-3 overflow-hidden">
 
     <div id="qr-reader"
@@ -38,9 +32,16 @@
     {{-- LINE --}}
     <div class="scan-line"></div>
 
-    
+    {{-- 🔥 STATUS OVERLAY TOP --}}
+    <div id="status"
+         class="absolute top-3 left-3 right-3 z-50 text-center py-2 rounded-xl 
+                bg-black/70 backdrop-blur text-sm text-white transition-all duration-300">
+        جاهز للفحص
+    </div>
 
 </div>
+
+
 
     {{-- CONTROLS --}}
     <div class="flex gap-2">
