@@ -194,15 +194,39 @@ function render(d){
     c.classList.remove('hidden');
 
     c.innerHTML = `
-        <div class="text-white font-bold text-base">${d.name}</div>
-        <div class="text-gray-400 text-xs">${d.phone}</div>
+        <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-3 space-y-2">
 
-        <div class="border-t border-white/10 pt-2"></div>
+            <!-- 👤 NAME -->
+            <div class="text-white font-semibold text-sm tracking-wide">
+                ${d.name}
+            </div>
 
-        <div>🎭 ${d.show_title}</div>
-        <div>🕒 ${d.date} • ${d.time}</div>
+            <!-- 📱 PHONE -->
+            <div class="text-gray-400 text-[11px]">
+                ${d.phone}
+            </div>
 
-        ${d.scanned_at ? `<div class="text-green-400">✅ ${d.scanned_at}</div>` : ''}
+            <div class="border-t border-white/10 my-1"></div>
+
+            <!-- 🎭 SHOW -->
+            <div class="text-gray-300 text-[12px]">
+                🎭 ${d.show_title}
+            </div>
+
+            <!-- 🕒 DATE & TIME -->
+            <div class="text-[12px] font-medium text-indigo-400">
+                🕒 ${d.date} • ${d.time}
+            </div>
+
+            ${
+                d.scanned_at 
+                ? `<div class="text-emerald-400 text-[12px] font-semibold">
+                        ✅ دخل: ${d.scanned_at}
+                   </div>`
+                : ''
+            }
+
+        </div>
     `;
 }
 
