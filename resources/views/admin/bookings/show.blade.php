@@ -32,6 +32,18 @@
         </a>
     </div>
 
+    {{-- 🔥 إعادة إرسال لكل التذاكر (فوق العميل) --}}
+    @if($booking->status === 'approved')
+        <div class="bg-blue-500/10 border border-blue-500/40 rounded-xl p-3 text-center">
+            <form action="{{ route('admin.resend.ticket', $booking->tickets->first()->id) }}" method="POST">
+                @csrf
+                <button class="text-xs px-4 py-2 rounded-full bg-blue-500 text-white">
+                    🔁 إعادة إرسال التذاكر
+                </button>
+            </form>
+        </div>
+    @endif
+
     {{-- بيانات --}}
     <div class="grid sm:grid-cols-2 gap-3 text-sm">
 
@@ -86,10 +98,9 @@
             @foreach($booking->tickets as $ticket)
                 <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col gap-2">
 
-                    {{-- Top --}}
                     <div class="flex items-center justify-between">
 
-                        <div>
+                         <div>
                             <p class="text-sm font-semibold text-white">
                                 {{ $ticket->name }}
                             </p>
@@ -99,7 +110,6 @@
                             </p>
                         </div>
 
-                        {{-- Status --}}
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full 
                                 {{ $ticket->whatsapp_sent ? 'bg-emerald-500' : 'bg-red-500' }}">
@@ -112,25 +122,27 @@
                         </div>
                     </div>
 
-                    {{-- Actions --}}
-                    <div class="flex flex-wrap gap-2">
+                    {{-- 🔥 يظهر بس لو approved --}}
+                    @if($booking->status === 'approved')
+                        <div class="flex flex-wrap gap-2">
 
-                        @if($ticket->qr_image_path)
-                            <a href="{{ $ticket->qr_image_path }}"
-                               target="_blank"
-                               class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10">
-                                عرض 🎫
-                            </a>
-                        @endif
+                            @if($ticket->qr_image_path)
+                                <a href="{{ $ticket->qr_image_path }}"
+                                   target="_blank"
+                                   class="text-[10px] px-3 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10">
+                                    عرض 🎫
+                                </a>
+                            @endif
 
-                        <form action="{{ route('admin.resend.ticket', $ticket->id) }}" method="POST">
-                            @csrf
-                            <button class="text-[10px] px-3 py-1 rounded-full bg-blue-500 text-white">
-                                إعادة إرسال
-                            </button>
-                        </form>
+                            <form action="{{ route('admin.resend.ticket', $ticket->id) }}" method="POST">
+                                @csrf
+                                <button class="text-[10px] px-3 py-1 rounded-full bg-blue-500 text-white">
+                                    إعادة إرسال
+                                </button>
+                            </form>
 
-                    </div>
+                        </div>
+                    @endif
 
                 </div>
             @endforeach
