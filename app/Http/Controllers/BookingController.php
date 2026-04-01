@@ -148,19 +148,5 @@ class BookingController extends Controller
         ]);
     }
 
-    public function delete($id)
-{
-    $booking = Booking::with('tickets')->findOrFail($id);
 
-    // حذف التذاكر
-    foreach ($booking->tickets as $ticket) {
-        $ticket->delete();
-    }
-
-    // حذف الحجز
-    $booking->delete();
-
-    return redirect()->route('admin.bookings.index')
-        ->with('status', 'تم حذف الحجز بالكامل');
-}
 }
