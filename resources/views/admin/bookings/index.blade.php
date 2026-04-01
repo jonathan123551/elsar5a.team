@@ -206,11 +206,22 @@
                         {{ $booking->status }}
                     </span>
 
+                     @php
+                        $allSent = $booking->tickets->every(fn($t) => $t->whatsapp_sent);
+                        $total   = $booking->tickets->count();
+                        $sent    = $booking->tickets->where('whatsapp_sent', true)->count();
+                    @endphp
+
                     <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full {{ $booking->whatsapp_sent ? 'bg-emerald-400' : 'bg-red-500' }}"></span>
-                        <span class="text-gray-400">
-                            {{ $booking->whatsapp_sent ? 'تم الاستلام' : 'لم تُرسل' }}
+
+                        <span class="w-2.5 h-2.5 rounded-full 
+                            {{ $allSent ? 'bg-emerald-400' : 'bg-red-500' }}">
                         </span>
+
+                        <span class="text-gray-400 text-[11px]">
+                            {{ $sent }}/{{ $total }}
+                        </span>
+
                     </div>
 
                     <a href="{{ route('admin.bookings.show',$booking) }}"

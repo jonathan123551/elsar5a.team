@@ -42,23 +42,15 @@
                                 <p class="text-xs text-gray-400">{{ $ticket->phone }}</p>
                             </div>
 
-                        @php
-                            $allSent = $booking->tickets->every(fn($t) => $t->whatsapp_sent);
-                            $total   = $booking->tickets->count();
-                            $sent    = $booking->tickets->where('whatsapp_sent', true)->count();
-                        @endphp
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full 
+                                    {{ $ticket->whatsapp_sent ? 'bg-green-500' : 'bg-red-500' }}"></span>
 
-                        <div class="flex items-center gap-2">
-
-                            <span class="w-2.5 h-2.5 rounded-full 
-                                {{ $allSent ? 'bg-emerald-400' : 'bg-red-500' }}">
-                            </span>
-
-                            <span class="text-gray-400 text-[10px]">
-                                {{ $sent }}/{{ $total }}
-                            </span>
-
-                        </div>
+                                <span class="text-[10px] 
+                                    {{ $ticket->whatsapp_sent ? 'text-green-300' : 'text-red-300' }}">
+                                    {{ $ticket->whatsapp_sent ? 'تم الاستلام' : 'لم يستلم' }}
+                                </span>
+                            </div>
                         </div>
 
                         @if($booking->status === 'approved')
