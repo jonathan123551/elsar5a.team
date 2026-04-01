@@ -201,10 +201,7 @@ function render(d){
                 ${d.name}
             </div>
 
-            <!-- 📱 PHONE -->
-            <div class="text-gray-400 text-[11px]">
-                ${d.phone}
-            </div>
+        
 
             <div class="border-t border-white/10 my-1"></div>
 
