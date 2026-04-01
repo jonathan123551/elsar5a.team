@@ -122,7 +122,26 @@
         </div>
     @endif
 
+{{-- Buttons --}}
+    <div class="flex gap-3 justify-center">
+        @if($booking->status === 'pending')
 
+            <form action="{{ route('admin.bookings.approve', $booking) }}" method="POST">
+                @csrf
+                <button class="px-4 py-2 rounded-full bg-emerald-500 text-black text-sm">
+                    اعتماد
+                </button>
+            </form>
+
+            <form action="{{ route('admin.bookings.reject', $booking) }}" method="POST">
+                @csrf
+                <button class="px-4 py-2 rounded-full bg-red-500 text-white text-sm">
+                    رفض
+                </button>
+            </form>
+
+        @endif
+    </div>
     {{-- 🔥 DELETE BUTTON (يظهر بس لو approved) --}}
     @if($booking->status === 'approved')
         <div class="text-center mt-6">
