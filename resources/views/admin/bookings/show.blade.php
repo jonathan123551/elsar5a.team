@@ -100,7 +100,7 @@
 
                     <div class="flex items-center justify-between">
 
-                         <div>
+                        <div>
                             <p class="text-sm font-semibold text-white">
                                 {{ $ticket->name }}
                             </p>
