@@ -22,8 +22,6 @@ class ScannerController extends Controller
         ]);
 
         $raw = trim($data['code']);
-
-        // استخراج الكود
         $code = $raw;
 
         if (str_starts_with($raw, 'REF=')) {
@@ -34,43 +32,48 @@ class ScannerController extends Controller
             ->where('ticket_code', $code)
             ->first();
 
-        // ❌ مش موجود
         if (!$ticket) {
             return response()->json([
-                'status'  => 'error',
-                'message' => '❌ التذكرة غير موجودة',
-            ], 404);
+                'status' => 'error',
+                'message' => '❌ غير موجود',
+            ]);
         }
 
-        // ❌ مش approved
         if ($ticket->booking->status !== 'approved') {
             return response()->json([
-                'status'  => 'error',
-                'message' => '❌ الحجز لم يتم اعتماده بعد',
+                'status' => 'error',
+                'message' => '❌ غير معتمد',
             ]);
         }
 
         $time = $ticket->booking->showTime;
 
         $payload = [
-            'ticket_code' => $ticket->ticket_code,
-            'name'        => $ticket->name,
-            'phone'       => $ticket->phone,
-            'show_title'  => optional($time->show)->title ?? '',
-            'date'        => optional($time->date)->format('d/m/Y'),
-            'time'        => $time->time
+            'name' => $ticket->name,
+            'phone' => $ticket->phone,
+            'show_title' => optional($time->show)->title ?? '',
+            'date' => optional($time->date)->format('d/m/Y'),
+            'time' => $time->time
                 ? Carbon::parse($time->time)->format('g:i A')
                 : '',
-            'scanned_at'  => $ticket->scanned_at
-                ? Carbon::parse($ticket->scanned_at)->format('d/m/Y g:i A')
-                : null,
+            'scanned_at' => $ticket->scanned_at,
         ];
 
-        // ⚠️ مستخدمة قبل كده
+        // 🔥 GRACE PERIOD (20 ثانية)
         if ($ticket->scanned_at) {
+
+            $diff = now()->diffInSeconds($ticket->scanned_at);
+
+            if ($diff <= 20) {
+                return response()->json(array_merge([
+                    'status' => 'ok',
+                    'message' => '✅ تأكيد سريع',
+                ], $payload));
+            }
+
             return response()->json(array_merge([
-                'status'  => 'used',
-                'message' => '⚠️ التذكرة مستخدمة قبل كده',
+                'status' => 'used',
+                'message' => '⚠️ مستخدمة قبل كده',
             ], $payload));
         }
 
@@ -80,11 +83,9 @@ class ScannerController extends Controller
             'scanned_at' => now(),
         ]);
 
-        $payload['scanned_at'] = now()->format('d/m/Y g:i A');
-
         return response()->json(array_merge([
-            'status'  => 'ok',
-            'message' => '✅ دخول مسموح',
+            'status' => 'ok',
+            'message' => '✅ دخول',
         ], $payload));
     }
 }
