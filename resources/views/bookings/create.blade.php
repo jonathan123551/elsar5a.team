@@ -134,7 +134,9 @@
 <script>
 
 let count = 1;
-const maxTickets = 10;
+const maxTickets = {{ max(0, $showTime->total_tickets - $showTime->bookings()
+    ->whereIn('status',['approved','pending'])
+    ->sum('tickets_count')) }};
 
 const namesContainer = document.getElementById('namesContainer');
 const ticketsInput = document.getElementById('tickets_count');
@@ -168,7 +170,12 @@ function changeCount(val) {
     count += val;
 
     if (count < 1) count = 1;
-    if (count > maxTickets) count = maxTickets;
+
+    if (count > maxTickets) {
+        count = maxTickets;
+
+        alert("❌ لا يوجد تذاكر متاحة، المتاح: " + maxTickets);
+    }
 
     countDisplay.innerText = count;
     ticketsInput.value = count;
