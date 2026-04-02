@@ -43,17 +43,17 @@
 
 <div class="hidden md:block bg-black/40 border border-white/10 rounded-2xl">
     <div class="overflow-x-auto">
-        <table class="min-w-[720px] w-full text-sm text-gray-200">
+       <table class="min-w-[720px] w-full text-sm text-gray-200 text-center">
 
 
         <thead class="bg-white/5 text-xs text-gray-400">
             <tr>
-                <th class="px-3 py-2">التاريخ</th>
-                <th class="px-3 py-2">الساعة</th>
-                <th class="px-3 py-2">السعر</th>
-                <th class="px-3 py-2">المتاح / الإجمالي</th>
-                <th class="px-3 py-2">الحالة</th>
-                <th class="px-3 py-2">إجراءات</th>
+                <th class="px-3 py-2 text-center">التاريخ</th>
+                <th class="px-3 py-2 text-center">الساعة</th>
+                <th class="px-3 py-2 text-center">السعر</th>
+                <th class="px-3 py-2 text-center">المتاح / الإجمالي</th>
+                <th class="px-3 py-2 text-center">الحالة</th>
+                <th class="px-3 py-2 text-center">إجراءات</th>
             </tr>
         </thead>
 
@@ -70,9 +70,9 @@
 
             <tr class="border-t border-white/5 hover:bg-white/5 transition">
 
-                <td class="px-3 py-2">{{ $time->date->format('d/m/Y') }}</td>
+                <td class="px-3 py-2 text-center align-middle">{{ $time->date->format('d/m/Y') }}</td>
 
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 text-center align-middle">
                     {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
                 </td>
 
@@ -80,7 +80,7 @@
                     {{ $time->ticket_price }} ج
                 </td>
 
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 text-center align-middle">
                     {{ $remaining }} / {{ $time->total_tickets }}
                 </td>
 
@@ -127,8 +127,8 @@
                 </td>
 
 
-                <td class="px-3 py-2">
-                    <div class="flex gap-2">
+                <td class="px-3 py-2 text-center align-middle">
+                   <div class="flex justify-center items-center gap-2">
                         <a href="{{ route('admin.shows.times.edit', [$show, $time]) }}"
                            class="px-2 py-1 rounded-full bg-white/10">
                             تعديل
