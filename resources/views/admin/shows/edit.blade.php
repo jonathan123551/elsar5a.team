@@ -4,33 +4,24 @@
 
 @section('content')
 
-<section class="max-w-5xl space-y-6 mx-auto">
-
 {{-- Header --}}
 
-<div class="flex items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold">تعديل العرض</h1>
-
-```
 <a href="{{ route('admin.shows.index') }}"
    class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
     ← رجوع
 </a>
-```
-
-</div>
 
 {{-- Errors --}}
-@if ($errors->any()) <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-xs rounded-xl p-3"> <ul class="list-disc pr-4 space-y-1">
-@foreach($errors->all() as $error) <li>{{ $error }}</li>
-@endforeach </ul> </div>
+@if ($errors->any())
+
+
+@foreach($errors->all() as $error)
+{{ $error }}
+@endforeach
+
+
 @endif
 
-<form action="{{ route('admin.shows.update', $show) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-    @csrf
-    @method('PUT')
-
-```
 <div class="grid lg:grid-cols-2 gap-6">
 
     {{-- LEFT --}}
@@ -130,114 +121,261 @@
         class="w-full sm:w-auto px-6 py-2 rounded-full bg-amber-400 text-black text-sm hover:bg-amber-300 transition">
     حفظ التعديلات
 </button>
-```
 
 </form>
 
+
+
+
+
 </section>
 
-{{-- 🔥 SCRIPT (QR + LIVE PREVIEW) --}}
+{{-- 🔥 نفس السكربت بدون أي تغيير --}}
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
+ <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const img      = document.getElementById('ticketTemplatePreview');
+            const qrBox    = document.getElementById('qrBox');
+            const handle   = document.getElementById('qrResizeHandle');
 
-    const img      = document.getElementById('ticketTemplatePreview');
-    const qrBox    = document.getElementById('qrBox');
-    const handle   = document.getElementById('qrResizeHandle');
+            const inputX   = document.getElementById('ticket_qr_x_input');
+            const inputY   = document.getElementById('ticket_qr_y_input');
+            const inputS   = document.getElementById('ticket_qr_size_input');
 
-    const inputX   = document.getElementById('ticket_qr_x_input');
-    const inputY   = document.getElementById('ticket_qr_y_input');
-    const inputS   = document.getElementById('ticket_qr_size_input');
-
-    if (img && qrBox && handle && inputX && inputY && inputS) {
-
-        let scale = 1, isDragging = false, isResizing = false;
-        let startX=0,startY=0,startLeft=0,startTop=0,startWidth=0;
-
-        function recalc(){
-            if (!img.naturalWidth) return;
-            scale = img.clientWidth / img.naturalWidth;
-
-            qrBox.style.left   = (inputX.value * scale)+'px';
-            qrBox.style.top    = (inputY.value * scale)+'px';
-            qrBox.style.width  = (inputS.value * scale)+'px';
-            qrBox.style.height = (inputS.value * scale)+'px';
-        }
-
-        function updateInputs(){
-            const imgRect = img.getBoundingClientRect();
-            const boxRect = qrBox.getBoundingClientRect();
-
-            inputX.value = Math.round((boxRect.left - imgRect.left)/scale);
-            inputY.value = Math.round((boxRect.top  - imgRect.top )/scale);
-            inputS.value = Math.round(boxRect.width/scale);
-        }
-
-        img.onload = recalc;
-        window.addEventListener('resize', recalc);
-
-        qrBox.onmousedown = e=>{
-            if(e.target===handle) return;
-            isDragging=true;
-            const r=qrBox.getBoundingClientRect();
-            startX=e.clientX;startY=e.clientY;
-            startLeft=r.left;startTop=r.top;
-        };
-
-        handle.onmousedown = e=>{
-            isResizing=true;
-            startX=e.clientX;
-            startWidth=qrBox.getBoundingClientRect().width;
-            e.stopPropagation();
-        };
-
-        window.onmousemove = e=>{
-            if(!isDragging && !isResizing) return;
-
-            if(isDragging){
-                const rect=img.getBoundingClientRect();
-                let left=startLeft+(e.clientX-startX)-rect.left;
-                let top =startTop +(e.clientY-startY)-rect.top;
-
-                left=Math.max(0,Math.min(left,rect.width-qrBox.offsetWidth));
-                top =Math.max(0,Math.min(top ,rect.height-qrBox.offsetHeight));
-
-                qrBox.style.left=left+'px';
-                qrBox.style.top =top +'px';
+            if (!img || !qrBox || !handle || !inputX || !inputY || !inputS) {
+                return;
             }
 
-            if(isResizing){
-                let size=Math.max(40,startWidth+(e.clientX-startX));
-                qrBox.style.width=size+'px';
-                qrBox.style.height=size+'px';
+            let scale = 1;
+            let isDragging = false;
+            let isResizing = false;
+            let startX = 0, startY = 0;
+            let startLeft = 0, startTop = 0;
+            let startWidth = 0, startHeight = 0;
+
+            function recalcScaleAndPositionFromInputs() {
+                if (!img.naturalWidth) return;
+
+                scale = img.clientWidth / img.naturalWidth;
+
+                const xVal = parseInt(inputX.value || '0', 10);
+                const yVal = parseInt(inputY.value || '0', 10);
+                const sVal = parseInt(inputS.value || '220', 10);
+
+                qrBox.style.left   = (xVal * scale) + 'px';
+                qrBox.style.top    = (yVal * scale) + 'px';
+                qrBox.style.width  = (sVal * scale) + 'px';
+                qrBox.style.height = (sVal * scale) + 'px';
             }
 
-            updateInputs();
-        };
+            function updateInputsFromBox() {
+                const imgRect = img.getBoundingClientRect();
+                const boxRect = qrBox.getBoundingClientRect();
 
-        window.onmouseup=()=>{isDragging=false;isResizing=false;};
+                const left = boxRect.left - imgRect.left;
+                const top  = boxRect.top  - imgRect.top;
+                const size = boxRect.width;
 
-        recalc();
+                inputX.value = Math.max(0, Math.round(left / scale));
+                inputY.value = Math.max(0, Math.round(top  / scale));
+                inputS.value = Math.max(10, Math.round(size / scale));
+            }
+
+            img.addEventListener('load', function () {
+                recalcScaleAndPositionFromInputs();
+            });
+
+            if (img.complete) {
+                recalcScaleAndPositionFromInputs();
+            }
+
+            [inputX, inputY, inputS].forEach(function (el) {
+                el.addEventListener('input', function () {
+                    recalcScaleAndPositionFromInputs();
+                });
+            });
+
+            qrBox.addEventListener('mousedown', function (e) {
+                if (e.target === handle) return;
+
+                isDragging = true;
+                const rect = qrBox.getBoundingClientRect();
+
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = rect.left;
+                startTop  = rect.top;
+
+                e.preventDefault();
+            });
+
+            handle.addEventListener('mousedown', function (e) {
+                isResizing = true;
+                const rect = qrBox.getBoundingClientRect();
+
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth  = rect.width;
+                startHeight = rect.height;
+
+                e.stopPropagation();
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', function (e) {
+                if (!isDragging && !isResizing) return;
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                if (isDragging) {
+                    const imgRect = img.getBoundingClientRect();
+
+                    let newLeft = startLeft + dx - imgRect.left;
+                    let newTop  = startTop  + dy - imgRect.top;
+
+                    const maxLeft = imgRect.width  - qrBox.offsetWidth;
+                    const maxTop  = imgRect.height - qrBox.offsetHeight;
+
+                    newLeft = Math.min(Math.max(0, newLeft), maxLeft);
+                    newTop  = Math.min(Math.max(0, newTop ), maxTop);
+
+                    qrBox.style.left = newLeft + 'px';
+                    qrBox.style.top  = newTop  + 'px';
+                } else if (isResizing) {
+                    let newSize = Math.max(40, startWidth + dx);
+
+                    const imgRect = img.getBoundingClientRect();
+                    const boxRect = qrBox.getBoundingClientRect();
+
+                    const maxSize = Math.min(
+                        imgRect.width  - (boxRect.left - imgRect.left),
+                        imgRect.height - (boxRect.top  - imgRect.top)
+                    );
+
+                    newSize = Math.min(newSize, maxSize);
+
+                    qrBox.style.width  = newSize + 'px';
+                    qrBox.style.height = newSize + 'px';
+                }
+
+                updateInputsFromBox();
+            });
+
+            window.addEventListener('mouseup', function () {
+                isDragging = false;
+                isResizing = false;
+            });
+
+            qrBox.addEventListener('touchstart', function (e) {
+                const touch = e.touches[0];
+                if (!touch) return;
+
+                if (e.target === handle) {
+                    isResizing = true;
+                    const rect = qrBox.getBoundingClientRect();
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    startWidth  = rect.width;
+                    startHeight = rect.height;
+                } else {
+                    isDragging = true;
+                    const rect = qrBox.getBoundingClientRect();
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    startLeft = rect.left;
+                    startTop  = rect.top;
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            window.addEventListener('touchmove', function (e) {
+                const touch = e.touches[0];
+                if (!touch || (!isDragging && !isResizing)) return;
+
+                const dx = touch.clientX - startX;
+                const dy = touch.clientY - startY;
+
+                if (isDragging) {
+                    const imgRect = img.getBoundingClientRect();
+
+                    let newLeft = startLeft + dx - imgRect.left;
+                    let newTop  = startTop  + dy - imgRect.top;
+
+                    const maxLeft = imgRect.width  - qrBox.offsetWidth;
+                    const maxTop  = imgRect.height - qrBox.offsetHeight;
+
+                    newLeft = Math.min(Math.max(0, newLeft), maxLeft);
+                    newTop  = Math.min(Math.max(0, newTop ), maxTop);
+
+                    qrBox.style.left = newLeft + 'px';
+                    qrBox.style.top  = newTop  + 'px';
+                } else if (isResizing) {
+                    let newSize = Math.max(40, startWidth + dx);
+
+                    const imgRect = img.getBoundingClientRect();
+                    const boxRect = qrBox.getBoundingClientRect();
+
+                    const maxSize = Math.min(
+                        imgRect.width  - (boxRect.left - imgRect.left),
+                        imgRect.height - (boxRect.top  - imgRect.top)
+                    );
+
+                    newSize = Math.min(newSize, maxSize);
+
+                    qrBox.style.width  = newSize + 'px';
+                    qrBox.style.height = newSize + 'px';
+                }
+
+                updateInputsFromBox();
+                e.preventDefault();
+            }, { passive: false });
+
+            window.addEventListener('touchend', function () {
+                isDragging = false;
+                isResizing = false;
+            });
+
+            window.addEventListener('resize', function () {
+                recalcScaleAndPositionFromInputs();
+            });
+        });
+        </script>
+        <script>
+/* 🔥 LIVE PREVIEW */
+
+// Poster Preview
+document.getElementById('posterInput')?.addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById('posterPreview');
+
+    if(img){
+        img.src = url;
     }
-
-    // 🔥 LIVE PREVIEW
-    document.getElementById('posterInput')?.addEventListener('change', e=>{
-        const f=e.target.files[0];
-        if(!f) return;
-        document.getElementById('posterPreview').src=URL.createObjectURL(f);
-    });
-
-    document.getElementById('ticketInput')?.addEventListener('change', e=>{
-        const f=e.target.files[0];
-        if(!f) return;
-
-        const img=document.getElementById('ticketTemplatePreview');
-        img.src=URL.createObjectURL(f);
-
-        setTimeout(()=>img.dispatchEvent(new Event('load')),100);
-    });
-
 });
-</script>
+
+// Ticket Preview
+document.getElementById('ticketInput')?.addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById('ticketTemplatePreview');
+
+    if(img){
+        img.src = url;
+
+        // 🔥 مهم عشان الـ QR يعيد حساب نفسه
+        setTimeout(()=>{
+            img.dispatchEvent(new Event('load'));
+        },100);
+    }
+});
+
+    </script>
 
 @endsection
