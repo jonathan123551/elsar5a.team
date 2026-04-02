@@ -84,31 +84,47 @@
                     {{ $remaining }} / {{ $time->total_tickets }}
                 </td>
 
-                {{-- 🔥 SWITCH --}}
+                {{-- 🔥 PREMIUM SWITCH --}}
+
                 <td class="px-3 py-2">
-                    <form action="{{ route('admin.shows.times.toggle', [$show, $time]) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
 
-                        <label class="flex items-center gap-2 cursor-pointer relative">
+                <form action="{{ route('admin.shows.times.toggle', [$show, $time]) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
 
-                            <input type="checkbox"
-                                   name="is_sold_out"
-                                   class="sr-only peer"
-                                   onchange="this.form.submit()"
-                                   {{ $time->is_sold_out ? 'checked' : '' }}>
+                
+                <label class="cursor-pointer block w-fit">
 
-                            <div class="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-red-500 transition"></div>
+                    <input type="checkbox"
+                        class="sr-only peer"
+                        onchange="this.form.submit()"
+                        {{ $time->is_sold_out ? 'checked' : '' }}>
 
-                            <div class="absolute w-5 h-5 bg-white rounded-full right-0.5 top-0.5 transition-all peer-checked:translate-x-5"></div>
+                    <div class="relative flex items-center justify-between w-[120px] h-9 px-2 rounded-full
+                        transition-all duration-300
+                        {{ $time->is_sold_out ? 'bg-red-500/20 border border-red-500/40' : 'bg-emerald-500/10 border border-emerald-500/40' }}">
 
-                            <span class="text-xs">
-                                {{ $time->is_sold_out ? 'Sold Out' : 'متاح' }}
-                            </span>
+                        {{-- circle --}}
+                        <div class="absolute top-1 w-7 h-7 bg-white rounded-full shadow-md
+                            transition-all duration-300
+                            {{ $time->is_sold_out ? 'left-1' : 'left-[calc(100%-2rem)]' }}">
+                        </div>
 
-                        </label>
-                    </form>
+                        {{-- text --}}
+                        <span class="text-xs w-full text-center font-medium z-10
+                            {{ $time->is_sold_out ? 'text-red-200' : 'text-emerald-300' }}">
+                            {{ $time->is_sold_out ? 'Sold Out' : 'متاح' }}
+                        </span>
+
+                    </div>
+
+                </label>
+               
+
+                </form>
+
                 </td>
+
 
                 <td class="px-3 py-2">
                     <div class="flex gap-2">
@@ -183,22 +199,39 @@
         @csrf
         @method('PATCH')
 
-        <label class="flex items-center justify-between cursor-pointer">
+        <form action="{{ route('admin.shows.times.toggle', [$show, $time]) }}" method="POST">
+    @csrf
+    @method('PATCH')
 
-            <span class="text-xs">
-                {{ $time->is_sold_out ? 'Sold Out' : 'متاح' }}
-            </span>
+
+        <label class="cursor-pointer block w-full">
 
             <input type="checkbox"
-                   class="sr-only peer"
-                   onchange="this.form.submit()"
-                   {{ $time->is_sold_out ? 'checked' : '' }}>
+                class="sr-only peer"
+                onchange="this.form.submit()"
+                {{ $time->is_sold_out ? 'checked' : '' }}>
 
-            <div class="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-red-500 relative">
-                <div class="absolute w-5 h-5 bg-white rounded-full top-0.5 right-0.5 peer-checked:translate-x-5 transition"></div>
+            <div class="relative flex items-center justify-between w-full h-10 px-3 rounded-full
+                transition-all duration-300
+                {{ $time->is_sold_out ? 'bg-red-500/20 border border-red-500/40' : 'bg-emerald-500/10 border border-emerald-500/40' }}">
+
+                <div class="absolute top-1 w-7 h-7 bg-white rounded-full shadow-md
+                    transition-all duration-300
+                    {{ $time->is_sold_out ? 'left-1' : 'left-[calc(100%-2rem)]' }}">
+                </div>
+
+                <span class="text-xs w-full text-center font-medium z-10
+                    {{ $time->is_sold_out ? 'text-red-200' : 'text-emerald-300' }}">
+                    {{ $time->is_sold_out ? 'Sold Out' : 'متاح' }}
+                </span>
+
             </div>
 
         </label>
+        
+
+</form>
+
     </form>
 
     <div class="flex gap-2">
