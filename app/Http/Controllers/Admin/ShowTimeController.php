@@ -116,4 +116,13 @@ class ShowTimeController extends Controller
             ->route('admin.shows.times.index', $show)
             ->with('status', 'تم حذف الموعد.');
     }
+    public function toggle(Show $show, ShowTime $showTime)
+{
+    // قلب الحالة
+    $showTime->is_sold_out = !$showTime->is_sold_out;
+
+    $showTime->save();
+
+    return back()->with('status', 'تم تحديث حالة الموعد ✅');
+}
 }

@@ -155,7 +155,10 @@ Route::middleware('admin')
         '/show-times/{showTime}/update-tickets',
         [AdminShowTimeController::class, 'updateTickets']
     )->name('show-times.update-tickets');
-
+    Route::patch(
+    '/shows/{show}/times/{showTime}/toggle',
+    [AdminShowTimeController::class, 'toggle']
+    )->name('shows.times.toggle');
     // Bookings
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [AdminBookingController::class, 'index'])->name('index');
