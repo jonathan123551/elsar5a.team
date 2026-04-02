@@ -57,7 +57,7 @@
 
                         $reserved = \App\Models\Booking::where('show_time_id', $time->id)
                             ->whereIn('status', ['approved','pending'])
-                            ->count();
+                            ->sum('tickets_count');
 
                         $remaining = $totalTickets - $reserved;
 
