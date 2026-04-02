@@ -6,7 +6,7 @@
 
 <section class="space-y-5">
 
-```
+
 {{-- Header --}}
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 

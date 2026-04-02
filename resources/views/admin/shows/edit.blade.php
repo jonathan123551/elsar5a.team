@@ -6,11 +6,16 @@
 
 {{-- Header --}}
 
-<a href="{{ route('admin.shows.index') }}"
-   class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-    ← رجوع
-</a>
+<div class="flex items-center justify-between gap-3">
 
+    <a href="{{ route('admin.shows.index') }}"
+       class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
+        ← رجوع
+    </a>
+
+    <h1 class="text-2xl font-bold">تعديل العرض</h1>
+
+</div>
 {{-- Errors --}}
 @if ($errors->any())
 
@@ -365,14 +370,26 @@ document.getElementById('ticketInput')?.addEventListener('change', function(e){
 
     const url = URL.createObjectURL(file);
     const img = document.getElementById('ticketTemplatePreview');
+    const qrBox = document.getElementById('qrBox');
 
-    if(img){
+    if(img && qrBox){
         img.src = url;
 
-        // 🔥 مهم عشان الـ QR يعيد حساب نفسه
-        setTimeout(()=>{
+        // 🔥 رجّع QR لنقطة البداية
+        qrBox.style.left = "10px";
+        qrBox.style.top = "10px";
+        qrBox.style.width = "120px";
+        qrBox.style.height = "120px";
+
+        // 🔥 حدّث inputs كمان
+        document.getElementById('ticket_qr_x_input').value = 0;
+        document.getElementById('ticket_qr_y_input').value = 0;
+        document.getElementById('ticket_qr_size_input').value = 220;
+
+        // 🔥 أهم حاجة: recalc بعد تحميل الصورة
+        img.onload = function(){
             img.dispatchEvent(new Event('load'));
-        },100);
+        };
     }
 });
 
