@@ -67,10 +67,7 @@
     {{-- Bottom Row (🔥 هنا الجديد) --}}
     <div class="flex items-center justify-between">
 
-        {{-- Date --}}
-        <div class="text-[11px] text-gray-500">
-            📅 {{ $show->created_at?->format('Y-m-d') }}
-        </div>
+        
 
         {{-- Switch --}}
         <form action="{{ route('admin.shows.toggle', $show) }}" method="POST">
