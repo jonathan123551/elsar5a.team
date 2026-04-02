@@ -75,8 +75,6 @@
 {{-- 🔥 PREMIUM SWITCH (FIXED + ANIMATED) --}}
 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-3">
 
-    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-3">
-
 <span class="text-xs text-gray-300">الحالة</span>
 
 <label class="relative inline-flex items-center cursor-pointer">
