@@ -16,15 +16,16 @@
     </div>
 
     <div class="flex items-center gap-2">
+       <a href="{{ route('admin.shows.times.create', $show) }}"
+           class="inline-flex items-center px-4 py-2 rounded-full bg-amber-400 text-black text-sm font-medium hover:bg-amber-300 transition">
+            + إضافة موعد جديد
+        </a>
         <a href="{{ route('admin.shows.index') }}"
            class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
             ← رجوع لإدارة العروض
         </a>
 
-        <a href="{{ route('admin.shows.times.create', $show) }}"
-           class="inline-flex items-center px-4 py-2 rounded-full bg-amber-400 text-black text-sm font-medium hover:bg-amber-300 transition">
-            + إضافة موعد جديد
-        </a>
+        
     </div>
 </div>
 
