@@ -85,44 +85,44 @@
                 </td>
 
                 {{-- 🔥 PREMIUM SWITCH --}}
-
+                <td class="px-3 py-2 text-center">
                 @php
-    $isLocked = $remaining <= 0;
-@endphp
+                    $isLocked = $remaining <= 0;
+                @endphp
 
-<form action="{{ route('admin.shows.times.toggle', [$show, $time]) }}" method="POST">
-    @csrf
-    @method('PATCH')
+                <form action="{{ route('admin.shows.times.toggle', [$show, $time]) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
 
-    <label class="cursor-pointer block w-fit">
+                    <label class="cursor-pointer block w-fit">
 
-        <input type="checkbox"
-               class="sr-only peer"
-               onchange="this.form.submit()"
-               {{ ($time->is_sold_out || $isLocked) ? 'checked' : '' }}
-               {{ $isLocked ? 'disabled' : '' }}>
+                        <input type="checkbox"
+                            class="sr-only peer"
+                            onchange="this.form.submit()"
+                            {{ ($time->is_sold_out || $isLocked) ? 'checked' : '' }}
+                            {{ $isLocked ? 'disabled' : '' }}>
 
-        <div class="relative flex items-center justify-between w-[120px] h-9 px-2 rounded-full
-            transition-all duration-300
-            {{ ($time->is_sold_out || $isLocked) ? 'bg-red-500/20 border border-red-500/40' : 'bg-emerald-500/10 border border-emerald-500/40' }}
-            {{ $isLocked ? 'opacity-60 cursor-not-allowed' : '' }}">
+                        <div class="relative flex items-center justify-between w-[120px] h-9 px-2 rounded-full
+                            transition-all duration-300
+                            {{ ($time->is_sold_out || $isLocked) ? 'bg-red-500/20 border border-red-500/40' : 'bg-emerald-500/10 border border-emerald-500/40' }}
+                            {{ $isLocked ? 'opacity-60 cursor-not-allowed' : '' }}">
 
-            {{-- circle --}}
-            <div class="absolute top-1 w-7 h-7 bg-white rounded-full shadow-md
-                transition-all duration-300
-                {{ ($time->is_sold_out || $isLocked) ? 'left-1' : 'left-[calc(100%-2rem)]' }}">
-            </div>
+                            {{-- circle --}}
+                            <div class="absolute top-1 w-7 h-7 bg-white rounded-full shadow-md
+                                transition-all duration-300
+                                {{ ($time->is_sold_out || $isLocked) ? 'left-1' : 'left-[calc(100%-2rem)]' }}">
+                            </div>
 
-            {{-- text --}}
-            <span class="text-xs w-full text-center font-medium z-10
-                {{ ($time->is_sold_out || $isLocked) ? 'text-red-200' : 'text-emerald-300' }}">
-                {{ ($time->is_sold_out || $isLocked) ? 'Sold Out' : 'متاح' }}
-            </span>
+                            {{-- text --}}
+                            <span class="text-xs w-full text-center font-medium z-10
+                                {{ ($time->is_sold_out || $isLocked) ? 'text-red-200' : 'text-emerald-300' }}">
+                                {{ ($time->is_sold_out || $isLocked) ? 'Sold Out' : 'متاح' }}
+                            </span>
 
-        </div>
+                        </div>
 
-    </label>
-</form>
+                    </label>
+                </form>
 
                 </td>
 
