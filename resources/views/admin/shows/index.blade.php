@@ -44,93 +44,93 @@
         @foreach($shows as $show)
             <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-3">
 
-                {{-- Top Section --}}
-                <div class="flex items-start justify-between">
+    {{-- Top --}}
+    <div class="flex items-center gap-3">
 
-                    <div class="flex items-center gap-3">
+        @if($show->poster_path)
+            <img src="{{ $show->poster_path }}"
+                 class="w-14 h-14 rounded-xl object-cover">
+        @endif
 
-                        @if($show->poster_path)
-                            <img src="{{ $show->poster_path }}"
-                                 class="w-14 h-14 rounded-xl object-cover">
-                        @endif
+        <div class="flex-1">
+            <div class="font-semibold text-sm sm:text-base">
+                {{ $show->title }}
+            </div>
 
-                        <div>
-                            <div class="font-semibold text-sm sm:text-base">
-                                {{ $show->title }}
-                            </div>
+            <div class="text-xs text-gray-400 line-clamp-2">
+                {{ $show->description }}
+            </div>
+        </div>
 
-                            <div class="text-xs text-gray-400 line-clamp-2">
-                                {{ $show->description }}
-                            </div>
-                        </div>
+    </div>
 
+    {{-- Bottom Row (🔥 هنا الجديد) --}}
+    <div class="flex items-center justify-between">
+
+        {{-- Date --}}
+        <div class="text-[11px] text-gray-500">
+            📅 {{ $show->created_at?->format('Y-m-d') }}
+        </div>
+
+        {{-- Switch --}}
+        <form action="{{ route('admin.shows.toggle', $show) }}" method="POST">
+            @csrf
+
+            <button type="submit" class="flex items-center gap-2">
+
+                <span class="text-[10px]
+                    {{ $show->is_active ? 'text-emerald-400' : 'text-gray-400' }}">
+                    {{ $show->is_active ? 'فعال' : 'مخفي' }}
+                </span>
+
+                <div class="relative w-11 h-6 rounded-full transition-all duration-300
+                    {{ $show->is_active ? 'bg-emerald-500' : 'bg-gray-600' }}">
+
+                    <div class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md
+                        transition-all duration-300
+                        {{ $show->is_active ? 'right-0.5' : 'right-5' }}">
                     </div>
 
-                    {{-- 🔥 Toggle Switch --}}
-                    <form action="{{ route('admin.shows.toggle', $show) }}" method="POST">
-                        @csrf
-
-                        <button type="submit" class="flex flex-col items-end gap-1 group">
-
-                            <span class="text-[10px] font-medium
-                                {{ $show->is_active ? 'text-emerald-400' : 'text-gray-400' }}">
-                                {{ $show->is_active ? 'فعال' : 'مخفي' }}
-                            </span>
-
-                            <div class="relative w-11 h-6 rounded-full transition-all duration-300
-                                {{ $show->is_active ? 'bg-emerald-500' : 'bg-gray-600' }}">
-
-                                <div class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md
-                                    transition-all duration-300
-                                    {{ $show->is_active ? 'right-0.5' : 'right-5' }}">
-                                </div>
-
-                            </div>
-
-                        </button>
-                    </form>
-
                 </div>
 
-                {{-- Date --}}
-                <div class="text-[11px] text-gray-500">
-                    📅 {{ $show->created_at?->format('Y-m-d') }}
-                </div>
+            </button>
+        </form>
 
-                {{-- Actions --}}
-                <div class="flex flex-wrap gap-2 text-xs">
+    </div>
 
-                    <a href="{{ route('admin.shows.times.index', $show) }}"
-                       class="flex-1 text-center px-3 py-2 rounded-xl bg-purple-500/20 text-purple-100 hover:bg-purple-500/30">
-                        المواعيد
-                    </a>
+    {{-- Actions --}}
+    <div class="flex flex-wrap gap-2 text-xs">
 
-                    <a href="{{ route('admin.shows.edit', $show) }}"
-                       class="flex-1 text-center px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20">
-                        تعديل
-                    </a>
+        <a href="{{ route('admin.shows.times.index', $show) }}"
+           class="flex-1 text-center px-3 py-2 rounded-xl bg-purple-500/20 text-purple-100 hover:bg-purple-500/30">
+            المواعيد
+        </a>
 
-                    <form action="{{ route('admin.shows.destroy', $show) }}" method="POST"
-                          class="flex-1"
-                          onsubmit="return confirm('متأكد إنك عايز تحذف العرض؟');">
-                        @csrf
-                        @method('DELETE')
+        <a href="{{ route('admin.shows.edit', $show) }}"
+           class="flex-1 text-center px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20">
+            تعديل
+        </a>
 
-                        <button type="submit"
-                                class="w-full px-3 py-2 rounded-xl bg-red-500/20 text-red-200 hover:bg-red-500/30">
-                            حذف
-                        </button>
-                    </form>
+        <form action="{{ route('admin.shows.destroy', $show) }}" method="POST"
+              class="flex-1"
+              onsubmit="return confirm('متأكد إنك عايز تحذف العرض؟');">
+            @csrf
+            @method('DELETE')
 
-                </div>
+            <button type="submit"
+                    class="w-full px-3 py-2 rounded-xl bg-red-500/20 text-red-200 hover:bg-red-500/30">
+                حذف
+            </button>
+        </form>
 
-            </div>
+    </div>
+
+</div>
         @endforeach
 
     </div>
 
 @endif
-```
 
 </section>
 @endsection
