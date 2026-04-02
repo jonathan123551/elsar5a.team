@@ -75,27 +75,34 @@
 {{-- 🔥 PREMIUM SWITCH (FIXED + ANIMATED) --}}
 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-3">
 
-    <span class="text-xs text-gray-300">الحالة</span>
-    <label class="relative inline-flex items-center cursor-pointer">
+    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-3">
 
-        <input type="checkbox"
-               name="is_sold_out"
-               value="1"
-               class="sr-only peer"
-               {{ $showTime->is_sold_out ? 'checked' : '' }}>
+<span class="text-xs text-gray-300">الحالة</span>
 
-        {{-- background --}}
-        <div class="w-14 h-8 rounded-full transition-all duration-300
-            bg-emerald-500/20 peer-checked:bg-red-500/30">
-        </div>
+<label class="relative inline-flex items-center cursor-pointer">
 
-        {{-- circle --}}
-        <div class="absolute right-1 top-1 w-6 h-6 bg-white rounded-full
-            transition-all duration-300
-            peer-checked:translate-x-6">
-        </div>
+    <input type="checkbox"
+           name="is_sold_out"
+           value="1"
+           class="sr-only peer"
+           {{ $showTime->is_sold_out ? 'checked' : '' }}>
 
-    </label>
+    {{-- background --}}
+    <div class="w-14 h-8 rounded-full transition-all duration-300
+        bg-emerald-500/20 peer-checked:bg-red-500/30">
+    </div>
+
+    {{-- circle --}}
+    <div class="absolute left-1 top-1 w-6 h-6 bg-white rounded-full
+        transition-all duration-300
+        peer-checked:translate-x-6">
+    </div>
+
+</label>
+
+
+</div>
+
 
 </div>
 
