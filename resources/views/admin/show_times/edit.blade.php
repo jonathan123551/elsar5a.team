@@ -6,7 +6,6 @@
 
 <section class="max-w-2xl mx-auto px-4 space-y-6">
 
-```
 {{-- Header --}}
 <div class="space-y-1">
     <h1 class="text-xl md:text-2xl font-bold">تعديل موعد</h1>
@@ -121,7 +120,7 @@
     </div>
 
 </form>
-```
+
 
 </section>
 
