@@ -56,12 +56,13 @@
 {{-- PRICE & TOTAL --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-    <div class="flex flex-col gap-1">
-        <label class="text-xs text-gray-400">💰 سعر التذكرة</label>
-        <input type="number" step="0.5" min="0" name="ticket_price"
-               value="{{ old('ticket_price', $showTime->ticket_price) }}"
-               class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center focus:border-amber-400">
-    </div>
+   <div class="flex flex-col gap-1">
+    <label class="text-xs text-gray-400">💰 سعر التذكرة</label>
+
+    <input type="number" step="0.5" min="0" name="ticket_price"
+           value="{{ old('ticket_price', $showTime->ticket_price) }}"
+           class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center text-amber-400 focus:border-amber-400">
+</div>
 
     <div class="flex flex-col gap-1">
         <label class="text-xs text-gray-400">🎟️ إجمالي التذاكر</label>
