@@ -47,12 +47,6 @@
                 </div>
             </div>
 
-            <div>
-                <label class="block text-xs mb-1">التذاكر المتاحة الآن</label>
-                <input type="number" min="0" name="available_tickets" value="{{ old('available_tickets', $showTime->available_tickets) }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-xs focus:outline-none focus:border-amber-400">
-            </div>
-
             <div class="flex items-center gap-2 text-xs">
                 <input type="checkbox" name="is_sold_out" id="is_sold_out" value="1" class="scale-90"
                        {{ $showTime->is_sold_out ? 'checked' : '' }}>
