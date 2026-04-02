@@ -7,7 +7,6 @@
 
 <section class="max-w-5xl space-y-6 mx-auto">
 
-```
 {{-- Header --}}
 <div class="flex items-center justify-between gap-3">
     <h1 class="text-2xl font-bold">تعديل العرض</h1>
@@ -66,23 +65,13 @@
                     @endphp
 
                     <img src="{{ $posterUrl }}"
-                         class="w-full h-40 object-cover rounded-xl mb-2 border border-white/10">
+                         class="w-full max-h-60 object-contain rounded-xl mb-2 border border-white/10 bg-black/40 p-2">
                 @endif
 
                 <input type="file" name="poster" class="text-xs">
             </div>
 
-            {{-- Switch --}}
-            <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
-                <span class="text-xs">حالة العرض</span>
-
-                <input type="checkbox"
-                       name="is_active"
-                       value="1"
-                       class="scale-90"
-                       {{ $show->is_active ? 'checked' : '' }}>
-            </div>
-
+           
         </div>
 
         {{-- RIGHT --}}
@@ -152,56 +141,9 @@
 
 </form>
 
-{{-- ✅ الجدول رجع زي ما هو --}}
-@if($show->showTimes->count())
-    <hr class="border-white/10">
 
-    <div class="space-y-3">
-        <h2 class="text-sm font-semibold">مواعيد العرض 🎟️</h2>
 
-        <div class="overflow-x-auto border border-white/10 rounded-xl bg-black/40">
-            <table class="min-w-full text-xs">
-                <thead class="bg-white/5 text-gray-300">
-                <tr>
-                    <th class="px-3 py-2">اليوم</th>
-                    <th class="px-3 py-2">الساعة</th>
-                    <th class="px-3 py-2">الإجمالي</th>
-                    <th class="px-3 py-2">المحجوز</th>
-                    <th class="px-3 py-2">المتبقي</th>
-                    <th class="px-3 py-2">الحالة</th>
-                </tr>
-                </thead>
 
-                <tbody>
-                @foreach($show->showTimes as $time)
-                    @php
-                        $reserved = $time->bookings()
-                            ->whereIn('status', ['pending', 'approved'])
-                            ->sum('tickets_count');
-
-                        $remaining = max(0, $time->total_tickets - $reserved);
-                    @endphp
-
-                    <tr class="border-t border-white/5">
-                        <td class="px-3 py-2">{{ $time->date->format('Y-m-d') }}</td>
-                        <td class="px-3 py-2">{{ $time->time }}</td>
-                        <td class="px-3 py-2">{{ $time->total_tickets }}</td>
-                        <td class="px-3 py-2 text-amber-200">{{ $reserved }}</td>
-                        <td class="px-3 py-2 text-emerald-300">{{ $remaining }}</td>
-                        <td class="px-3 py-2">
-                            @if($time->is_sold_out)
-                                <span class="text-red-300">مكتمل</span>
-                            @else
-                                <span class="text-emerald-300">متاح</span>
-                            @endif
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-@endif
 
 </section>
 
