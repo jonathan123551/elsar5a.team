@@ -29,80 +29,80 @@
     @csrf
     @method('PUT')
 
-    {{-- CARD --}}
-    <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-4 shadow-xl shadow-black/40">
+   {{-- CARD --}}
 
-        {{-- DATE & TIME --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-5 shadow-xl shadow-black/40">
 
-            <div>
-                <label class="text-xs text-gray-400 mb-1 block">📅 التاريخ</label>
-                <input type="date" name="date"
-                       value="{{ old('date', $showTime->date->format('Y-m-d')) }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:border-amber-400">
-            </div>
 
-            <div>
-                <label class="text-xs text-gray-400 mb-1 block">⏰ الساعة</label>
-                <input type="time" name="time"
-                       value="{{ old('time', $showTime->time) }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:border-amber-400">
-            </div>
+{{-- DATE & TIME --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-        </div>
-
-        {{-- PRICE & TOTAL --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            <div>
-                <label class="text-xs text-gray-400 mb-1 block">💰 سعر التذكرة</label>
-                <input type="number" step="0.5" min="0" name="ticket_price"
-                       value="{{ old('ticket_price', $showTime->ticket_price) }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:border-amber-400">
-            </div>
-
-            <div>
-                <label class="text-xs text-gray-400 mb-1 block">🎟️ إجمالي التذاكر</label>
-                <input type="number" min="1" name="total_tickets"
-                       value="{{ old('total_tickets', $showTime->total_tickets) }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:border-amber-400">
-            </div>
-
-        </div>
-
-        {{-- 🔥 PREMIUM SWITCH --}}
-        <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-
-            <span class="text-xs text-gray-300">الحالة</span>
-
-            <label class="cursor-pointer">
-
-                <input type="checkbox"
-                       name="is_sold_out"
-                       value="1"
-                       class="sr-only peer"
-                       {{ $showTime->is_sold_out ? 'checked' : '' }}>
-
-                <div class="relative w-[110px] h-8 rounded-full px-2 flex items-center
-                    transition-all duration-300
-                    {{ $showTime->is_sold_out ? 'bg-red-500/20 border border-red-500/40' : 'bg-emerald-500/10 border border-emerald-500/40' }}">
-
-                    <div class="absolute top-1 w-6 h-6 bg-white rounded-full transition-all
-                        {{ $showTime->is_sold_out ? 'left-1' : 'left-[calc(100%-1.75rem)]' }}">
-                    </div>
-
-                    <span class="w-full text-center text-xs font-medium
-                        {{ $showTime->is_sold_out ? 'text-red-200' : 'text-emerald-300' }}">
-                        {{ $showTime->is_sold_out ? 'Sold Out' : 'متاح' }}
-                    </span>
-
-                </div>
-
-            </label>
-
-        </div>
-
+    <div class="flex flex-col gap-1">
+        <label class="text-xs text-gray-400">📅 التاريخ</label>
+        <input type="date" name="date"
+               value="{{ old('date', $showTime->date->format('Y-m-d')) }}"
+               class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center focus:border-amber-400 appearance-none">
     </div>
+
+    <div class="flex flex-col gap-1">
+        <label class="text-xs text-gray-400">⏰ الساعة</label>
+        <input type="time" name="time"
+               value="{{ old('time', $showTime->time) }}"
+               class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center focus:border-amber-400 appearance-none">
+    </div>
+
+</div>
+
+{{-- PRICE & TOTAL --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+    <div class="flex flex-col gap-1">
+        <label class="text-xs text-gray-400">💰 سعر التذكرة</label>
+        <input type="number" step="0.5" min="0" name="ticket_price"
+               value="{{ old('ticket_price', $showTime->ticket_price) }}"
+               class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center focus:border-amber-400">
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <label class="text-xs text-gray-400">🎟️ إجمالي التذاكر</label>
+        <input type="number" min="1" name="total_tickets"
+               value="{{ old('total_tickets', $showTime->total_tickets) }}"
+               class="w-full h-11 rounded-xl bg-black/70 border border-white/10 px-3 text-sm text-center focus:border-amber-400">
+    </div>
+
+</div>
+
+{{-- 🔥 PREMIUM SWITCH (FIXED + ANIMATED) --}}
+<div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-3">
+
+    <span class="text-xs text-gray-300">الحالة</span>
+
+    <label class="relative inline-flex items-center cursor-pointer">
+
+        <input type="checkbox"
+               name="is_sold_out"
+               value="1"
+               class="sr-only peer"
+               {{ $showTime->is_sold_out ? 'checked' : '' }}>
+
+        {{-- background --}}
+        <div class="w-14 h-8 rounded-full transition-all duration-300
+            bg-emerald-500/20 peer-checked:bg-red-500/30">
+        </div>
+
+        {{-- circle --}}
+        <div class="absolute right-1 top-1 w-6 h-6 bg-white rounded-full
+            transition-all duration-300
+            peer-checked:translate-x-6">
+        </div>
+
+    </label>
+
+</div>
+
+
+</div>
+
 
     {{-- ACTIONS --}}
     <div class="flex flex-col sm:flex-row gap-3">
