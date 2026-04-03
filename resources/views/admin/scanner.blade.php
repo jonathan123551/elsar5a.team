@@ -286,7 +286,7 @@ try {
     });
 
     video.srcObject = stream;
-
+    await video.play();
     codeReader.decodeFromVideoElement(video, (result, err) => {
 
         if(result){
