@@ -19,15 +19,33 @@
 
         {{-- الوصف --}}
         @if($about && $about->description)
-            <div class="text-sm md:text-base text-gray-200 leading-relaxed
-                        whitespace-pre-line text-center md:text-right">
-                {{ $about->description }}
-            </div>
-        @else
-            <p class="text-sm text-gray-400 text-center">
-                لم يتم إضافة معلومات عن الفريق بعد.
-            </p>
+
+        @php
+            $lines = preg_split('/\r\n|\r|\n/', $about->description);
+        @endphp
+
+        <div class="space-y-3 text-sm md:text-base text-gray-200 leading-relaxed">
+
+            @foreach($lines as $line)
+
+                @if(trim($line) !== '')
+
+                    <div class="bg-white/5 border border-white/10 rounded-xl px-4 py-3
+                                hover:bg-white/10 transition text-center md:text-right">
+                        {{ $line }}
+                    </div>
+
+                @endif
+
+            @endforeach
+
+        </div>
+
+        @else 
+        <p class="text-sm text-gray-400 text-center">
+        لم يتم إضافة معلومات عن الفريق بعد. </p>
         @endif
+
 
         {{-- سنة التأسيس --}}
         @if($about && $about->founded_year)
