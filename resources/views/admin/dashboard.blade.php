@@ -213,17 +213,44 @@
                     <tbody>
                     @foreach($showTimesStats as $time)
                         <tr class="border-t border-white/5 hover:bg-white/5">
+
                             <td class="px-3 py-2">{{ $time->show->title }}</td>
-                            <td class="px-3 py-2">{{ $time->date?->format('Y-m-d') }}</td>
+
+                            <td class="px-3 py-2">
+                                {{ $time->date?->format('Y-m-d') }}
+                            </td>
+
                             <td class="px-3 py-2">
                                 {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
                             </td>
-                            <td class="px-3 py-2 text-center">{{ $time->total_tickets }}</td>
-                            <td class="px-3 py-2 text-center text-emerald-300">{{ $time->approved_tickets }}</td>
-                            <td class="px-3 py-2 text-center text-amber-300">{{ $time->pending_tickets }}</td>
+
                             <td class="px-3 py-2 text-center">
-                                {{ $time->remaining_tickets }}
+                                <span class="px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                                    {{ $time->total_tickets }}
+                                </span>
                             </td>
+
+                            <td class="px-3 py-2 text-center">
+                                <span class="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    {{ $time->approved_tickets }}
+                                </span>
+                            </td>
+
+                            <td class="px-3 py-2 text-center">
+                                <span class="px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                                    {{ $time->pending_tickets }}
+                                </span>
+                            </td>
+
+                            <td class="px-3 py-2 text-center">
+                                <span class="px-2 py-1 rounded-full
+                                    {{ $time->remaining_tickets > 0
+                                        ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
+                                        : 'bg-red-500/15 text-red-300 border border-red-500/30' }}">
+                                    {{ $time->remaining_tickets }}
+                                </span>
+                            </td>
+
                         </tr>
                     @endforeach
                     </tbody>
@@ -241,42 +268,53 @@
                     {{-- Header --}}
                     <div class="flex justify-between text-xs">
                         <span class="text-gray-400">
-                            🎭 {{ $time->show->title }}
+                            {{ $time->show->title }}
                         </span>
 
-                        <span class="text-amber-300">
+                        <span class="text-gray-300">
                             {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
                         </span>
                     </div>
 
                     {{-- Date --}}
                     <div class="text-xs text-gray-400">
-                        📅 {{ $time->date?->format('Y-m-d') }}
+                        {{ $time->date?->format('Y-m-d') }}
                     </div>
 
                     {{-- Stats --}}
-                    <div class="grid grid-cols-4 text-center text-[11px] gap-2">
+                    <div class="grid grid-cols-2 gap-2 text-xs">
 
-                        <div>
-                            <div class="text-gray-400">إجمالي</div>
-                            <div>{{ $time->total_tickets }}</div>
+                        <div class="flex justify-between bg-white/5 rounded-lg px-2 py-1">
+                            <span class="text-gray-400">إجمالي</span>
+                            <span>{{ $time->total_tickets }}</span>
                         </div>
 
-                        <div>
-                            <div class="text-emerald-400">✔</div>
-                            <div>{{ $time->approved_tickets }}</div>
+                        <div class="flex justify-between bg-emerald-500/10 rounded-lg px-2 py-1">
+                            <span class="text-emerald-300">Approved</span>
+                            <span class="text-emerald-300 font-semibold">
+                                {{ $time->approved_tickets }}
+                            </span>
                         </div>
 
-                        <div>
-                            <div class="text-amber-400">⏳</div>
-                            <div>{{ $time->pending_tickets }}</div>
+                        <div class="flex justify-between bg-amber-400/10 rounded-lg px-2 py-1">
+                            <span class="text-amber-300">Pending</span>
+                            <span class="text-amber-300 font-semibold">
+                                {{ $time->pending_tickets }}
+                            </span>
                         </div>
 
-                        <div>
-                            <div class="text-sky-400">🎟️</div>
-                            <div class="{{ $time->remaining_tickets > 0 ? 'text-sky-300' : 'text-red-400' }}">
+                        <div class="flex justify-between rounded-lg px-2 py-1
+                            {{ $time->remaining_tickets > 0 ? 'bg-sky-500/10' : 'bg-red-500/10' }}">
+
+                            <span class="{{ $time->remaining_tickets > 0 ? 'text-sky-300' : 'text-red-300' }}">
+                                المتبقي
+                            </span>
+
+                            <span class="font-semibold
+                                {{ $time->remaining_tickets > 0 ? 'text-sky-300' : 'text-red-300' }}">
                                 {{ $time->remaining_tickets }}
-                            </div>
+                            </span>
+
                         </div>
 
                     </div>
@@ -290,8 +328,8 @@
             @endforelse
 
             </div>
+        </section>
 
-            </section>
 
 
         <hr class="border-white/10">
