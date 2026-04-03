@@ -74,7 +74,8 @@
     <div id="flashIcon" class="text-8xl font-black"></div>
 </div>
 
-<script src="https://unpkg.com/@zxing/browser@latest"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
 <style>
 .scan-frame{
     width:230px;
@@ -107,9 +108,8 @@
 .glow-red{ box-shadow:0 0 25px rgba(239,68,68,.6); }
 </style>
 
-
 <script>
-const codeReader = new ZXing.BrowserQRCodeReader();
+const qr = new Html5Qrcode("qr-reader");
 
 let busy = false;
 let lastCode = null;
@@ -117,7 +117,7 @@ let lastScanTime = 0;
 
 const COOLDOWN = 3000;
 
-// 🔊 SOUND (زي ما هو)
+// 🔊 SOUND (fixed)
 let audioCtx;
 function beep(type){
     try{
@@ -143,14 +143,14 @@ function beep(type){
     }catch(e){}
 }
 
-// 📳 vibration (زي ما هو)
+// 📳 vibration
 function vibrate(type){
     if(type==='ok') navigator.vibrate?.(120);
     else if(type==='used') navigator.vibrate?.([100,50,100]);
     else navigator.vibrate?.(200);
 }
 
-// 💡 flash overlay (زي ما هو)
+// 💡 flash overlay
 function flash(type){
     const f = document.getElementById('flash');
     const i = document.getElementById('flashIcon');
@@ -164,7 +164,7 @@ function flash(type){
     setTimeout(()=>f.classList.add('hidden'),700);
 }
 
-// 🎯 UI (زي ما هو)
+// 🎯 UI
 function setStatus(text,type){
     const s = document.getElementById('status');
 
@@ -182,29 +182,35 @@ function setStatus(text,type){
         s.classList.add('bg-red-500/90','text-white','border-red-300');
     }
 
+    // 🔥 pop animation
     s.style.transform = "translate(-50%, -5px) scale(1.1)";
     setTimeout(()=>{
         s.style.transform = "translate(-50%, 0) scale(1)";
     },150);
 }
-
-// 📊 render (زي ما هو)
+// 📊 render
 function render(d){
     const c = document.getElementById('card');
     c.classList.remove('hidden');
 
     c.innerHTML = `
         <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-3 space-y-2">
+
+            <!-- 👤 NAME -->
             <div class="text-white font-semibold text-sm tracking-wide">
                 ${d.name}
             </div>
 
+        
+
             <div class="border-t border-white/10 my-1"></div>
 
+            <!-- 🎭 SHOW -->
             <div class="text-gray-300 text-[12px]">
                 🎭 ${d.show_title}
             </div>
 
+            <!-- 🕒 DATE & TIME -->
             <div class="text-[12px] font-medium text-indigo-400">
                 🕒 ${d.date} • ${d.time}
             </div>
@@ -216,11 +222,12 @@ function render(d){
                    </div>`
                 : ''
             }
+
         </div>
     `;
 }
 
-// 🚀 request (زي ما هو)
+// 🚀 request
 function check(code){
 
     fetch('/admin/scanner/check',{
@@ -261,88 +268,134 @@ function check(code){
     });
 }
 
-// ================= ZXING START =================
+// 📸 START (FAST + STABLE)
+const qr = new Html5Qrcode("qr-reader");
 
-    async function startScanner(){
-try {
+let scanning = true;
 
-
-    const video = document.createElement('video');
-    video.setAttribute("playsinline", true);
-    video.autoplay = true;
-    video.muted = true;
-    video.className = "w-full rounded-2xl";
-
-    const container = document.getElementById('qr-reader');
-    container.innerHTML = '';
-    container.appendChild(video);
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        }
-    });
-
-    video.srcObject = stream;
-    await video.play();
-    codeReader.decodeFromVideoElement(video, (result, err) => {
-
-        if(result){
-
-            const text = result.getText();
-            const now = Date.now();
-
-            if(text === lastCode && now - lastScanTime < COOLDOWN){
-                return;
-            }
-
-            if(busy) return;
-
-            busy = true;
-            lastCode = text;
-            lastScanTime = now;
-
-            check(text);
-        }
-
-    });
-
-} catch (err) {
-
-    console.error(err);
-
-    setStatus('❌ الكاميرا مش شغالة','error');
-
-    alert("افتح إذن الكاميرا من المتصفح ❗");
+// 🚀 START
+qr.start(
+{
+facingMode: { exact: "environment" }
+},
+{
+fps: 30,
+qrbox: (viewfinderWidth, viewfinderHeight) => {
+const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+const size = Math.floor(minEdge * 0.7);
+return { width: size, height: size };
+},
+aspectRatio: 1.0,
+disableFlip: false,
+experimentalFeatures: {
+useBarCodeDetectorIfSupported: true // 🔥 مهم جدًا
+},
+videoConstraints: {
+facingMode: "environment",
+width: { ideal: 1920 },
+height: { ideal: 1080 }
 }
+},
+(text) => {
 
 
-}
+    if(!scanning) return;
 
+    const now = Date.now();
 
-startScanner();
-
-// 🔦 Flash control (نفسه)
-document.getElementById('flashBtn').onclick = async () => {
-    const track = document.querySelector('video')?.srcObject?.getVideoTracks()[0];
-
-    if(!track) return;
-
-    const capabilities = track.getCapabilities();
-
-    if(!capabilities.torch){
-        alert('الفلاش غير مدعوم');
+    if(text === lastCode && now - lastScanTime < COOLDOWN){
         return;
     }
 
-    const torchOn = !track.getSettings().torch;
+    if(busy) return;
 
-    await track.applyConstraints({
-        advanced: [{ torch: torchOn }]
-    });
+    scanning = false;
+    busy = true;
+
+    lastCode = text;
+    lastScanTime = now;
+
+    // 🔥 vibration fast
+    navigator.vibrate?.(80);
+
+    check(text);
+
+    setTimeout(()=>{
+        scanning = true;
+    }, 600);
+
+}
+
+
+);
+
+// 🎯 AUTO FOCUS + ZOOM (Lens behavior)
+setTimeout(async () => {
+
+
+try{
+    const track = qr.getRunningTrack();
+    const cap = track.getCapabilities();
+
+    let constraints = { advanced: [] };
+
+    // 🔥 zoom على النص
+    if(cap.zoom){
+        constraints.advanced.push({ zoom: cap.zoom.max * 0.6 });
+    }
+
+    // 🔥 focus مستمر
+    if(cap.focusMode){
+        constraints.advanced.push({ focusMode: "continuous" });
+    }
+
+    // 🔥 exposure (مهم للإضاءة)
+    if(cap.exposureMode){
+        constraints.advanced.push({ exposureMode: "continuous" });
+    }
+
+    await track.applyConstraints(constraints);
+
+}catch(e){
+    console.log("Camera tuning not supported");
+}
+
+
+}, 1200);
+
+    { facingMode: "environment" },
+    {
+        fps: 12,
+        qrbox: 260
+    },
+    text=>{
+        const now = Date.now();
+
+        if(text === lastCode && now - lastScanTime < COOLDOWN){
+            return;
+        }
+
+        if(busy) return;
+
+        busy = true;
+        lastCode = text;
+        lastScanTime = now;
+
+        check(text);
+    }
+);
+
+// 🔦 Flash control
+let flashOn = false;
+document.getElementById('flashBtn').onclick = async () => {
+    try{
+        flashOn = !flashOn;
+        await qr.applyVideoConstraints({
+            advanced: [{ torch: flashOn }]
+        });
+    }catch(e){
+        alert('الفلاش غير مدعوم');
+    }
 };
 </script>
-
 @endsection
