@@ -264,6 +264,84 @@ function check(code){
 // ================= ZXING START =================
 
 async function startScanner(){
+try {
+
+
+    const video = document.createElement('video');
+    video.setAttribute("playsinline", true);
+    video.autoplay = true;
+    video.muted = true;
+    video.className = "w-full rounded-2xl";
+
+    const container = document.getElementById('qr-reader');
+    container.innerHTML = '';
+    container.appendChild(video);
+
+    // 🔥 طلب الكاميرا مباشرة
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        }
+    });
+
+    video.srcObject = stream;
+
+    // 🔥 شغل ZXing على الفيديو
+    codeReader.decodeFromVideoElement(video, (result, err) => {
+
+        if(result){
+
+            const text = result.getText();
+            const now = Date.now();
+
+            if(text === lastCode && now - lastScanTime < COOLDOWN){
+                return;
+            }
+
+            if(busy) return;
+
+            busy = true;
+            lastCode = text;
+            lastScanTime = now;
+
+            check(text);
+        }
+
+    });
+
+    // 🔥 تحسين الكاميرا
+    setTimeout(()=>{
+        const track = stream.getVideoTracks()[0];
+        const cap = track.getCapabilities();
+
+        let constraints = { advanced: [] };
+
+        if(cap.zoom){
+            constraints.advanced.push({ zoom: cap.zoom.max / 2 });
+        }
+
+        if(cap.focusMode){
+            constraints.advanced.push({ focusMode: "continuous" });
+        }
+
+        track.applyConstraints(constraints);
+
+    },1000);
+
+} catch (err) {
+
+    console.error(err);
+
+    setStatus('❌ الكاميرا مش شغالة','error');
+
+    alert("افتح إذن الكاميرا من المتصفح ❗");
+}
+
+
+}
+
 
     const devices = await ZXing.BrowserQRCodeReader.listVideoInputDevices();
 
