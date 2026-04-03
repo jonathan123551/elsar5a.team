@@ -188,63 +188,111 @@
 
         {{-- جدول المواعيد والتذاكر لكل ميعاد --}}
         <section class="mt-4 space-y-3">
+
+
             <h2 class="text-sm font-semibold text-gray-200 mb-2">
                 المواعيد والتذاكر لكل عرض
             </h2>
 
-            <div class="overflow-x-auto border border-white/5 rounded-2xl bg-black/40">
+            {{-- 💻 DESKTOP TABLE --}}
+            <div class="hidden md:block overflow-x-auto border border-white/5 rounded-2xl bg-black/40">
                 <table class="min-w-full text-xs text-gray-200">
+
                     <thead class="bg-white/5 text-[11px] uppercase tracking-wide">
                     <tr>
                         <th class="px-3 py-2 text-right">العرض</th>
                         <th class="px-3 py-2 text-right">التاريخ</th>
                         <th class="px-3 py-2 text-right">الساعة</th>
-                        <th class="px-3 py-2 text-center">إجمالي التذاكر</th>
-                        <th class="px-3 py-2 text-center text-emerald-300">معتمدة</th>
+                        <th class="px-3 py-2 text-center">إجمالي</th>
+                        <th class="px-3 py-2 text-center text-emerald-300">Approved</th>
                         <th class="px-3 py-2 text-center text-amber-300">Pending</th>
                         <th class="px-3 py-2 text-center text-sky-300">المتبقي</th>
                     </tr>
                     </thead>
 
                     <tbody>
-                    @forelse($showTimesStats as $time)
+                    @foreach($showTimesStats as $time)
                         <tr class="border-t border-white/5 hover:bg-white/5">
-                            <td class="px-3 py-2">
-                                {{ $time->show->title ?? 'عرض غير معروف' }}
-                            </td>
-                            <td class="px-3 py-2">
-                                {{ $time->date?->format('Y-m-d') }}
-                            </td>
+                            <td class="px-3 py-2">{{ $time->show->title }}</td>
+                            <td class="px-3 py-2">{{ $time->date?->format('Y-m-d') }}</td>
                             <td class="px-3 py-2">
                                 {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
                             </td>
+                            <td class="px-3 py-2 text-center">{{ $time->total_tickets }}</td>
+                            <td class="px-3 py-2 text-center text-emerald-300">{{ $time->approved_tickets }}</td>
+                            <td class="px-3 py-2 text-center text-amber-300">{{ $time->pending_tickets }}</td>
                             <td class="px-3 py-2 text-center">
-                                {{ $time->total_tickets }}
-                            </td>
-                            <td class="px-3 py-2 text-center text-emerald-300 font-semibold">
-                                {{ $time->approved_tickets }}
-                            </td>
-                            <td class="px-3 py-2 text-center text-amber-300">
-                                {{ $time->pending_tickets }}
-                            </td>
-                            <td class="px-3 py-2 text-center">
-                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px]
-                                    {{ $time->remaining_tickets > 0 ? 'bg-sky-500/15 text-sky-200' : 'bg-red-500/15 text-red-200' }}">
-                                    {{ $time->remaining_tickets }}
-                                </span>
+                                {{ $time->remaining_tickets }}
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-3 py-4 text-center text-gray-400">
-                                لسه مفيش مواعيد عروض مضافة.
-                            </td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                     </tbody>
+
                 </table>
             </div>
-        </section>
+
+            {{-- 📱 MOBILE CARDS --}}
+            <div class="md:hidden space-y-3">
+
+            @forelse($showTimesStats as $time)
+
+                <div class="bg-black/40 border border-white/10 rounded-xl p-3 space-y-3 shadow-md">
+
+                    {{-- Header --}}
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">
+                            🎭 {{ $time->show->title }}
+                        </span>
+
+                        <span class="text-amber-300">
+                            {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
+                        </span>
+                    </div>
+
+                    {{-- Date --}}
+                    <div class="text-xs text-gray-400">
+                        📅 {{ $time->date?->format('Y-m-d') }}
+                    </div>
+
+                    {{-- Stats --}}
+                    <div class="grid grid-cols-4 text-center text-[11px] gap-2">
+
+                        <div>
+                            <div class="text-gray-400">إجمالي</div>
+                            <div>{{ $time->total_tickets }}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-emerald-400">✔</div>
+                            <div>{{ $time->approved_tickets }}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-amber-400">⏳</div>
+                            <div>{{ $time->pending_tickets }}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sky-400">🎟️</div>
+                            <div class="{{ $time->remaining_tickets > 0 ? 'text-sky-300' : 'text-red-400' }}">
+                                {{ $time->remaining_tickets }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            @empty
+                <div class="text-center text-gray-400 text-sm">
+                    لا توجد بيانات
+                </div>
+            @endforelse
+
+            </div>
+
+            </section>
+
 
         <hr class="border-white/10">
 
