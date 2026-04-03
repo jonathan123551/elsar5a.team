@@ -146,116 +146,205 @@ const images = @json($archive->images->pluck('image_path'));
 let current = 0;
 let scale = 1;
 let startX = 0;
+let currentX = 0;
+
+let velocity = 0;
+let isDragging = false;
+
+let initialDistance = 0;
+let isPinching = false;
 
 const viewer = document.getElementById('viewer');
 const img = document.getElementById('viewer-img');
 
-// 🔥 preload (مفيش lag)
+// 🔥 preload
 images.forEach(src => {
-    const i = new Image();
-    i.src = src;
+const i = new Image();
+i.src = src;
 });
 
-// 🔥 open viewer (isolated mode)
 function openViewer(index){
-    current = index;
-    scale = 1;
+current = index;
+scale = 1;
+currentX = 0;
 
-    img.src = images[current];
-    img.style.transform = 'scale(1)';
 
-    viewer.classList.remove('hidden');
+img.src = images[current];
+img.style.transform = `translateX(0px) scale(1)`;
 
-    setTimeout(()=>{
-        viewer.classList.remove('opacity-0');
-    },10);
+viewer.classList.remove('hidden');
+setTimeout(()=> viewer.classList.remove('opacity-0'), 10);
 
-    // 🚫 منع scroll الموقع
-    document.body.style.overflow = 'hidden';
+document.body.style.overflow = 'hidden';
+
+
 }
 
-// 🔥 close
 function closeViewer(){
-    viewer.classList.add('opacity-0');
-
-    setTimeout(()=>{
-        viewer.classList.add('hidden');
-    },300);
-
-    document.body.style.overflow = '';
+viewer.classList.add('opacity-0');
+setTimeout(()=> viewer.classList.add('hidden'), 300);
+document.body.style.overflow = '';
 }
 
-// 🔥 smooth change (بدون reopen)
 function changeImage(newIndex){
-    current = (newIndex + images.length) % images.length;
-    scale = 1;
+current = (newIndex + images.length) % images.length;
+scale = 1;
+currentX = 0;
 
-    img.style.opacity = 0;
-    img.style.transform = 'scale(0.96)';
 
-    setTimeout(()=>{
-        img.src = images[current];
-        img.style.opacity = 1;
-        img.style.transform = 'scale(1)';
-    },120);
+img.style.transition = 'none';
+img.style.opacity = 0;
+
+setTimeout(()=>{
+    img.src = images[current];
+    img.style.transition = 'all 0.3s ease';
+    img.style.opacity = 1;
+    img.style.transform = `translateX(0px) scale(1)`;
+},80);
+
+
 }
 
 function nextImg(){
-    changeImage(current + 1);
+if(scale > 1) return;
+changeImage(current + 1);
 }
 
 function prevImg(){
-    changeImage(current - 1);
+if(scale > 1) return;
+changeImage(current - 1);
 }
 
-// 🔥 swipe ناعم
+// ================= PINCH =================
+
+function getDistance(touches){
+let dx = touches[0].clientX - touches[1].clientX;
+let dy = touches[0].clientY - touches[1].clientY;
+return Math.sqrt(dx*dx + dy*dy);
+}
+
+// ================= TOUCH =================
+
 viewer.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
+
+
+if(e.touches.length === 2){
+    isPinching = true;
+    initialDistance = getDistance(e.touches);
+    return;
+}
+
+isDragging = true;
+startX = e.touches[0].clientX;
+velocity = 0;
+
+
 });
 
-viewer.addEventListener('touchend', e => {
+viewer.addEventListener('touchmove', e => {
 
-    // 🚫 لو الصورة متزوّمة → متقلبش
-    if(scale > 1) return;
 
-    let dx = e.changedTouches[0].clientX - startX;
+// 🔥 pinch zoom
+if(isPinching && e.touches.length === 2){
+    let newDistance = getDistance(e.touches);
+    let zoomFactor = newDistance / initialDistance;
 
-    if(Math.abs(dx) > 40){
-        dx > 0 ? prevImg() : nextImg();
-    }
+    scale = Math.min(Math.max(1, scale * zoomFactor), 4);
+
+    img.style.transform = `translateX(${currentX}px) scale(${scale})`;
+
+    initialDistance = newDistance;
+    return;
+}
+
+if(!isDragging) return;
+
+let dx = e.touches[0].clientX - startX;
+
+velocity = dx - currentX;
+currentX = dx;
+
+img.style.transform = `translateX(${dx}px) scale(${scale > 1 ? scale : 0.98})`;
+
+
 });
 
-// 🔥 zoom wheel
-img.addEventListener('wheel', e => {
-    e.preventDefault();
+viewer.addEventListener('touchend', () => {
 
-    scale += e.deltaY * -0.001;
-    scale = Math.min(Math.max(1, scale), 4);
 
-    img.style.transform = `scale(${scale})`;
+// 🔥 لو كان pinch
+if(isPinching){
+    isPinching = false;
+    return;
+}
+
+if(!isDragging) return;
+
+// 🔥 inertia
+let momentum = velocity * 3;
+currentX += momentum;
+
+img.style.transition = 'transform 0.3s ease-out';
+
+// 🔥 لو الصورة مش متزوّمة → قلب
+if(scale === 1 && Math.abs(currentX) > 100){
+    currentX > 0 ? prevImg() : nextImg();
+} else {
+    currentX = 0;
+    img.style.transform = `translateX(0px) scale(${scale})`;
+}
+
+setTimeout(()=>{
+    img.style.transition = '';
+},300);
+
+isDragging = false;
+
+
 });
 
-// 🔥 double tap
+// ================= DOUBLE TAP =================
 let lastTap = 0;
+
 img.addEventListener('touchend', () => {
-    let now = new Date().getTime();
+let now = new Date().getTime();
 
-    if(now - lastTap < 250){
-        scale = scale === 1 ? 2.5 : 1;
-        img.style.transform = `scale(${scale})`;
-    }
 
-    lastTap = now;
+if(now - lastTap < 250){
+    scale = scale === 1 ? 2.5 : 1;
+    img.style.transform = `translateX(0px) scale(${scale})`;
+}
+
+lastTap = now;
+
+
 });
 
-// 🔥 keyboard
+// ================= WHEEL =================
+img.addEventListener('wheel', e => {
+e.preventDefault();
+
+
+scale += e.deltaY * -0.001;
+scale = Math.min(Math.max(1, scale), 4);
+
+img.style.transform = `translateX(${currentX}px) scale(${scale})`;
+
+
+});
+
+// ================= KEYBOARD =================
 document.addEventListener('keydown', e => {
-    if(viewer.classList.contains('hidden')) return;
+if(viewer.classList.contains('hidden')) return;
 
-    if(e.key === 'ArrowRight') nextImg();
-    if(e.key === 'ArrowLeft') prevImg();
-    if(e.key === 'Escape') closeViewer();
+
+if(e.key === 'ArrowRight') nextImg();
+if(e.key === 'ArrowLeft') prevImg();
+if(e.key === 'Escape') closeViewer();
+
+
 });
+
 </script>
 
 
