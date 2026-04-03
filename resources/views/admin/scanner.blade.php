@@ -269,12 +269,25 @@ function check(code){
 }
 
 // 📸 START (FAST + STABLE)
+Html5Qrcode.getCameras().then(cameras => {
+    console.log("Cameras:", cameras);
+});
 qr.start(
-    { facingMode: "environment" },
+    { facingMode: { exact: "environment" } },
     {
-        fps: 12,
-        qrbox: 260
+        fps: 20,
+
+        qrbox: { width: 260, height: 260 },
+
+        aspectRatio: 1.0,
+
+        disableFlip: false, // 🔥 مهم لقراءة الزوايا
+
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true // 🔥 أقوى detection
+        }
     },
+
     text=>{
         const now = Date.now();
 
@@ -291,7 +304,9 @@ qr.start(
         check(text);
     }
 );
-
+qr.applyVideoConstraints({
+    advanced: [{ focusMode: "continuous" }]
+});
 // 🔦 Flash control
 let flashOn = false;
 document.getElementById('flashBtn').onclick = async () => {
