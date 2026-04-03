@@ -84,113 +84,175 @@
     </div>
     @endif
 
-    {{-- ================= Gallery ================= --}}
-    @if($archive->images && $archive->images->count())
-    <div class="bg-black/40 border border-white/10 rounded-2xl p-6 space-y-4">
-        <h2 class="font-semibold text-lg">📸 صور من العرض</h2>
+   {{-- ================= Gallery ================= --}}
+@if($archive->images && $archive->images->count())
 
-        <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
-            @foreach($archive->images as $i => $img)
-                <img
-                    src="{{ $img->image_path }}"
-                    data-index="{{ $i }}"
-                    loading="lazy"
-                    onclick="openViewer({{ $i }})"
-                    class="snap-center min-w-[85%] sm:min-w-[45%] md:min-w-[30%]
-                           h-64 object-cover rounded-xl cursor-pointer
-                           hover:scale-105 transition">
-            @endforeach
-        </div>
+<div class="bg-black/40 border border-white/10 rounded-2xl p-6 space-y-4">
+    <h2 class="font-semibold text-lg">📸 صور من العرض</h2>
 
-        <p class="text-xs text-gray-400 text-center">
-            اسحب يمين / شمال أو اضغط للتكبير
-        </p>
-    </div>
-    @endif
+
+<div class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
+    @foreach($archive->images as $i => $img)
+        <img
+            src="{{ $img->image_path }}"
+            loading="lazy"
+            onclick="openViewer({{ $i }})"
+            class="snap-center min-w-[85%] sm:min-w-[45%] md:min-w-[30%]
+                   h-64 object-cover rounded-xl cursor-pointer
+                   hover:scale-105 transition duration-300">
+    @endforeach
+</div>
+
+<p class="text-xs text-gray-400 text-center">
+    اسحب أو اضغط للتكبير
+</p>
+
+
+</div>
+@endif
 
 </section>
 
-{{-- ================= Fullscreen Viewer ================= --}}
+{{-- ================= VIEWER ================= --}}
+
 <div id="viewer"
-     class="fixed inset-0 bg-black/95 hidden z-50 flex items-center justify-center">
+     class="fixed inset-0 bg-black/95 hidden z-[9999]
+            flex items-center justify-center
+            opacity-0 transition-opacity duration-300">
 
-    {{-- Close --}}
-    <button onclick="closeViewer()"
-            class="absolute top-5 right-5 text-white text-2xl">✕</button>
 
-    {{-- Prev --}}
-    <button onclick="prevImg()"
-            class="absolute left-4 text-white text-4xl">‹</button>
+{{-- Close --}}
+<button onclick="closeViewer()"
+        class="absolute top-5 right-5 text-white text-2xl z-50">✕</button>
 
-    {{-- Next --}}
-    <button onclick="nextImg()"
-            class="absolute right-4 text-white text-4xl">›</button>
+{{-- Prev --}}
+<button onclick="prevImg()"
+        class="absolute left-4 text-white text-4xl z-50">‹</button>
 
-    <img id="viewer-img"
-         class="max-w-[95vw] max-h-[90vh]
-                transition-transform duration-300">
+{{-- Next --}}
+<button onclick="nextImg()"
+        class="absolute right-4 text-white text-4xl z-50">›</button>
+
+<img id="viewer-img"
+     class="max-w-[95vw] max-h-[90vh]
+            transition-all duration-300 ease-in-out will-change-transform">
+
+
 </div>
 
 <script>
 const images = @json($archive->images->pluck('image_path'));
+
 let current = 0;
 let scale = 1;
 let startX = 0;
 
+const viewer = document.getElementById('viewer');
+const img = document.getElementById('viewer-img');
+
+// 🔥 preload (مفيش lag)
+images.forEach(src => {
+    const i = new Image();
+    i.src = src;
+});
+
+// 🔥 open viewer (isolated mode)
 function openViewer(index){
     current = index;
     scale = 1;
-    const img = document.getElementById('viewer-img');
+
     img.src = images[current];
     img.style.transform = 'scale(1)';
-    document.getElementById('viewer').classList.remove('hidden');
+
+    viewer.classList.remove('hidden');
+
+    setTimeout(()=>{
+        viewer.classList.remove('opacity-0');
+    },10);
+
+    // 🚫 منع scroll الموقع
+    document.body.style.overflow = 'hidden';
 }
 
+// 🔥 close
 function closeViewer(){
-    document.getElementById('viewer').classList.add('hidden');
+    viewer.classList.add('opacity-0');
+
+    setTimeout(()=>{
+        viewer.classList.add('hidden');
+    },300);
+
+    document.body.style.overflow = '';
+}
+
+// 🔥 smooth change (بدون reopen)
+function changeImage(newIndex){
+    current = (newIndex + images.length) % images.length;
+    scale = 1;
+
+    img.style.opacity = 0;
+    img.style.transform = 'scale(0.96)';
+
+    setTimeout(()=>{
+        img.src = images[current];
+        img.style.opacity = 1;
+        img.style.transform = 'scale(1)';
+    },120);
 }
 
 function nextImg(){
-    current = (current + 1) % images.length;
-    openViewer(current);
+    changeImage(current + 1);
 }
 
 function prevImg(){
-    current = (current - 1 + images.length) % images.length;
-    openViewer(current);
+    changeImage(current - 1);
 }
 
-// Swipe
-const viewer = document.getElementById('viewer');
+// 🔥 swipe ناعم
 viewer.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
 });
 
 viewer.addEventListener('touchend', e => {
     let dx = e.changedTouches[0].clientX - startX;
-    if(dx > 50) prevImg();
-    if(dx < -50) nextImg();
+
+    if(Math.abs(dx) > 40){
+        dx > 0 ? prevImg() : nextImg();
+    }
 });
 
-// Zoom (Pinch + Wheel)
-const img = document.getElementById('viewer-img');
+// 🔥 zoom wheel
 img.addEventListener('wheel', e => {
     e.preventDefault();
+
     scale += e.deltaY * -0.001;
-    scale = Math.min(Math.max(1, scale), 3);
+    scale = Math.min(Math.max(1, scale), 4);
+
     img.style.transform = `scale(${scale})`;
 });
 
-// Double Tap Zoom
+// 🔥 double tap
 let lastTap = 0;
-img.addEventListener('touchend', e => {
+img.addEventListener('touchend', () => {
     let now = new Date().getTime();
-    if(now - lastTap < 300){
-        scale = scale === 1 ? 2 : 1;
+
+    if(now - lastTap < 250){
+        scale = scale === 1 ? 2.5 : 1;
         img.style.transform = `scale(${scale})`;
     }
+
     lastTap = now;
 });
+
+// 🔥 keyboard
+document.addEventListener('keydown', e => {
+    if(viewer.classList.contains('hidden')) return;
+
+    if(e.key === 'ArrowRight') nextImg();
+    if(e.key === 'ArrowLeft') prevImg();
+    if(e.key === 'Escape') closeViewer();
+});
 </script>
+
 
 @endsection
