@@ -266,20 +266,26 @@
                 <div class="bg-black/40 border border-white/10 rounded-xl p-3 space-y-3 shadow-md">
 
                     {{-- Header --}}
-                    <div class="flex justify-between text-xs">
-                        <span class="text-gray-400">
-                            {{ $time->show->title }}
-                        </span>
+                    <div class="flex justify-between text-xs items-center">
 
-                        <span class="text-gray-300">
-                            {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
-                        </span>
-                    </div>
+                    {{-- 🎭 اسم العرض --}}
+                    <span class="text-gray-400 flex items-center gap-1">
+                        <span>🎭</span>
+                        <span>{{ $time->show->title }}</span>
+                    </span>
 
-                    {{-- Date --}}
-                    <div class="text-xs text-gray-400">
-                        {{ $time->date?->format('Y-m-d') }}
-                    </div>
+                    {{-- ⏰ الوقت --}}
+                    <span class="text-amber-400 font-medium">
+                        {{ \Carbon\Carbon::parse($time->time)->format('g:i A') }}
+                    </span>
+
+                </div>
+
+                {{-- 📅 التاريخ --}}
+                <div class="text-xs text-gray-400 flex items-center gap-1">
+                    <span>📅</span>
+                    <span>{{ $time->date?->format('Y-m-d') }}</span>
+                </div>
 
                     {{-- Stats --}}
                     <div class="grid grid-cols-2 gap-2 text-xs">
