@@ -214,6 +214,10 @@ viewer.addEventListener('touchstart', e => {
 });
 
 viewer.addEventListener('touchend', e => {
+
+    // 🚫 لو الصورة متزوّمة → متقلبش
+    if(scale > 1) return;
+
     let dx = e.changedTouches[0].clientX - startX;
 
     if(Math.abs(dx) > 40){
