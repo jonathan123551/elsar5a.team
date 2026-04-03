@@ -74,8 +74,7 @@
     <div id="flashIcon" class="text-8xl font-black"></div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
-
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
 <style>
 .scan-frame{
     width:230px;
@@ -108,8 +107,9 @@
 .glow-red{ box-shadow:0 0 25px rgba(239,68,68,.6); }
 </style>
 
+
 <script>
-const qr = new Html5Qrcode("qr-reader");
+const codeReader = new ZXing.BrowserQRCodeReader();
 
 let busy = false;
 let lastCode = null;
@@ -117,7 +117,7 @@ let lastScanTime = 0;
 
 const COOLDOWN = 3000;
 
-// 🔊 SOUND (fixed)
+// 🔊 SOUND (زي ما هو)
 let audioCtx;
 function beep(type){
     try{
@@ -143,14 +143,14 @@ function beep(type){
     }catch(e){}
 }
 
-// 📳 vibration
+// 📳 vibration (زي ما هو)
 function vibrate(type){
     if(type==='ok') navigator.vibrate?.(120);
     else if(type==='used') navigator.vibrate?.([100,50,100]);
     else navigator.vibrate?.(200);
 }
 
-// 💡 flash overlay
+// 💡 flash overlay (زي ما هو)
 function flash(type){
     const f = document.getElementById('flash');
     const i = document.getElementById('flashIcon');
@@ -164,7 +164,7 @@ function flash(type){
     setTimeout(()=>f.classList.add('hidden'),700);
 }
 
-// 🎯 UI
+// 🎯 UI (زي ما هو)
 function setStatus(text,type){
     const s = document.getElementById('status');
 
@@ -182,35 +182,29 @@ function setStatus(text,type){
         s.classList.add('bg-red-500/90','text-white','border-red-300');
     }
 
-    // 🔥 pop animation
     s.style.transform = "translate(-50%, -5px) scale(1.1)";
     setTimeout(()=>{
         s.style.transform = "translate(-50%, 0) scale(1)";
     },150);
 }
-// 📊 render
+
+// 📊 render (زي ما هو)
 function render(d){
     const c = document.getElementById('card');
     c.classList.remove('hidden');
 
     c.innerHTML = `
         <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-3 space-y-2">
-
-            <!-- 👤 NAME -->
             <div class="text-white font-semibold text-sm tracking-wide">
                 ${d.name}
             </div>
 
-        
-
             <div class="border-t border-white/10 my-1"></div>
 
-            <!-- 🎭 SHOW -->
             <div class="text-gray-300 text-[12px]">
                 🎭 ${d.show_title}
             </div>
 
-            <!-- 🕒 DATE & TIME -->
             <div class="text-[12px] font-medium text-indigo-400">
                 🕒 ${d.date} • ${d.time}
             </div>
@@ -222,12 +216,11 @@ function render(d){
                    </div>`
                 : ''
             }
-
         </div>
     `;
 }
 
-// 🚀 request
+// 🚀 request (زي ما هو)
 function check(code){
 
     fetch('/admin/scanner/check',{
@@ -268,56 +261,84 @@ function check(code){
     });
 }
 
-// 📸 START (FAST + STABLE)
-Html5Qrcode.getCameras().then(cameras => {
-    console.log("Cameras:", cameras);
-});
-qr.start(
-    { facingMode: { exact: "environment" } },
-    {
-        fps: 20,
+// ================= ZXING START =================
 
-        qrbox: { width: 260, height: 260 },
+async function startScanner(){
 
-        aspectRatio: 1.0,
+    const devices = await ZXing.BrowserQRCodeReader.listVideoInputDevices();
 
-        disableFlip: false, // 🔥 مهم لقراءة الزوايا
+    const backCam = devices.find(d =>
+        d.label.toLowerCase().includes('back')
+    );
 
-        experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true // 🔥 أقوى detection
+    const selectedDeviceId = backCam ? backCam.deviceId : devices[0].deviceId;
+
+    const video = document.createElement('video');
+    video.setAttribute("playsinline", true);
+    video.className = "w-full rounded-2xl";
+
+    const container = document.getElementById('qr-reader');
+    container.innerHTML = '';
+    container.appendChild(video);
+
+    codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
+
+        if(result){
+
+            const text = result.getText();
+            const now = Date.now();
+
+            if(text === lastCode && now - lastScanTime < COOLDOWN){
+                return;
+            }
+
+            if(busy) return;
+
+            busy = true;
+            lastCode = text;
+            lastScanTime = now;
+
+            check(text);
         }
-    },
 
-    text=>{
-        const now = Date.now();
+    });
 
-        if(text === lastCode && now - lastScanTime < COOLDOWN){
-            return;
+    // 🔥 AUTO FOCUS + ZOOM
+    setTimeout(()=>{
+        const track = video.srcObject.getVideoTracks()[0];
+
+        const capabilities = track.getCapabilities();
+
+        if(capabilities.zoom){
+            track.applyConstraints({
+                advanced: [{ zoom: capabilities.zoom.max / 2 }]
+            });
         }
 
-        if(busy) return;
+    },1000);
+}
 
-        busy = true;
-        lastCode = text;
-        lastScanTime = now;
+startScanner();
 
-        check(text);
-    }
-);
-qr.applyVideoConstraints({
-    advanced: [{ focusMode: "continuous" }]
-});
-// 🔦 Flash control
-let flashOn = false;
+// 🔦 Flash control (نفسه)
 document.getElementById('flashBtn').onclick = async () => {
-    try{
-        flashOn = !flashOn;
-        await qr.applyVideoConstraints({
-            advanced: [{ torch: flashOn }]
-        });
-    }catch(e){
+    const track = document.querySelector('video')?.srcObject?.getVideoTracks()[0];
+
+    if(!track) return;
+
+    const capabilities = track.getCapabilities();
+
+    if(!capabilities.torch){
         alert('الفلاش غير مدعوم');
+        return;
     }
+
+    const torchOn = !track.getSettings().torch;
+
+    await track.applyConstraints({
+        advanced: [{ torch: torchOn }]
+    });
 };
 </script>
+
 @endsection
