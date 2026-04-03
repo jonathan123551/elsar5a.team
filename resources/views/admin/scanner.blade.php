@@ -271,82 +271,128 @@ function check(code){
 
 let scanning = true;
 
+// 🎯 TRACK BOX
+const trackBox = document.createElement("div");
+trackBox.id = "qr-track-box";
+trackBox.className = "absolute border-2 border-emerald-400 rounded-xl pointer-events-none hidden";
+trackBox.style.boxShadow = "0 0 20px rgba(34,197,94,0.7)";
+document.querySelector(".relative").appendChild(trackBox);
+
+// 🔥 TRACKING
+function updateTracking(result){
+if(!result?.resultPoints) return;
+
+const video = document.querySelector("#qr-reader video");
+if(!video) return;
+
+const rect = video.getBoundingClientRect();
+
+const scaleX = rect.width / video.videoWidth;
+const scaleY = rect.height / video.videoHeight;
+
+let minX = Infinity, minY = Infinity;
+let maxX = 0, maxY = 0;
+
+result.resultPoints.forEach(p=>{
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+});
+
+trackBox.style.left = (minX * scaleX) + "px";
+trackBox.style.top = (minY * scaleY) + "px";
+trackBox.style.width = ((maxX-minX)*scaleX) + "px";
+trackBox.style.height = ((maxY-minY)*scaleY) + "px";
+
+trackBox.classList.remove("hidden");
+
+}
+
+// 🧹 hide لو مفيش detection
+setInterval(()=>{
+trackBox.classList.add("hidden");
+},700);
+
+// 🚀 START
 qr.start(
 {
-facingMode: { exact: "environment" }
+facingMode: "environment"
 },
 {
 fps: 30,
-qrbox: (w, h) => {
-const size = Math.min(w, h) * 0.7;
-return { width: size, height: size };
+qrbox: (w,h)=>{
+const size = Math.min(w,h)*0.7;
+return { width, height };
 },
-aspectRatio: 1.0,
-experimentalFeatures: {
-useBarCodeDetectorIfSupported: true
+aspectRatio:1,
+experimentalFeatures:{
+useBarCodeDetectorIfSupported
 },
-videoConstraints: {
-facingMode: "environment",
-width: { ideal: 1920 },
-height: { ideal: 1080 }
+videoConstraints:{
+facingMode:"environment",
+width:{ideal:1920},
+height:{ideal:1080}
 }
 },
-(text) => {
+(decodedText, decodedResult)=>{
 
+updateTracking(decodedResult);
 
-    if(!scanning) return;
+if(!scanning) return;
 
-    const now = Date.now();
+const now = Date.now();
 
-    if(text === lastCode && now - lastScanTime < COOLDOWN){
-        return;
-    }
-
-    if(busy) return;
-
-    scanning = false;
-    busy = true;
-
-    lastCode = text;
-    lastScanTime = now;
-
-    navigator.vibrate?.(80);
-
-    check(text);
-
-    setTimeout(()=>{
-        scanning = true;
-    }, 600);
+if(decodedText === lastCode && now - lastScanTime < COOLDOWN){
+    return;
 }
 
+if(busy) return;
 
+scanning = false;
+busy = true;
+
+lastCode = decodedText;
+lastScanTime = now;
+
+navigator.vibrate?.(80);
+
+check(decodedText);
+
+setTimeout(()=>{
+    scanning = true;
+},600);
+
+}
 );
 
 // 🔥 AUTO FOCUS + ZOOM
-setTimeout(async () => {
+setTimeout(async ()=>{
 try{
 const track = qr.getRunningTrack();
 const cap = track.getCapabilities();
 
-
     let constraints = { advanced: [] };
 
     if(cap.zoom){
-        constraints.advanced.push({ zoom: cap.zoom.max * 0.6 });
+        constraints.advanced.push({ zoom: cap.zoom.max*0.6 });
     }
 
     if(cap.focusMode){
-        constraints.advanced.push({ focusMode: "continuous" });
+        constraints.advanced.push({ focusMode:"continuous" });
+    }
+
+    if(cap.exposureMode){
+        constraints.advanced.push({ exposureMode:"continuous" });
     }
 
     await track.applyConstraints(constraints);
 
 }catch(e){
-    console.log("Camera tuning not supported");
+    console.log("camera tuning not supported");
 }
 
-
-}, 1200);
+},1200);
 
 
 // 🔦 Flash control
