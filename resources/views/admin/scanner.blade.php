@@ -268,27 +268,22 @@ function check(code){
     });
 }
 
-// 📸 START (FAST + STABLE)
-const qr = new Html5Qrcode("qr-reader");
 
 let scanning = true;
 
-// 🚀 START
 qr.start(
 {
 facingMode: { exact: "environment" }
 },
 {
 fps: 30,
-qrbox: (viewfinderWidth, viewfinderHeight) => {
-const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-const size = Math.floor(minEdge * 0.7);
+qrbox: (w, h) => {
+const size = Math.min(w, h) * 0.7;
 return { width: size, height: size };
 },
 aspectRatio: 1.0,
-disableFlip: false,
 experimentalFeatures: {
-useBarCodeDetectorIfSupported: true // 🔥 مهم جدًا
+useBarCodeDetectorIfSupported: true
 },
 videoConstraints: {
 facingMode: "environment",
@@ -315,7 +310,6 @@ height: { ideal: 1080 }
     lastCode = text;
     lastScanTime = now;
 
-    // 🔥 vibration fast
     navigator.vibrate?.(80);
 
     check(text);
@@ -323,35 +317,26 @@ height: { ideal: 1080 }
     setTimeout(()=>{
         scanning = true;
     }, 600);
-
 }
 
 
 );
 
-// 🎯 AUTO FOCUS + ZOOM (Lens behavior)
+// 🔥 AUTO FOCUS + ZOOM
 setTimeout(async () => {
-
-
 try{
-    const track = qr.getRunningTrack();
-    const cap = track.getCapabilities();
+const track = qr.getRunningTrack();
+const cap = track.getCapabilities();
+
 
     let constraints = { advanced: [] };
 
-    // 🔥 zoom على النص
     if(cap.zoom){
         constraints.advanced.push({ zoom: cap.zoom.max * 0.6 });
     }
 
-    // 🔥 focus مستمر
     if(cap.focusMode){
         constraints.advanced.push({ focusMode: "continuous" });
-    }
-
-    // 🔥 exposure (مهم للإضاءة)
-    if(cap.exposureMode){
-        constraints.advanced.push({ exposureMode: "continuous" });
     }
 
     await track.applyConstraints(constraints);
@@ -363,27 +348,6 @@ try{
 
 }, 1200);
 
-    { facingMode: "environment" },
-    {
-        fps: 12,
-        qrbox: 260
-    },
-    text=>{
-        const now = Date.now();
-
-        if(text === lastCode && now - lastScanTime < COOLDOWN){
-            return;
-        }
-
-        if(busy) return;
-
-        busy = true;
-        lastCode = text;
-        lastScanTime = now;
-
-        check(text);
-    }
-);
 
 // 🔦 Flash control
 let flashOn = false;
