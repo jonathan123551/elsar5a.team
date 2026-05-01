@@ -1,0 +1,50 @@
+# Keep the Docker build context small and reproducible.
+# Anything listed here is excluded from the COPY . . step.
+
+.git
+.gitignore
+.gitattributes
+.editorconfig
+
+# Local env / secrets
+.env
+.env.local
+.env.backup
+.env.production
+.env.testing
+
+# Local development output / dependency dirs (regenerated inside the image)
+node_modules
+vendor
+public/build
+public/hot
+public/storage
+storage/*.key
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/pail
+bootstrap/cache/*.php
+
+# IDE / OS
+.idea
+.vscode
+.fleet
+.nova
+.zed
+.DS_Store
+Thumbs.db
+
+# Tests / cache files
+.phpunit.cache
+.phpunit.result.cache
+.phpactor.json
+
+# Docs / readme / random root noise that doesn't ship to the runtime
+README.md
+*.log
+
+# Keep the placeholder empty files in repo root from being copied
+git
+main

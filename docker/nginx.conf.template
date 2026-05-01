@@ -1,0 +1,40 @@
+# Rendered to /etc/nginx/conf.d/default.conf at container start by entrypoint.sh
+# (envsubst replaces ${PORT}). Render injects $PORT for the public-facing port.
+
+server {
+    listen 0.0.0.0:${PORT} default_server;
+    server_name _;
+
+    root /app/public;
+    index index.php index.html;
+
+    # Allow large QR / image uploads
+    client_max_body_size 25M;
+
+    # Gzip text responses
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Don't log healthchecks
+    location = /up {
+        access_log off;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 60s;
+    }
+
+    # Deny dotfiles except .well-known
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
