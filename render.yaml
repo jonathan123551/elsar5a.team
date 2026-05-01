@@ -1,0 +1,96 @@
+# Render Blueprint for elsar5ateam
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This file provisions the web service. The Postgres database is hosted
+# externally on Neon (free tier with no expiration) so the user only needs
+# to paste the Neon connection string into DB_URL after first deploy.
+#
+# Service URL after first deploy: https://elsar5ateam.onrender.com
+# (If "elsar5ateam" is taken on Render, change `name` below before
+# creating the Blueprint — the rest of the file does not depend on it.)
+
+services:
+  - type: web
+    name: elsar5ateam
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      # --- App identity ---
+      - key: APP_NAME
+        value: "Elsar5a Team"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        value: https://elsar5ateam.onrender.com
+      - key: APP_LOCALE
+        value: ar
+      - key: APP_FALLBACK_LOCALE
+        value: en
+      - key: APP_FAKER_LOCALE
+        value: en_US
+      - key: APP_MAINTENANCE_DRIVER
+        value: file
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: APP_KEY
+        sync: false                 # User provides — see PR description for a generated value
+
+      # --- Logging ---
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_STACK
+        value: stderr               # Render captures stderr in the live logs view
+      - key: LOG_DEPRECATIONS_CHANNEL
+        value: "null"
+      - key: LOG_LEVEL
+        value: warning
+
+      # --- Database (Neon Postgres) ---
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        sync: false                 # User provides Neon connection string here
+
+      # --- Sessions / cache / queue (DB-backed for free tier; no Redis needed) ---
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: SESSION_ENCRYPT
+        value: "false"
+      - key: SESSION_PATH
+        value: /
+      - key: SESSION_DOMAIN
+        value: ""
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+
+      # --- Mail (log driver until SMTP is configured) ---
+      - key: MAIL_MAILER
+        value: log
+      - key: MAIL_FROM_ADDRESS
+        value: hello@example.com
+      - key: MAIL_FROM_NAME
+        value: "Elsar5a Team"
+
+      # --- Trust Render's load balancer so HTTPS, host, and IP are correct ---
+      - key: TRUSTED_PROXIES
+        value: "*"
+
+      # --- Vite app name (used by any frontend assets) ---
+      - key: VITE_APP_NAME
+        value: "Elsar5a Team"
