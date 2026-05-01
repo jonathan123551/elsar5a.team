@@ -1,3 +1,18 @@
+---
+title: Elsar5a Team
+emoji: 🎭
+colorFrom: red
+colorTo: yellow
+sdk: docker
+app_port: 8080
+pinned: false
+short_description: Elsar5a theatre productions site
+---
+
+<!-- The YAML block above is metadata for Hugging Face Spaces deployment.
+     See .github/workflows/deploy-to-hf-space.yml and the deploy notes in
+     this README's "Deployment" section below. -->
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

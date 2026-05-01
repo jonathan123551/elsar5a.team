@@ -1,0 +1,53 @@
+name: Sync to Hugging Face Space
+
+# Mirrors the main branch of this repo to the Hugging Face Space's git
+# remote on every push. Hugging Face Spaces auto-rebuild on every push to
+# their git repo, so this workflow is the only thing needed to keep the
+# Space in sync with GitHub. No paid features required.
+#
+# Setup (one-time, in GitHub repo Settings -> Secrets and variables -> Actions):
+#   HF_USER   = your Hugging Face username (e.g. "kareem")
+#   HF_SPACE  = the Space name you create on HF (e.g. "elsar5ateam")
+#   HF_TOKEN  = a write token from https://huggingface.co/settings/tokens
+#
+# After those three secrets are set, every push to main triggers a Space
+# rebuild. You can also run it on demand from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: hf-space-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (full history, with LFS)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git config --global user.name  "github-actions[bot]"
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_USER:  ${{ secrets.HF_USER }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_USER" ] || [ -z "$HF_SPACE" ] || [ -z "$HF_TOKEN" ]; then
+            echo "::error::Missing one of HF_USER / HF_SPACE / HF_TOKEN secrets."
+            echo "Add them under: Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          git remote add hf "https://${HF_USER}:${HF_TOKEN}@huggingface.co/spaces/${HF_USER}/${HF_SPACE}" || true
+          # Force-push so the Space exactly mirrors GitHub main.
+          git push --force hf HEAD:main
