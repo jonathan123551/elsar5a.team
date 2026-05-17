@@ -533,44 +533,80 @@
    PREMIUM RESULT SHEET (cinematic popup)
    ========================================================= */
 
+/* The result popup is a full-viewport overlay that perfectly
+   centers a compact card in the middle of the screen. It used
+   to slide up from the bottom (bottom-sheet pattern), but on
+   tall iPhone viewports the card felt disconnected from the
+   scanner area above it. Centering vertically keeps the card
+   visually balanced inside the camera-frame region and reads
+   more clearly during rapid real-world ticket scanning.
+
+   iOS-specific notes:
+     - `100dvh` instead of `100vh` so the overlay always matches
+       the visible viewport (vh-with-URL-bar bug).
+     - Both `env(safe-area-inset-top)` and `…-bottom)` are
+       respected so notch + home-bar never pull the card off
+       center.
+     - `overscroll-behavior: contain` prevents the page behind
+       from scroll-chaining when the operator drags on the
+       backdrop. */
 .scan-sheet {
     position: fixed;
     inset: 0;
-    z-index: 80;
+    min-height: 100dvh;
+    z-index: 90;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding: 16px;
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-    background: rgba(2,4,12,0.55);
-    backdrop-filter: blur(8px) saturate(140%);
-    -webkit-backdrop-filter: blur(8px) saturate(140%);
+    padding:
+        max(16px, env(safe-area-inset-top))
+        16px
+        max(16px, env(safe-area-inset-bottom));
+    background: rgba(2,4,12,0.62);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
     opacity: 0;
     pointer-events: none;
-    transition: opacity .2s cubic-bezier(.2,.7,.2,1);
+    overscroll-behavior: contain;
+    transition: opacity .26s cubic-bezier(.2,.7,.2,1);
 }
 .scan-sheet[data-state="visible"] {
     opacity: 1;
     pointer-events: auto;
 }
+
+/* Card sizing — `min(92vw, 22rem)` keeps it from feeling cramped
+   on small phones (iPhone SE) or comically wide on tablets. The
+   max-height + scroll fallback guards against landscape phones
+   where the viewport height collapses below the card's content. */
 .scan-sheet-card {
-    width: 100%;
-    max-width: 28rem;
-    padding: 18px;
-    border-radius: 26px;
+    width: min(92vw, 22rem);
+    max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px;
+    border-radius: 24px;
     background: linear-gradient(180deg, rgba(20,24,38,0.96), rgba(8,10,20,0.96));
     border: 1px solid rgba(129,140,248,0.32);
     box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.06),
-        0 24px 48px -22px rgba(0,0,0,0.85),
-        0 0 32px rgba(34,211,238,0.18);
+        0 30px 60px -28px rgba(0,0,0,0.92),
+        0 0 36px rgba(34,211,238,0.22);
     display: grid;
-    gap: 10px;
-    transform: translateY(28px) scale(.97);
-    transition: transform .28s cubic-bezier(.2,.7,.2,1);
+    gap: 12px;
+    /* Entrance: a touch stronger than the old translateY(28)/.97 —
+       a small pop that feels more cinematic and confirms a result
+       arrived, without ever feeling jarring on rapid re-scans. */
+    transform: translateY(14px) scale(.94);
+    opacity: 0;
+    transition:
+        transform .34s cubic-bezier(.2,.85,.2,1.02),
+        opacity   .22s cubic-bezier(.2,.7,.2,1);
+    will-change: transform, opacity;
 }
 .scan-sheet[data-state="visible"] .scan-sheet-card {
     transform: translateY(0) scale(1);
+    opacity: 1;
 }
 .scan-sheet[data-result="ok"]    .scan-sheet-card { border-color: rgba(110,231,183,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 48px -22px rgba(0,0,0,0.85), 0 0 36px rgba(52,211,153,0.30); }
 .scan-sheet[data-result="used"]  .scan-sheet-card { border-color: rgba(254,240,138,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 48px -22px rgba(0,0,0,0.85), 0 0 36px rgba(251,191,36,0.30); }
@@ -657,15 +693,20 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
-    padding-top: 4px;
+    gap: 8px;
+    padding-top: 6px;
 }
+/* Big, deliberately oversized tap target. Door staff scanning at
+   a venue entrance hit this button hundreds of times per night —
+   it has to forgive a thumb that's already moving to the next QR. */
 .scan-sheet-done {
     width: 100%;
-    padding: 12px 16px;
+    min-height: 48px;
+    padding: 13px 16px;
     font-size: 14px;
     font-weight: 800;
     letter-spacing: .04em;
+    touch-action: manipulation;
 }
 .scan-sheet-hint {
     font-size: 11px;
@@ -684,9 +725,14 @@
 
 @media (prefers-reduced-motion: reduce) {
     .reticle-line,
+    .scan-sheet,
     .scan-sheet-card,
     .scanner-status { animation: none !important; transition: none !important; }
     .scanner-stage[data-state="error"] { animation: none !important; }
+    /* When motion is reduced we still want the card to be visible
+       once `[data-state="visible"]` is set — drop the entrance
+       transform/opacity offsets entirely. */
+    .scan-sheet-card { transform: none !important; opacity: 1 !important; }
 }
 </style>
 
