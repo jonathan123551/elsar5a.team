@@ -177,7 +177,8 @@
                         <div id="screenshotEmptyState">
                             <p class="text-[28px] leading-none mb-1">📎</p>
                             <p class="text-sm text-white font-semibold">اختر صورة من معرض الصور</p>
-                            <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 5MB</p>
+                            <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                            <p class="text-[10px] text-gray-500 mt-0.5">لقطات شاشة iPhone بحجمها الطبيعي مدعومة.</p>
                         </div>
                         <div id="screenshotPreviewWrap" class="hidden">
                             <img id="screenshotPreview" alt=""
@@ -197,20 +198,26 @@
                        class="hidden text-[12px] text-red-300"></p>
                 </div>
 
-                {{-- Natural-position submit (also drives the sticky footer clone). --}}
-                <div data-sticky-action class="pt-1">
-                    <button type="submit"
-                            id="submitBtn"
-                            disabled
-                            class="w-full px-6 py-3.5 rounded-2xl
-                                   bg-gray-600 text-black/80 text-sm font-bold
-                                   disabled:cursor-not-allowed transition
-                                   shadow-[0_8px_30px_rgba(250,204,21,0.0)]
-                                   flex items-center justify-center gap-2">
-                        <span id="submitLabel">إرسال طلب الحجز</span>
-                    </button>
+                {{-- Natural-position submit (also drives the sticky
+                     footer clone). Only the button itself is wrapped
+                     in data-sticky-action so the floating footer
+                     stays a single tappable CTA — the hint sits
+                     OUTSIDE so it never duplicates into the footer. --}}
+                <div class="pt-1 space-y-2">
+                    <div data-sticky-action>
+                        <button type="submit"
+                                id="submitBtn"
+                                disabled
+                                class="w-full px-6 py-3.5 rounded-2xl
+                                       bg-gray-600 text-black/80 text-sm font-bold
+                                       disabled:cursor-not-allowed transition
+                                       shadow-[0_8px_30px_rgba(250,204,21,0.0)]
+                                       flex items-center justify-center gap-2">
+                            <span id="submitLabel">إرسال طلب الحجز</span>
+                        </button>
+                    </div>
                     <p id="submitHint"
-                       class="mt-2 text-center text-[11px] text-gray-400">
+                       class="text-center text-[11px] text-gray-400">
                         أكمل البيانات وارفع لقطة الشاشة لتفعيل زر الإرسال
                     </p>
                 </div>

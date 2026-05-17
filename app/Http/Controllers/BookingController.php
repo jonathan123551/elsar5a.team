@@ -135,17 +135,14 @@ class BookingController extends Controller
 
             // Upload the screenshot OUTSIDE the transaction so the
             // showtime row lock isn't held during a slow external
-            // HTTP call to Cloudinary.
-            $file = $request->file('payment_screenshot');
-            $tempPath = sys_get_temp_dir() . '/' . uniqid('booking_', true);
-            file_put_contents($tempPath, file_get_contents($file->getRealPath()));
-            try {
-                $upload = (new UploadApi())->upload($tempPath, [
-                    'folder' => 'payments/screenshots',
-                ]);
-            } finally {
-                @unlink($tempPath);
-            }
+            // HTTP call to Cloudinary. We hand Cloudinary the
+            // already-validated temp upload path directly instead of
+            // re-buffering the file into memory — important for
+            // 8–16 MB iPhone screenshots on a 256 MB worker.
+            $upload = (new UploadApi())->upload(
+                $request->file('payment_screenshot')->getRealPath(),
+                ['folder' => 'payments/screenshots']
+            );
 
             $booking = DB::transaction(function () use (
                 $showTime, $names, $normalizedPhones, $ticketsCount, $upload
@@ -204,11 +201,25 @@ class BookingController extends Controller
                 return $b;
             });
 
-            return view('bookings.thankyou', compact('booking'));
+            // PRG (Post-Redirect-Get): redirect to a dedicated GET
+            // route so the thank-you page has its own URL, a refresh
+            // doesn't re-POST the booking, and iOS Safari's bfcache
+            // never shows the user a stale form-submit state.
+            return redirect()->route('bookings.thankyou', [
+                'reference' => $booking->reference_code,
+            ]);
 
         } finally {
             Cache::forget($lockKey);
         }
+    }
+
+    // ================= THANK YOU =================
+    public function thankyou(string $reference)
+    {
+        $booking = Booking::where('reference_code', $reference)->firstOrFail();
+
+        return view('bookings.thankyou', compact('booking'));
     }
 
     private function normalizeEgyptPhone(string $phone): string

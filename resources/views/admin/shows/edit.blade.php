@@ -51,21 +51,48 @@
 
         {{-- Poster --}}
         <div>
-            <label class="text-xs mb-1">البوستر</label>
+            <label class="block text-xs mb-1.5 text-gray-300">البوستر</label>
 
-            @if($show->poster_path)
-                @php
-                    $posterUrl = str_starts_with($show->poster_path, 'http')
+            @php
+                $posterUrl = $show->poster_path
+                    ? (str_starts_with($show->poster_path, 'http')
                         ? $show->poster_path
-                        : $show->poster_path;
-                @endphp
+                        : $show->poster_path)
+                    : null;
+            @endphp
 
-                <img id="posterPreview"
-                     src="{{ $posterUrl }}"
-                     class="w-full max-h-60 object-contain rounded-xl mb-2 border border-white/10 bg-black/40 p-2">
-            @endif
+            <label for="posterInput"
+                   data-upload-dropzone
+                   class="block cursor-pointer rounded-2xl border-2 border-dashed
+                          border-white/15 hover:border-amber-400/60 active:border-amber-400/80
+                          transition bg-black/40 p-4 text-center">
 
-            <input type="file" name="poster" id="posterInput" class="text-xs">
+                <div data-upload-empty class="{{ $posterUrl ? 'hidden' : '' }}">
+                    <p class="text-[28px] leading-none mb-1">🎭</p>
+                    <p class="text-sm text-white font-semibold">اختر بوستر للعرض</p>
+                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                </div>
+
+                <div data-upload-preview class="{{ $posterUrl ? '' : 'hidden' }}">
+                    <img id="posterPreview"
+                         data-upload-preview-img
+                         src="{{ $posterUrl }}"
+                         alt=""
+                         class="mx-auto max-h-56 rounded-xl border border-white/10 object-contain">
+                    <p data-upload-filename class="text-[11px] text-gray-300 mt-2 truncate"></p>
+                    <p class="text-[11px] text-amber-300 mt-1">اضغط لاستبدال الصورة</p>
+                </div>
+
+            </label>
+
+            <input type="file"
+                   name="poster"
+                   id="posterInput"
+                   accept="image/*"
+                   data-max-mb="12"
+                   class="hidden">
+
+            <p data-upload-error class="hidden text-[12px] text-red-300 mt-1.5"></p>
         </div>
 
     </div>
@@ -77,7 +104,30 @@
 
             <h3 class="text-sm font-semibold">🎟️ تصميم التذكرة + QR</h3>
 
-            <input type="file" name="ticket_template" id="ticketInput" class="text-xs">
+            <label for="ticketInput"
+                   data-upload-dropzone
+                   class="block cursor-pointer rounded-2xl border-2 border-dashed
+                          border-white/15 hover:border-amber-400/60 active:border-amber-400/80
+                          transition bg-black/40 p-3 text-center">
+                <div data-upload-empty class="{{ $show->ticket_template_path ? 'hidden' : '' }}">
+                    <p class="text-[24px] leading-none mb-1">🎟️</p>
+                    <p class="text-xs text-white font-semibold">اختر تصميم التذكرة</p>
+                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                </div>
+                <div data-upload-preview class="{{ $show->ticket_template_path ? '' : 'hidden' }}">
+                    <p data-upload-filename class="text-[11px] text-gray-300 truncate"></p>
+                    <p class="text-[11px] text-amber-300 mt-1">اضغط لاستبدال الصورة</p>
+                </div>
+            </label>
+
+            <input type="file"
+                   name="ticket_template"
+                   id="ticketInput"
+                   accept="image/*"
+                   data-max-mb="12"
+                   class="hidden">
+
+            <p data-upload-error class="hidden text-[12px] text-red-300"></p>
 
             @if($show->ticket_template_path)
 
@@ -154,6 +204,49 @@ document.querySelectorAll('.single-submit-form').forEach(function (f) {
                 if (spin) spin.classList.remove('hidden');
             });
         });
+    });
+});
+
+// Wire up every [data-upload-dropzone] in the page to its sibling
+// <input type=file>. Provides a mobile-friendly tap target, inline
+// preview, filename, and client-side size guard.
+document.querySelectorAll('[data-upload-dropzone]').forEach(function (zone) {
+    var input = document.getElementById(zone.getAttribute('for'));
+    if (!input) return;
+
+    var empty   = zone.querySelector('[data-upload-empty]');
+    var preview = zone.querySelector('[data-upload-preview]');
+    var img     = zone.querySelector('[data-upload-preview-img]');
+    var name    = zone.querySelector('[data-upload-filename]');
+    var err     = zone.parentElement.querySelector('[data-upload-error]');
+    var maxMb   = parseFloat(input.getAttribute('data-max-mb') || '12');
+
+    input.addEventListener('change', function () {
+        if (err) err.classList.add('hidden');
+        var file = input.files && input.files[0];
+        if (!file) {
+            if (preview) preview.classList.add('hidden');
+            if (empty)   empty.classList.remove('hidden');
+            return;
+        }
+        if (file.size > maxMb * 1024 * 1024) {
+            if (err) {
+                err.innerText = 'حجم الصورة أكبر من ' + maxMb + 'MB — جرّب صورة أصغر.';
+                err.classList.remove('hidden');
+            }
+            input.value = '';
+            if (preview) preview.classList.add('hidden');
+            if (empty)   empty.classList.remove('hidden');
+            return;
+        }
+        if (img) {
+            var url = URL.createObjectURL(file);
+            img.src = url;
+            img.onload = function () { URL.revokeObjectURL(url); };
+        }
+        if (name) name.innerText = file.name;
+        if (empty)   empty.classList.add('hidden');
+        if (preview) preview.classList.remove('hidden');
     });
 });
 </script>

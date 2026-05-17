@@ -51,10 +51,33 @@
             {{-- بوستر العرض --}}
             <div>
                 <label class="block text-xs mb-1.5 text-gray-300">بوستر العرض (اختياري)</label>
-                <input type="file" name="poster" accept="image/*"
-                       class="w-full text-xs text-gray-300 file:me-3 file:px-3 file:py-2 file:rounded-full
-                              file:border-0 file:bg-amber-400/10 file:text-amber-200 file:cursor-pointer
-                              hover:file:bg-amber-400/20 transition">
+
+                <label for="posterInput"
+                       data-upload-dropzone
+                       class="block cursor-pointer rounded-2xl border-2 border-dashed
+                              border-white/15 hover:border-amber-400/60 active:border-amber-400/80
+                              transition bg-black/40 p-4 text-center">
+                    <div data-upload-empty>
+                        <p class="text-[28px] leading-none mb-1">🎭</p>
+                        <p class="text-sm text-white font-semibold">اختر بوستر للعرض</p>
+                        <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                    </div>
+                    <div data-upload-preview class="hidden">
+                        <img data-upload-preview-img alt=""
+                             class="mx-auto max-h-48 rounded-xl border border-white/10 object-contain">
+                        <p data-upload-filename class="text-[11px] text-gray-300 mt-2 truncate"></p>
+                        <p class="text-[11px] text-amber-300 mt-1">اضغط لاستبدال الصورة</p>
+                    </div>
+                </label>
+
+                <input type="file"
+                       name="poster"
+                       id="posterInput"
+                       accept="image/*"
+                       data-max-mb="12"
+                       class="hidden">
+
+                <p data-upload-error class="hidden text-[12px] text-red-300 mt-1.5"></p>
             </div>
 
             {{-- تصميم التذكرة + إعداد موضع الـ QR --}}
@@ -72,11 +95,30 @@
                     <div class="space-y-2">
                         <label class="block text-xs mb-1">ملف تصميم التذكرة</label>
 
+                        <label for="ticket_template_input"
+                               data-upload-dropzone
+                               class="block cursor-pointer rounded-2xl border-2 border-dashed
+                                      border-white/15 hover:border-amber-400/60 active:border-amber-400/80
+                                      transition bg-black/40 p-3 text-center">
+                            <div data-upload-empty>
+                                <p class="text-[24px] leading-none mb-1">🎟️</p>
+                                <p class="text-xs text-white font-semibold">اختر تصميم التذكرة</p>
+                                <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                            </div>
+                            <div data-upload-preview class="hidden">
+                                <p data-upload-filename class="text-[11px] text-gray-300 truncate"></p>
+                                <p class="text-[11px] text-amber-300 mt-1">اضغط لاستبدال الصورة</p>
+                            </div>
+                        </label>
+
                         <input type="file"
                                name="ticket_template"
                                id="ticket_template_input"
                                accept="image/*"
-                               class="w-full text-xs text-gray-300">
+                               data-max-mb="12"
+                               class="hidden">
+
+                        <p data-upload-error class="hidden text-[12px] text-red-300"></p>
 
                         <p class="text-[11px] text-gray-400 mt-1">
                             بعد ما تختار الملف، هتقدر تحرك مربع الـ QR وتغيّر حجمه على التصميم.
@@ -178,6 +220,53 @@
                         if (spin) spin.classList.remove('hidden');
                     });
                 });
+            });
+        });
+
+        // Wire up every [data-upload-dropzone] in the page to its
+        // sibling <input type=file>. Provides:
+        //   • visible mobile-friendly tap target (>= 44px)
+        //   • inline preview thumbnail + filename
+        //   • client-side size guard (data-max-mb on the input) so
+        //     the user gets an instant error instead of a 413 from
+        //     PHP after a 30-second upload.
+        document.querySelectorAll('[data-upload-dropzone]').forEach(function (zone) {
+            var input = document.getElementById(zone.getAttribute('for'));
+            if (!input) return;
+
+            var empty   = zone.querySelector('[data-upload-empty]');
+            var preview = zone.querySelector('[data-upload-preview]');
+            var img     = zone.querySelector('[data-upload-preview-img]');
+            var name    = zone.querySelector('[data-upload-filename]');
+            var err     = zone.parentElement.querySelector('[data-upload-error]');
+            var maxMb   = parseFloat(input.getAttribute('data-max-mb') || '12');
+
+            input.addEventListener('change', function () {
+                if (err) err.classList.add('hidden');
+                var file = input.files && input.files[0];
+                if (!file) {
+                    if (preview) preview.classList.add('hidden');
+                    if (empty)   empty.classList.remove('hidden');
+                    return;
+                }
+                if (file.size > maxMb * 1024 * 1024) {
+                    if (err) {
+                        err.innerText = 'حجم الصورة أكبر من ' + maxMb + 'MB — جرّب صورة أصغر.';
+                        err.classList.remove('hidden');
+                    }
+                    input.value = '';
+                    if (preview) preview.classList.add('hidden');
+                    if (empty)   empty.classList.remove('hidden');
+                    return;
+                }
+                if (img) {
+                    var url = URL.createObjectURL(file);
+                    img.src = url;
+                    img.onload = function () { URL.revokeObjectURL(url); };
+                }
+                if (name) name.innerText = file.name;
+                if (empty)   empty.classList.add('hidden');
+                if (preview) preview.classList.remove('hidden');
             });
         });
         </script>
