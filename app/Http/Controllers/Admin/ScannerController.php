@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\ScannerAccess;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -16,75 +15,18 @@ class ScannerController extends Controller
     /**
      * Render the gate scanner UI.
      *
-     * Intentionally returns a minimal blade view that boots the
-     * premium scanner stack (multi-engine decode + cinematic result
-     * sheet). The page itself is reachable without admin auth so
-     * staff can run the scanner on shared devices at the door — only
+     * The page is intentionally reachable without admin auth so door
+     * staff can run the scanner on shared devices at the door. Only
      * a single validated ticket's name / phone / show metadata is
-     * echoed at a time, no booking management is exposed. Access is
-     * gated by the lightweight ScannerAccess middleware (one-time
-     * per-device PIN) so anonymous random visitors can't burn
-     * tickets, while real door staff retain a fast workflow.
+     * echoed at a time, no booking management is exposed, and the
+     * POST /admin/scanner/check endpoint is rate-limited so a burst
+     * of guessed codes can't burn tickets faster than a real
+     * operator scans them. There is intentionally NO PIN gate — the
+     * real-world organizer entrance flow has to stay ultra-fast.
      */
     public function index()
     {
         return view('admin.scanner');
-    }
-
-    /** Render the scanner-only PIN screen. */
-    public function pinForm()
-    {
-        if (request()->session()->get(ScannerAccess::SESSION_KEY) === true) {
-            return redirect()->route('admin.scanner');
-        }
-
-        return view('admin.scanner-pin');
-    }
-
-    /**
-     * Verify the scanner PIN and unlock the device session.
-     *
-     * The PIN is sourced from env(SCANNER_PIN). In non-production
-     * environments without a PIN configured we accept a default
-     * dev PIN of "1234" so local development isn't broken; in
-     * production a missing SCANNER_PIN fails closed.
-     */
-    public function pinSubmit(Request $request)
-    {
-        $data = $request->validate([
-            'pin' => ['required', 'string', 'max:32'],
-        ]);
-
-        $configured = env('SCANNER_PIN');
-
-        if (!$configured && app()->environment('production')) {
-            return back()
-                ->withErrors(['pin' => 'وضع الفحص غير مفعّل حاليًا.'])
-                ->withInput();
-        }
-
-        $expected = $configured ?: '1234';
-
-        if (!hash_equals((string) $expected, (string) $data['pin'])) {
-            return back()
-                ->withErrors(['pin' => 'الرمز غير صحيح.'])
-                ->withInput();
-        }
-
-        $request->session()->put(ScannerAccess::SESSION_KEY, true);
-        $request->session()->regenerate();
-
-        return redirect()->route('admin.scanner');
-    }
-
-    /**
-     * Manually lock the scanner device (sign-out for the gate
-     * organizer). Admins use their regular logout instead.
-     */
-    public function pinLogout(Request $request)
-    {
-        $request->session()->forget(ScannerAccess::SESSION_KEY);
-        return redirect()->route('scanner.pin');
     }
 
     /**

@@ -59,7 +59,12 @@ Route::get('/archive/{archive}', [SiteController::class, 'archiveShow'])
 // Booking
 Route::get('/book/{showTime}', [BookingController::class, 'create'])
     ->name('bookings.create');
+// Throttle keeps a single client from hammering the booking endpoint
+// while idempotency tokens + the per-IP/phone cache lock + the
+// transactional capacity check in BookingController::store close
+// the remaining concurrency windows.
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
+    ->middleware('throttle:20,1')
     ->name('bookings.store');
 
 Route::get('/ticket/{reference}', [App\Http\Controllers\Admin\BookingController::class, 'sendTicketsByReference'])
@@ -111,34 +116,25 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Scanner (publicly reachable, PIN-gated)
+| Scanner (publicly reachable, no auth wall)
 |--------------------------------------------------------------------------
-| The QR scanner is intentionally exposed without the full admin auth
-| so staff can use it on shared devices at the door without owning an
-| admin dashboard account. Anonymous traffic is blocked by the
-| `scanner.access` middleware, which sends new devices through a
-| one-time PIN screen (PIN sourced from env(SCANNER_PIN)). Once a
-| device passes that screen, the session flag remains set so the
-| operator can scan as fast as they want. The URL / route names are
-| preserved as `admin.scanner.*` so existing references (dashboard
-| links, blade `route('admin.scanner')` calls) keep working.
+| The QR gate scanner is intentionally reachable WITHOUT any admin
+| login or PIN gate. Real-world event entrance flow has to stay
+| ultra-fast — door staff scan dozens of tickets per minute on
+| shared phones and adding any friction screen in front of the
+| camera is unacceptable.
+|
+| The /admin/scanner URL/route names are preserved so existing
+| references (dashboard links, blade `route('admin.scanner')`)
+| keep working. POST /admin/scanner/check is rate-limited so a
+| burst of guessed codes can't burn tickets faster than a real
+| operator would.
 */
-
-// PIN gate (publicly reachable so door staff can unlock the device).
-Route::get('/admin/scanner/pin', [ScannerController::class, 'pinForm'])->name('scanner.pin');
-Route::post('/admin/scanner/pin', [ScannerController::class, 'pinSubmit'])
-    ->middleware('throttle:5,1')
-    ->name('scanner.pin.submit');
-Route::post('/admin/scanner/pin/logout', [ScannerController::class, 'pinLogout'])
-    ->name('scanner.pin.logout');
-
-Route::middleware('scanner.access')->group(function () {
-    Route::get('/admin/scanner', [ScannerController::class, 'index'])
-        ->name('admin.scanner');
-    Route::post('/admin/scanner/check', [ScannerController::class, 'check'])
-        ->middleware('throttle:60,1')
-        ->name('admin.scanner.check');
-});
+Route::get('/admin/scanner', [ScannerController::class, 'index'])
+    ->name('admin.scanner');
+Route::post('/admin/scanner/check', [ScannerController::class, 'check'])
+    ->middleware('throttle:120,1')
+    ->name('admin.scanner.check');
 
 
 /*
@@ -206,7 +202,12 @@ Route::middleware('admin')
     Route::post('/resend-ticket/{id}', [AdminBookingController::class, 'resendTicket'])
     ->name('resend.ticket');
 
-    Route::delete('/admin/booking/{id}', [AdminBookingController::class, 'delete'])
+    // Route fix: this lives inside the prefix('admin') group, so the
+    // leading `/admin/` segment was being doubled and producing
+    // `/admin/admin/booking/{id}`. Drop the redundant prefix so the
+    // route resolves to `/admin/booking/{id}` like the rest of the
+    // admin namespace.
+    Route::delete('/booking/{id}', [AdminBookingController::class, 'delete'])
     ->name('booking.delete');
     // Archive
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');

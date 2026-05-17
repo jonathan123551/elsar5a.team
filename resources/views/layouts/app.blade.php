@@ -19,7 +19,48 @@
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
+
+        /* Mobile-friendly tap targets — every clickable element on
+           the public + admin surfaces should be at least 44×44 with
+           a little visual feedback. Scoped to the elements the rest
+           of the design system already uses so we don't surprise
+           desktop UIs. iOS in particular needs an explicit
+           -webkit-tap-highlight-color override to avoid the default
+           grey flash. */
+        button,
+        [role="button"],
+        input[type="submit"],
+        input[type="button"],
+        a {
+            -webkit-tap-highlight-color: transparent;
+        }
+        button,
+        input[type="submit"],
+        input[type="button"] {
+            touch-action: manipulation; /* kill 300ms double-tap zoom delay on iOS */
+        }
+        input,
+        select,
+        textarea {
+            /* iOS Safari auto-zooms into any input under 16px on
+               focus, which yanks the layout. Force a minimum logical
+               font-size on small viewports so the keyboard appears
+               without zooming. */
+            font-size: 16px;
+        }
+        @media (min-width: 640px) {
+            input, select, textarea { font-size: inherit; }
+        }
+
+        /* Safari iOS sometimes leaves a phantom rubber-band white
+           strip behind the dark stage background when the user
+           overscrolls. Anchor html/body to the stage color so it
+           never bleeds through. */
+        html { background-color: #020617; }
 
         /* خلفية أجواء مسرح */
         .stage-bg {
@@ -78,6 +119,93 @@
     <style>
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* =========================================================
+   STICKY ACTION FOOTER
+   ---------------------------------------------------------
+   Native-feeling sticky action bar pattern used across the
+   public booking flow and admin approval/edit screens.
+
+   How it works
+   ------------
+   Pages add `data-sticky-action` to the natural in-flow
+   action container (Approve/Reject buttons, "Submit
+   booking" button, "Save changes" button, etc.).
+
+   On boot we clone each natural action into a fixed footer
+   pinned to the bottom of the viewport. While the natural
+   action is OFF-SCREEN we fade the floating clone in; the
+   instant the user scrolls far enough to see the real
+   action in its natural place at the bottom of the page,
+   we fade the clone back out so the layout never has two
+   competing CTAs visible at once.
+
+   Clones don't double-submit — they synthesize a click on
+   the original control, which goes through the original
+   form's submit handler (including any in-progress /
+   disabled state).
+   ========================================================= */
+#sticky-action-footer {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    padding: 10px 14px max(10px, env(safe-area-inset-bottom)) 14px;
+    background: linear-gradient(180deg, rgba(2,6,23,0) 0%, rgba(2,6,23,0.85) 35%, rgba(2,6,23,0.96) 100%);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity .22s cubic-bezier(.2,.7,.2,1), transform .22s cubic-bezier(.2,.7,.2,1);
+}
+#sticky-action-footer.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+#sticky-action-footer .sa-inner {
+    max-width: 64rem;
+    margin: 0 auto;
+}
+#sticky-action-footer .sa-inner > * {
+    width: 100%;
+}
+#sticky-action-footer .sa-inner button,
+#sticky-action-footer .sa-inner a,
+#sticky-action-footer .sa-inner input[type="submit"] {
+    min-height: 48px;
+}
+
+/* Tiny inline spinner used by submit buttons while their
+   handler is in-flight. Kept generic so any form on the site
+   can opt in via `is-loading` on the button. */
+.btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: btnSpin .7s linear infinite;
+    vertical-align: -2px;
+    margin-inline-end: 6px;
+}
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+button.is-loading,
+input[type="submit"].is-loading {
+    opacity: 0.85;
+    cursor: progress;
+}
+
+/* When a `data-sticky-action` block is present we pad the
+   bottom of the main content so the floating CTA never
+   covers the last paragraph / submit button on short
+   viewports. Calculated to clear the footer + safe area. */
+body.has-sticky-action main {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
 </style>
 
 </head>
@@ -190,5 +318,109 @@
             </nav>
         </div>
     </footer>
+
+    {{--
+        Sticky action footer bootstrapper. See the CSS comment above
+        for the full design rationale. The script is intentionally
+        plain, dependency-free, and gated on the existence of at
+        least one `[data-sticky-action]` element so we don't pay
+        any runtime cost on pages that don't opt in.
+    --}}
+    <script>
+    (function () {
+        function init() {
+            var anchors = document.querySelectorAll('[data-sticky-action]');
+            if (!anchors.length) return;
+            if (!('IntersectionObserver' in window)) return; // graceful no-op on ancient browsers
+
+            document.body.classList.add('has-sticky-action');
+
+            var footer = document.createElement('div');
+            footer.id = 'sticky-action-footer';
+            footer.setAttribute('role', 'region');
+            footer.setAttribute('aria-label', 'إجراءات سريعة');
+            footer.innerHTML = '<div class="sa-inner"></div>';
+            document.body.appendChild(footer);
+
+            var inner = footer.querySelector('.sa-inner');
+            var renderedFor = null;
+
+            function wireClone(anchor, clone) {
+                clone.removeAttribute('data-sticky-action');
+                clone.removeAttribute('id');
+                clone.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+
+                var originals = anchor.querySelectorAll('button, a, input[type=submit], input[type=button]');
+                var clones    = clone.querySelectorAll('button, a, input[type=submit], input[type=button]');
+
+                clones.forEach(function (c, i) {
+                    var orig = originals[i];
+                    if (!orig) return;
+                    // Demote to a plain button so the clone never tries to
+                    // submit its own (cloned, detached) form. We delegate
+                    // back to the original control, which preserves any
+                    // double-submit guard / disabled state.
+                    if (c.tagName === 'BUTTON' || c.tagName === 'INPUT') {
+                        c.type = 'button';
+                    }
+                    c.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        if (orig.disabled || orig.classList.contains('is-loading')) return;
+                        orig.click();
+                    });
+                });
+            }
+
+            function render(anchor) {
+                if (renderedFor === anchor) return;
+                inner.innerHTML = '';
+                var clone = anchor.cloneNode(true);
+                wireClone(anchor, clone);
+                inner.appendChild(clone);
+                renderedFor = anchor;
+            }
+
+            function update() {
+                // Hide the floating footer if ANY natural anchor is in view.
+                var anyVisible = false;
+                var lastAnchor = anchors[anchors.length - 1];
+                anchors.forEach(function (a) {
+                    var r = a.getBoundingClientRect();
+                    var visible = r.top < (window.innerHeight - 40) && r.bottom > 0;
+                    if (visible) anyVisible = true;
+                });
+
+                if (anyVisible) {
+                    footer.classList.remove('is-visible');
+                } else {
+                    render(lastAnchor);
+                    footer.classList.add('is-visible');
+                }
+            }
+
+            // Initial paint + react to scroll, resize, and DOM mutations
+            // that affect anchor layout (e.g. form fields expanding).
+            update();
+            window.addEventListener('scroll', update, { passive: true });
+            window.addEventListener('resize', update);
+            window.addEventListener('orientationchange', update);
+
+            // ResizeObserver catches cases like "ticket count goes from 1
+            // to 3 and the form grows" without us having to manually
+            // notify the sticky footer.
+            if ('ResizeObserver' in window) {
+                var ro = new ResizeObserver(update);
+                anchors.forEach(function (a) { ro.observe(a); });
+                ro.observe(document.body);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
 </body>
 </html>
