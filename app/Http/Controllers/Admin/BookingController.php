@@ -285,4 +285,34 @@ public function resendTicket($id)
     return redirect()->route('admin.bookings.index')
         ->with('status', 'تم حذف الحجز بالكامل');
 }
+
+    /**
+     * Public, unauthenticated landing for /ticket/{reference}.
+     *
+     * Historically the route mapped to a non-existent method, so any
+     * hit returned an HTTP 500 (and, with APP_DEBUG=true, the full
+     * Laravel ignition stack). The route is orphaned — nothing in the
+     * UI links to it — so we keep it harmless by:
+     *   - returning a small Arabic status page when the reference
+     *     resolves to a real booking (no PII beyond what the booker
+     *     already knows), and
+     *   - aborting with a themed 404 when it doesn't.
+     *
+     * NOTE: this does NOT trigger any WhatsApp send. The WhatsApp
+     * delivery flow is intentionally untouched.
+     */
+    public function sendTicketsByReference(string $reference)
+    {
+        $reference = trim($reference);
+
+        $booking = Booking::with('showTime.show')
+            ->where('reference_code', $reference)
+            ->first();
+
+        if (!$booking) {
+            abort(404);
+        }
+
+        return view('site.ticket-status', compact('booking'));
+    }
 }

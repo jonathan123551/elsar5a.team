@@ -31,9 +31,11 @@
             <div class="flex-1 space-y-3">
                 <h1 class="text-2xl md:text-3xl font-bold">{{ $show->title }}</h1>
 
-                <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
-                    {{ $show->description }}
-                </p>
+                @if(filled($show->description))
+                    <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                        {{ $show->description }}
+                    </p>
+                @endif
 
                 <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-300">
                     <span class="px-2 py-1 rounded-full bg-white/5 border border-white/10">

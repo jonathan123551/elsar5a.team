@@ -54,6 +54,22 @@
         </div>
     </div>
 
+    @if($bookings->isEmpty())
+        {{-- Empty state — no bookings yet. --}}
+        <div class="bg-black/40 border border-white/10 rounded-2xl p-8 text-center space-y-3">
+            <div class="text-5xl">📬</div>
+            <h2 class="text-base font-semibold text-gray-200">لا توجد حجوزات بعد</h2>
+            <p class="text-xs text-gray-400 leading-relaxed">
+                بمجرد وصول أول حجز من الموقع، هيظهر هنا تلقائيًا وتقدر تراجع تحويله وتعتمده.
+            </p>
+            <div class="pt-2">
+                <a href="{{ route('admin.shows.index') }}"
+                   class="inline-block text-xs px-4 py-2 rounded-full bg-amber-400 text-black font-semibold hover:bg-amber-300 transition">
+                    🎭 إدارة العروض
+                </a>
+            </div>
+        </div>
+    @else
     {{-- 💻 DESKTOP TABLE --}}
     <div class="hidden md:block">
         <div class="bg-black/40 border border-white/10 rounded-2xl overflow-x-auto">
@@ -232,6 +248,7 @@
             </div>
         @endforeach
     </div>
+    @endif
 
 </section>
 

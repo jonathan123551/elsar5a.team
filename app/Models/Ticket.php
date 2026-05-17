@@ -15,6 +15,8 @@ class Ticket extends Model
         'is_scanned',
         'scanned_at',
         'scanned_by_admin_id',
+        'scanned_by_ip',
+        'scanned_by_ua',
         'whatsapp_sent',
     ];
 

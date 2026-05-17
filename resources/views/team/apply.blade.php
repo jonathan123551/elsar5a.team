@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@section('title', 'الانضمام للفريق — فريق الصرخة المسرحي')
+@section('meta_robots', 'noindex, nofollow')
+@section('meta_description', 'تم غلق باب التقديم للانضمام لفريق الصرخة المسرحي حاليًا.')
+
 @section('content')
 
 <!-- 🔒 CLOSED OVERLAY -->
