@@ -3,31 +3,33 @@
 @section('title', 'تعديل العرض - ' . $show->title)
 
 @section('content')
-<form action="{{ route('admin.shows.update', $show) }}" method="POST" enctype="multipart/form-data">
+<section class="space-y-5 max-w-4xl mx-auto">
+<form action="{{ route('admin.shows.update', $show) }}" method="POST" enctype="multipart/form-data"
+      class="space-y-5 single-submit-form">
     @csrf
     @method('PUT')
-{{-- Header --}}
 
-<div class="flex items-center justify-between gap-3">
+    {{-- Header --}}
+    <div class="flex items-center justify-between gap-3">
+        <h1 class="text-xl sm:text-2xl font-bold truncate">تعديل العرض</h1>
 
-    <h1 class="text-2xl font-bold">تعديل العرض</h1>
+        <a href="{{ route('admin.shows.index') }}"
+           class="text-[12px] px-3 py-2 rounded-full bg-white/5 border border-white/10
+                  hover:bg-white/10 active:bg-white/15 transition shrink-0">
+            ← رجوع
+        </a>
+    </div>
 
-    <a href="{{ route('admin.shows.index') }}"
-       class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-        ← رجوع
-    </a>
-
-</div>
-{{-- Errors --}}
-@if ($errors->any())
-
-
-@foreach($errors->all() as $error)
-{{ $error }}
-@endforeach
-
-
-@endif
+    {{-- Errors --}}
+    @if ($errors->any())
+        <div class="bg-red-500/10 border border-red-500/40 text-red-200 text-[13px] rounded-xl p-3">
+            <ul class="list-disc pe-4 space-y-0.5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
 <div class="grid lg:grid-cols-2 gap-6">
 
@@ -124,12 +126,37 @@
 
 </div>
 
-<button type="submit"
-        class="w-full sm:w-auto px-6 py-2 rounded-full bg-amber-400 text-black text-sm hover:bg-amber-300 transition">
-    حفظ التعديلات
-</button>
+    {{-- Submit (sticky-action on mobile) --}}
+    <div data-sticky-action class="pt-2">
+        <button type="submit"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3
+                       rounded-2xl bg-amber-400 text-black text-sm font-bold
+                       hover:bg-amber-300 active:bg-amber-500 transition
+                       disabled:opacity-60 disabled:cursor-progress
+                       shadow-[0_8px_24px_rgba(251,191,36,0.25)]">
+            <span class="btn-label">حفظ التعديلات</span>
+            <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+    </div>
 
 </form>
+</section>
+
+<script>
+document.querySelectorAll('.single-submit-form').forEach(function (f) {
+    f.addEventListener('submit', function () {
+        requestAnimationFrame(function () {
+            f.querySelectorAll('button[type=submit]').forEach(function (b) {
+                if (b.disabled) return;
+                b.disabled = true;
+                b.classList.add('is-loading');
+                var spin = b.querySelector('.btn-spinner');
+                if (spin) spin.classList.remove('hidden');
+            });
+        });
+    });
+});
+</script>
 
 
 {{-- 🔥 نفس السكربت بدون أي تغيير --}}

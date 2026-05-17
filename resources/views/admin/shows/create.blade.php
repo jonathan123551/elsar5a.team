@@ -4,15 +4,16 @@
 @section('title', 'إضافة عرض جديد')
 
 @section('content')
-    <section class="max-w-xl space-y-4 mx-auto">
+    <section class="max-w-xl space-y-5 mx-auto">
 
-        {{-- العنوان + زر الرجوع --}}
+        {{-- Header --}}
         <div class="flex items-center justify-between gap-3 mb-2">
-            <h1 class="text-2xl font-bold">إضافة عرض جديد</h1>
+            <h1 class="text-xl sm:text-2xl font-bold">إضافة عرض جديد</h1>
 
             <a href="{{ route('admin.shows.index') }}"
-               class="text-xs px-3 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
-                ← رجوع لقائمة العروض
+               class="text-[12px] px-3 py-2 rounded-full bg-white/5 border border-white/10
+                      hover:bg-white/10 active:bg-white/15 transition">
+                ← رجوع
             </a>
         </div>
 
@@ -26,28 +27,34 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.shows.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <form action="{{ route('admin.shows.store') }}" method="POST" enctype="multipart/form-data"
+              class="space-y-4 single-submit-form">
             @csrf
 
             {{-- اسم العرض --}}
             <div>
-                <label class="block text-xs mb-1">اسم العرض</label>
-                <input type="text" name="title" value="{{ old('title') }}"
-                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+                <label class="block text-xs mb-1.5 text-gray-300">اسم العرض</label>
+                <input type="text" name="title" value="{{ old('title') }}" required
+                       autocomplete="off"
+                       class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2.5 text-sm
+                              focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 transition">
             </div>
 
             {{-- وصف العرض --}}
             <div>
-                <label class="block text-xs mb-1">وصف العرض</label>
+                <label class="block text-xs mb-1.5 text-gray-300">وصف العرض</label>
                 <textarea name="description" rows="4"
-                          class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2 text-sm focus:outline-none focus:border-amber-400">{{ old('description') }}</textarea>
+                          class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2.5 text-sm
+                                 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 transition resize-y">{{ old('description') }}</textarea>
             </div>
 
             {{-- بوستر العرض --}}
             <div>
-                <label class="block text-xs mb-1">بوستر العرض (اختياري)</label>
+                <label class="block text-xs mb-1.5 text-gray-300">بوستر العرض (اختياري)</label>
                 <input type="file" name="poster" accept="image/*"
-                       class="w-full text-xs text-gray-300">
+                       class="w-full text-xs text-gray-300 file:me-3 file:px-3 file:py-2 file:rounded-full
+                              file:border-0 file:bg-amber-400/10 file:text-amber-200 file:cursor-pointer
+                              hover:file:bg-amber-400/20 transition">
             </div>
 
             {{-- تصميم التذكرة + إعداد موضع الـ QR --}}
@@ -131,23 +138,49 @@
             </div>
 
             {{-- حالة العرض --}}
-            <div class="flex items-center gap-2 text-xs">
+            <label for="is_active"
+                   class="flex items-center gap-2.5 text-sm bg-black/30 border border-white/10
+                          rounded-xl px-3 py-2.5 cursor-pointer hover:bg-black/40 transition">
                 <input type="checkbox"
                        name="is_active"
                        id="is_active"
                        value="1"
-                       class="scale-90"
+                       class="w-4 h-4 accent-amber-400"
                        {{ old('is_active', 1) ? 'checked' : '' }}>
-                <label for="is_active">عرض هذا العرض على الموقع</label>
-            </div>
+                <span>عرض هذا العرض على الموقع</span>
+            </label>
 
-            {{-- زر الحفظ --}}
-            <button type="submit"
-                    class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-amber-400 text-black text-sm font-medium hover:bg-amber-300 transition">
-                اضافه العرض
-               
-            </button>
+            {{-- Submit (sticky-action on mobile) --}}
+            <div data-sticky-action class="pt-2">
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl
+                               bg-amber-400 text-black text-sm font-bold hover:bg-amber-300 active:bg-amber-500
+                               transition disabled:opacity-60 disabled:cursor-progress
+                               shadow-[0_8px_24px_rgba(251,191,36,0.25)]">
+                    <span class="btn-label">إضافة العرض</span>
+                    <span class="btn-spinner hidden" aria-hidden="true"></span>
+                </button>
+            </div>
         </form>
+
+        <script>
+        // Disable + show spinner on submit so the form can't be
+        // accidentally posted twice (refresh / double-tap / Enter
+        // hammering).
+        document.querySelectorAll('.single-submit-form').forEach(function (f) {
+            f.addEventListener('submit', function () {
+                requestAnimationFrame(function () {
+                    f.querySelectorAll('button[type=submit]').forEach(function (b) {
+                        if (b.disabled) return;
+                        b.disabled = true;
+                        b.classList.add('is-loading');
+                        var spin = b.querySelector('.btn-spinner');
+                        if (spin) spin.classList.remove('hidden');
+                    });
+                });
+            });
+        });
+        </script>
     </section>
 
     {{-- سكربت محرر الـ QR --}}

@@ -14,8 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ✅ Middleware aliases
         $middleware->alias([
-            'admin'           => \App\Http\Middleware\IsAdmin::class,
-            'scanner.access'  => \App\Http\Middleware\ScannerAccess::class,
+            'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
 
         // ✅ Apply security headers on every web response. Lightweight

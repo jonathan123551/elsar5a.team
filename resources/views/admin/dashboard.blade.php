@@ -3,24 +3,24 @@
 @section('title', 'لوحة تحكم الأدمن')
 
 @section('content')
-    <section class="space-y-8">
+    <section class="space-y-6 sm:space-y-8">
 
-        {{-- عنوان وترحيب --}}
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold mb-2">لوحة تحكم الأدمن 🎭</h1>
-                <p class="text-sm text-gray-300">
+        {{-- Header --}}
+        <header class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h1 class="text-xl sm:text-2xl font-bold mb-1.5">لوحة تحكم الأدمن 🎭</h1>
+                <p class="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
                     من هنا تقدر تتابع نبض العروض، الحجوزات، والتذاكر اللي طلعت للجمهور.
                 </p>
             </div>
 
-            {{-- حالة حفظ آخر مرة (لو حابب تستغل session status) --}}
             @if(session('status'))
-                <div class="text-[11px] px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-emerald-200">
+                <div role="status"
+                     class="text-[11px] px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-emerald-200 shrink-0">
                     {{ session('status') }}
                 </div>
             @endif
-        </div>
+        </header>
 
         {{-- صف إحصائيات رئيسي --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
@@ -39,26 +39,19 @@
                 <span class="text-[11px] text-gray-500">عدد المرات اللي العروض هتتقدَّم فيها على المسرح.</span>
             </div>
 
-            {{-- إجمالي التذاكر المتبقية --}}
-            <div class="bg-black/40 border border-emerald-500/30 rounded-2xl p-4 space-y-2">
-                <p class="text-xs text-gray-400">التذاكر المتبقية</p>
-                <p class="text-3xl font-bold text-emerald-300">
-                    {{ $ticketsRemaining }}
-                </p>
-                <p class="text-[11px] text-gray-400 mt-1">
-                    محسوبة من إجمالي التذاكر الأساسية لكل المواعيد
-                    ناقص التذاكر في الحجوزات
-                    <span class="text-emerald-300">(pending + approved)</span>.
-                    الحجوزات المرفوضة مش بتتحسب.
-                </p>
+            <div class="bg-black/40 border border-emerald-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-1">
+                <span class="text-[11px] text-gray-400">التذاكر المتبقية</span>
+                <span class="text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">{{ $ticketsRemaining }}</span>
+                <span class="text-[11px] text-gray-500 leading-snug">
+                    إجمالي تذاكر المواعيد ناقص الحجوزات <span class="text-emerald-300">(pending + approved)</span>.
+                </span>
             </div>
 
-            {{-- إجمالي التذاكر المعتمدة --}}
-            <div class="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col gap-1">
-                <span class="text-[11px] text-gray-400">التذاكر <span class="text-emerald-300">approved</span>.</span>
-                <span class="text-2xl font-bold text-emerald-300">{{ $totalTicketsApproved }}</span>
-                <span class="text-[11px] text-gray-500">
-                    تذاكر لحجوزات اتأكدت واتقبلت، وطلع لها QR.
+            <div class="bg-black/40 border border-white/10 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-1">
+                <span class="text-[11px] text-gray-400">التذاكر المعتمدة</span>
+                <span class="text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">{{ $totalTicketsApproved }}</span>
+                <span class="text-[11px] text-gray-500 leading-snug">
+                    حجوزات اتأكدت وطلع لها QR.
                 </span>
             </div>
         </div>
@@ -372,29 +365,32 @@
 
         <hr class="border-white/10">
 
-        <div class="flex items-center gap-4">
+        {{-- Footer admin actions. On mobile, lay them out as full
+             pill buttons (44px+ tap targets) so the iPhone user
+             doesn't fat-finger logout when they meant "تعديل
+             About". --}}
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <a href="{{ route('admin.about.edit') }}"
+               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
+                      hover:bg-white/10 active:bg-white/15 text-amber-300 transition">
+                ✏️ تعديل About
+            </a>
 
-    {{-- زر تسجيل الخروج --}}
-    <form action="{{ route('logout') }}" method="POST">
-        @csrf
-        <button class="text-xs text-red-400 hover:text-red-300 transition">
-            تسجيل خروج
-        </button>
-    </form>
+            <a href="{{ route('admin.archive.index') }}"
+               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
+                      hover:bg-white/10 active:bg-white/15 text-emerald-300 transition">
+                🗂️ تعديل العروض السابقة
+            </a>
 
-    {{-- زر تعديل About --}}
-    <a href="{{ route('admin.about.edit') }}"
-       class="text-xs text-amber-400 hover:text-amber-300 transition">
-        تعديل About
-    </a>
-
-    {{-- زر تعديل العروض السابقة --}}
-    <a href="{{ route('admin.archive.index') }}"
-       class="text-xs text-emerald-400 hover:text-emerald-300 transition">
-        تعديل العروض السابقة
-    </a>
-
-</div>
+            <form action="{{ route('logout') }}" method="POST" class="ms-auto">
+                @csrf
+                <button type="submit"
+                        class="text-[12px] px-3.5 py-2 rounded-full bg-red-500/10 border border-red-500/30
+                               hover:bg-red-500/20 active:bg-red-500/30 text-red-300 transition">
+                    🚪 تسجيل خروج
+                </button>
+            </form>
+        </div>
 
     </section>
 @endsection
