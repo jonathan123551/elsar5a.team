@@ -107,6 +107,23 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
+| Scanner (publicly reachable)
+|--------------------------------------------------------------------------
+| The QR scanner is intentionally exposed without admin auth so staff
+| can use it on shared devices at the door without logging in. The
+| endpoint only echoes the ticket holder's name / phone + show metadata
+| for a single validated code at a time — no listing, no booking
+| management, no admin data is exposed. The URL / route names are
+| preserved as `admin.scanner.*` so existing references (dashboard
+| links, blade `route('admin.scanner')` calls) keep working.
+|--------------------------------------------------------------------------
+*/
+Route::get('/admin/scanner', [ScannerController::class, 'index'])->name('admin.scanner');
+Route::post('/admin/scanner/check', [ScannerController::class, 'check'])->name('admin.scanner.check');
+
+
+/*
+|--------------------------------------------------------------------------
 | Admin Routes
 |--------------------------------------------------------------------------
 */
@@ -183,10 +200,6 @@ Route::middleware('admin')
     // About
     Route::get('/about', [AboutController::class, 'edit'])->name('about.edit');
     Route::post('/about', [AboutController::class, 'update'])->name('about.update');
-
-    // Scanner
-    Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner');
-    Route::post('/scanner/check', [ScannerController::class, 'check'])->name('scanner.check');
 
     // Payments
     Route::get('/settings/payments', [SettingsController::class, 'editPayments'])
