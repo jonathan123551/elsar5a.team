@@ -275,47 +275,39 @@ body.has-sticky-action main {
         @yield('content')
     </main>
 
-    {{-- Footer --}}
-    <footer class="border-t border-white/10 bg-black/60 mt-10">
-        <div class="max-w-5xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-            <div class="text-center md:text-right space-y-1">
-                <div>
-                    © {{ now()->year }} فريق الصرخة المسرحي — نجول، نصرخ… فيزداد العقل وعيًا.
-                </div>
-                <div class="text-[10px] text-gray-500">
-                    حجز أونلاين • تذاكر QR
-                </div>
-            </div>
+    {{-- ================= Footer =================
+         Minimal, cinematic, theater-curtain inspired. The old pages/links
+         block was removed by request — navigation already lives in the
+         header, so the footer doesn't need to duplicate it. We keep only
+         the brand whisper and a thin amber→red gradient hairline that
+         echoes the stage-curtain motif used elsewhere on the site. --}}
+    <footer class="mt-12 sm:mt-16" role="contentinfo">
+        {{-- Stage-curtain hairline. Three stacked layers so it reads as
+             a glowing seam rather than a flat border, but it costs us
+             nothing at runtime — pure CSS gradients. --}}
+        <div aria-hidden="true" class="relative h-px w-full overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-l from-transparent via-amber-300/30 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-l from-transparent via-red-400/20 to-transparent blur-[1px]"></div>
+        </div>
 
-            <nav aria-label="روابط التذييل"
-                 class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-                <a href="{{ url('/') }}"
-                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
-                    الرئيسية
-                </a>
-                <span class="text-gray-700" aria-hidden="true">•</span>
-                <a href="{{ route('about') }}"
-                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
-                    عن الفريق
-                </a>
-                <span class="text-gray-700" aria-hidden="true">•</span>
-                <a href="{{ route('archive') }}"
-                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
-                    العروض السابقة
-                </a>
-                <span class="text-gray-700" aria-hidden="true">•</span>
-                <a href="https://www.instagram.com/elsar5a.team"
-                   target="_blank" rel="noopener noreferrer"
-                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
-                    Instagram
-                </a>
-                <span class="text-gray-700" aria-hidden="true">•</span>
-                <a href="https://wa.me/201000000000"
-                   target="_blank" rel="noopener noreferrer"
-                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
-                    تواصل
-                </a>
-            </nav>
+        <div class="relative">
+            {{-- Subtle stage glow under the hairline. Pointer-events
+                 disabled so it never blocks interactive content above. --}}
+            <div aria-hidden="true"
+                 class="pointer-events-none absolute inset-x-0 -top-6 mx-auto h-12 max-w-md
+                        bg-gradient-to-t from-transparent via-amber-400/5 to-amber-300/0 blur-2xl"></div>
+
+            <div class="relative max-w-5xl mx-auto px-4 py-6 sm:py-8 text-center">
+                <p class="text-[11px] sm:text-xs tracking-[0.18em] uppercase text-gray-500">
+                    Elsar5a Theatre Team
+                </p>
+                <p class="mt-2 text-[13px] sm:text-sm text-gray-300/90 italic">
+                    نجول، نصرخ… فيزداد العقل وعيًا
+                </p>
+                <p class="mt-3 text-[10px] sm:text-[11px] text-gray-500">
+                    © {{ now()->year }} فريق الصرخة المسرحي
+                </p>
+            </div>
         </div>
     </footer>
 
