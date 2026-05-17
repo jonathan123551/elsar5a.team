@@ -56,21 +56,28 @@ class BookingController extends Controller
      *    sessionStorage). We Cache::add() it for 10 minutes; if the
      *    same token POSTs again we short-circuit to the
      *    "already-processed" branch instead of double-charging the
-     *    customer.
+     *    customer. The reservation is released in `finally` on any
+     *    failure path so the user can retry; it is kept only on
+     *    success so a refresh/back-button replay is still rejected.
      *
      * 2) Short-lived per-IP/phone lock. Catches the case where a
      *    customer opens two tabs simultaneously (different tokens
      *    but same phone/IP) and submits both within a few seconds.
      *
-     * 3) Transactional capacity check with row-level lock on the
-     *    showtime + pending/approved bookings. This closes the
-     *    real race: two customers checking out simultaneously
-     *    while only one ticket is left. Previously the code did a
-     *    plain ->sum() outside any transaction, so both clients
-     *    saw `remaining=1` and both got created. We now SELECT FOR
-     *    UPDATE the showtime row, re-sum bookings inside the same
-     *    transaction, then insert. The second concurrent submit
-     *    sees the freshly committed count and is rejected cleanly.
+     * 3) Transactional capacity check with a row-level lock on the
+     *    showtime row. The outer SELECT FOR UPDATE serializes any
+     *    concurrent booking attempts for THIS showtime, so a plain
+     *    aggregate ->sum() inside the transaction is safe. We
+     *    deliberately do NOT chain ->lockForUpdate() onto the sum
+     *    query — PostgreSQL rejects `SELECT FOR UPDATE` combined
+     *    with aggregate functions ("FOR UPDATE is not allowed with
+     *    aggregate functions"), which would 500 every booking
+     *    attempt on a Postgres backend.
+     *
+     * All branches inside the transaction return a tagged array
+     * instead of calling abort(redirect()) — throwing redirects
+     * across the DB::transaction boundary is fragile and was
+     * surfacing the themed 500 page on every failure mode.
      */
     public function store(Request $request, ShowTime $showTime)
     {
@@ -103,6 +110,8 @@ class BookingController extends Controller
             ])->withInput();
         }
 
+        $bookingSucceeded = false;
+
         try {
 
             // ✅ VALIDATION
@@ -133,6 +142,27 @@ class BookingController extends Controller
                 $normalizedPhones[] = $this->normalizeEgyptPhone($p);
             }
 
+            // Cheap capacity pre-check before we burn a Cloudinary
+            // upload — the authoritative re-check happens inside
+            // the transaction below with a row-level lock.
+            $preReserved = $showTime->bookings()
+                ->whereIn('status', ['approved', 'pending'])
+                ->sum('tickets_count');
+
+            $preRemaining = max(0, $showTime->total_tickets - $preReserved);
+
+            if ($showTime->is_sold_out || $preRemaining <= 0) {
+                return back()->withErrors([
+                    'general' => '❌ لا توجد تذاكر متاحة',
+                ])->withInput();
+            }
+
+            if ($ticketsCount > $preRemaining) {
+                return back()->withErrors([
+                    'general' => '❌ المتاح فقط: ' . $preRemaining . ' تذاكر',
+                ])->withInput();
+            }
+
             // Upload the screenshot OUTSIDE the transaction so the
             // showtime row lock isn't held during a slow external
             // HTTP call to Cloudinary. We hand Cloudinary the
@@ -144,37 +174,35 @@ class BookingController extends Controller
                 ['folder' => 'payments/screenshots']
             );
 
-            $booking = DB::transaction(function () use (
+            $result = DB::transaction(function () use (
                 $showTime, $names, $normalizedPhones, $ticketsCount, $upload
             ) {
-                // SELECT FOR UPDATE pinning the showtime row.
+                // SELECT FOR UPDATE pinning the showtime row. This
+                // is the ONLY lock we take — it's enough to
+                // serialize concurrent booking attempts for this
+                // showtime, and it lets us run a plain aggregate
+                // sum() below (Postgres rejects FOR UPDATE with
+                // aggregates).
                 $locked = ShowTime::whereKey($showTime->id)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$locked || $locked->is_sold_out) {
-                    abort(redirect()->back()->withErrors([
-                        'general' => '❌ هذا العرض مغلق حاليًا',
-                    ])->withInput());
+                    return ['error' => '❌ هذا العرض مغلق حاليًا'];
                 }
 
                 $reserved = $locked->bookings()
                     ->whereIn('status', ['approved', 'pending'])
-                    ->lockForUpdate()
                     ->sum('tickets_count');
 
                 $remaining = max(0, $locked->total_tickets - $reserved);
 
                 if ($remaining <= 0) {
-                    abort(redirect()->back()->withErrors([
-                        'general' => '❌ لا توجد تذاكر متاحة',
-                    ])->withInput());
+                    return ['error' => '❌ لا توجد تذاكر متاحة'];
                 }
 
                 if ($ticketsCount > $remaining) {
-                    abort(redirect()->back()->withErrors([
-                        'general' => '❌ المتاح فقط: ' . $remaining . ' تذاكر',
-                    ])->withInput());
+                    return ['error' => '❌ المتاح فقط: ' . $remaining . ' تذاكر'];
                 }
 
                 $b = Booking::create([
@@ -198,19 +226,36 @@ class BookingController extends Controller
                     ]);
                 }
 
-                return $b;
+                return ['booking' => $b];
             });
+
+            if (isset($result['error'])) {
+                return back()->withErrors([
+                    'general' => $result['error'],
+                ])->withInput();
+            }
+
+            $bookingSucceeded = true;
 
             // PRG (Post-Redirect-Get): redirect to a dedicated GET
             // route so the thank-you page has its own URL, a refresh
             // doesn't re-POST the booking, and iOS Safari's bfcache
             // never shows the user a stale form-submit state.
             return redirect()->route('bookings.thankyou', [
-                'reference' => $booking->reference_code,
+                'reference' => $result['booking']->reference_code,
             ]);
 
         } finally {
             Cache::forget($lockKey);
+            // Release the idempotency reservation on any failure
+            // (validation error, capacity miss, transaction
+            // rollback, exception, 500) so the user's next retry
+            // isn't permanently rejected as "already processed".
+            // On success we keep the reservation so a refresh /
+            // back-button replay is still rejected cleanly.
+            if (!$bookingSucceeded && $idempotencyCacheKey) {
+                Cache::forget($idempotencyCacheKey);
+            }
         }
     }
 
