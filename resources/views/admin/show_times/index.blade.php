@@ -135,7 +135,8 @@
                         </a>
 
                         <form action="{{ route('admin.shows.times.destroy', [$show, $time]) }}"
-                              method="POST">
+                              method="POST"
+                              onsubmit="return confirm('تأكيد حذف هذا الموعد؟ لن يمكن التراجع.');">
                             @csrf
                             @method('DELETE')
                             <button class="px-2 py-1 rounded-full bg-red-500/20 text-red-200">
@@ -240,7 +241,8 @@
             تعديل
         </a>
 
-        <form action="{{ route('admin.shows.times.destroy', [$show, $time]) }}" method="POST" class="flex-1">
+        <form action="{{ route('admin.shows.times.destroy', [$show, $time]) }}" method="POST" class="flex-1"
+              onsubmit="return confirm('تأكيد حذف هذا الموعد؟ لن يمكن التراجع.');">
             @csrf
             @method('DELETE')
             <button class="w-full py-2 bg-red-500/20 text-red-200 rounded-lg text-xs">

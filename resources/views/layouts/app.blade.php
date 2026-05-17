@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'فريق الصرخة المسرحي')</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @hasSection('meta_robots')
+        <meta name="robots" content="@yield('meta_robots')">
+    @endif
+    <meta name="description" content="@yield('meta_description', 'فريق الصرخة المسرحي — حجز تذاكر العروض أونلاين.')">
     <link rel="icon" type="image/png" href="{{ asset('images/sarkha-logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/sarkha-logo.png') }}">
 
@@ -79,50 +85,54 @@
 
     {{-- Navbar --}}
     <header class="border-b border-white/10 bg-black/40 backdrop-blur sticky top-0 z-40">
-    <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
+    <div class="max-w-5xl mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
 
         {{-- اللوجو + الاسم --}}
-        <div class="flex items-center gap-2">
+        <a href="{{ url('/') }}"
+           class="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 rounded-xl pr-1"
+           aria-label="الصفحة الرئيسية">
             <img src="{{ asset('images/sarkha-logo.png') }}"
-                 class="w-10 h-10 object-contain invert brightness-125
-                        drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                 class="w-9 h-9 sm:w-10 sm:h-10 object-contain invert brightness-125
+                        drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]
+                        transition-transform duration-300 group-hover:scale-105"
                  alt="فريق الصرخة المسرحي">
 
             <div class="leading-tight">
-                <div class="text-sm font-semibold">
+                <div class="text-[12px] sm:text-sm font-semibold whitespace-nowrap">
                     فريق الصرخة المسرحي
                 </div>
-                <div class="text-[10px] text-gray-400">
+                <div class="hidden sm:block text-[10px] text-gray-400">
+                    حجز تذاكر العروض أونلاين
                 </div>
             </div>
-        </div>
+        </a>
 
         {{-- الناف بار --}}
-        <nav
-            class="flex items-center gap-1 text-[11px] sm:text-sm font-medium
-                   bg-black/50 backdrop-blur px-2 py-1
-                   rounded-full border border-white/10">
+        <nav aria-label="التنقل"
+            class="flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-sm font-medium
+                   bg-black/50 backdrop-blur px-1.5 sm:px-2 py-1
+                   rounded-full border border-white/10 max-w-full overflow-x-auto scrollbar-hide">
 
-            {{-- Home --}}
-            <a href="{{ route('shows.index') }}"
-               class="px-2 py-1 rounded-full transition
-                      hover:bg-amber-400 hover:text-black
-                      {{ request()->routeIs('shows.index') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
+            {{-- Home (تروح لـ / مباشرة، مو لـ /shows) --}}
+            <a href="{{ url('/') }}"
+               class="px-2 sm:px-2.5 py-1 rounded-full transition whitespace-nowrap
+                      hover:bg-amber-400 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
+                      {{ request()->routeIs('home') || request()->is('/') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
                الرئيسية
             </a>
 
             {{-- العروض السابقة --}}
             <a href="{{ route('archive') }}"
-               class="px-2 py-1 rounded-full transition
-                      hover:bg-amber-400 hover:text-black
+               class="px-2 sm:px-2.5 py-1 rounded-full transition whitespace-nowrap
+                      hover:bg-amber-400 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
                       {{ request()->routeIs('archive') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
                 العروض السابقة
             </a>
 
             {{-- About --}}
             <a href="{{ route('about') }}"
-               class="px-2 py-1 rounded-full transition
-                      hover:bg-amber-400 hover:text-black
+               class="px-2 sm:px-2.5 py-1 rounded-full transition whitespace-nowrap
+                      hover:bg-amber-400 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
                       {{ request()->routeIs('about') ? 'bg-amber-400 text-black' : 'text-gray-300' }}">
                 عن الفريق
             </a>
@@ -139,11 +149,45 @@
 
     {{-- Footer --}}
     <footer class="border-t border-white/10 bg-black/60 mt-10">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-xs text-gray-400 gap-2">
-            <div>© {{ now()->year }} فريق الصرخة المسرحي – نجول، نصرخ… فيزداد العقل وعيًا.</div>
-            <div class="flex gap-2">
-                <span>أجواء مسرح • حجز أونلاين • QR Tickets</span>
+        <div class="max-w-5xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-400">
+            <div class="text-center md:text-right space-y-1">
+                <div>
+                    © {{ now()->year }} فريق الصرخة المسرحي — نجول، نصرخ… فيزداد العقل وعيًا.
+                </div>
+                <div class="text-[10px] text-gray-500">
+                    حجز أونلاين • تذاكر QR
+                </div>
             </div>
+
+            <nav aria-label="روابط التذييل"
+                 class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                <a href="{{ url('/') }}"
+                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
+                    الرئيسية
+                </a>
+                <span class="text-gray-700" aria-hidden="true">•</span>
+                <a href="{{ route('about') }}"
+                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
+                    عن الفريق
+                </a>
+                <span class="text-gray-700" aria-hidden="true">•</span>
+                <a href="{{ route('archive') }}"
+                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
+                    العروض السابقة
+                </a>
+                <span class="text-gray-700" aria-hidden="true">•</span>
+                <a href="https://www.instagram.com/elsar5a.team"
+                   target="_blank" rel="noopener noreferrer"
+                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
+                    Instagram
+                </a>
+                <span class="text-gray-700" aria-hidden="true">•</span>
+                <a href="https://wa.me/201000000000"
+                   target="_blank" rel="noopener noreferrer"
+                   class="hover:text-amber-300 transition focus:outline-none focus-visible:underline">
+                    تواصل
+                </a>
+            </nav>
         </div>
     </footer>
 </body>

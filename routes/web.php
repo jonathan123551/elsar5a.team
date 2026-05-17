@@ -62,7 +62,9 @@ Route::get('/book/{showTime}', [BookingController::class, 'create'])
 Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->name('bookings.store');
 
-Route::get('/ticket/{reference}', [App\Http\Controllers\Admin\BookingController::class, 'sendTicketsByReference']);
+Route::get('/ticket/{reference}', [App\Http\Controllers\Admin\BookingController::class, 'sendTicketsByReference'])
+    ->middleware('throttle:30,1')
+    ->name('ticket.status');
 // 🎭 Team Application (Public)
 Route::get('/join-team', [TeamApplicationController::class, 'create'])
     ->name('team.apply');
@@ -101,25 +103,42 @@ Route::post('/chatwoot-webhook', function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/login', [AuthController::class, 'show'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:10,1')
+    ->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 /*
 |--------------------------------------------------------------------------
-| Scanner (publicly reachable)
+| Scanner (publicly reachable, PIN-gated)
 |--------------------------------------------------------------------------
-| The QR scanner is intentionally exposed without admin auth so staff
-| can use it on shared devices at the door without logging in. The
-| endpoint only echoes the ticket holder's name / phone + show metadata
-| for a single validated code at a time — no listing, no booking
-| management, no admin data is exposed. The URL / route names are
+| The QR scanner is intentionally exposed without the full admin auth
+| so staff can use it on shared devices at the door without owning an
+| admin dashboard account. Anonymous traffic is blocked by the
+| `scanner.access` middleware, which sends new devices through a
+| one-time PIN screen (PIN sourced from env(SCANNER_PIN)). Once a
+| device passes that screen, the session flag remains set so the
+| operator can scan as fast as they want. The URL / route names are
 | preserved as `admin.scanner.*` so existing references (dashboard
 | links, blade `route('admin.scanner')` calls) keep working.
-|--------------------------------------------------------------------------
 */
-Route::get('/admin/scanner', [ScannerController::class, 'index'])->name('admin.scanner');
-Route::post('/admin/scanner/check', [ScannerController::class, 'check'])->name('admin.scanner.check');
+
+// PIN gate (publicly reachable so door staff can unlock the device).
+Route::get('/admin/scanner/pin', [ScannerController::class, 'pinForm'])->name('scanner.pin');
+Route::post('/admin/scanner/pin', [ScannerController::class, 'pinSubmit'])
+    ->middleware('throttle:5,1')
+    ->name('scanner.pin.submit');
+Route::post('/admin/scanner/pin/logout', [ScannerController::class, 'pinLogout'])
+    ->name('scanner.pin.logout');
+
+Route::middleware('scanner.access')->group(function () {
+    Route::get('/admin/scanner', [ScannerController::class, 'index'])
+        ->name('admin.scanner');
+    Route::post('/admin/scanner/check', [ScannerController::class, 'check'])
+        ->middleware('throttle:60,1')
+        ->name('admin.scanner.check');
+});
 
 
 /*
