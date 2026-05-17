@@ -292,43 +292,12 @@
             </div>
         </section>
 
-
-
-        <hr class="border-white/10">
-
-        {{-- Footer admin actions. On mobile, lay them out as full
-             pill buttons (44px+ tap targets) so the iPhone user
-             doesn't fat-finger logout when they meant "تعديل
-             About". --}}
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-            <a href="{{ route('admin.about.edit') }}"
-               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
-                      hover:bg-white/10 active:bg-white/15 text-amber-300 transition">
-                ✏️ تعديل About
-            </a>
-
-            <a href="{{ route('admin.archive.index') }}"
-               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
-                      hover:bg-white/10 active:bg-white/15 text-emerald-300 transition">
-                🗂️ تعديل العروض السابقة
-            </a>
-
-            <form action="{{ route('logout') }}" method="POST" class="ms-auto">
-                @csrf
-                <button type="submit"
-                        class="text-[12px] px-3.5 py-2 rounded-full bg-red-500/10 border border-red-500/30
-                               hover:bg-red-500/20 active:bg-red-500/30 text-red-300 transition">
-                    🚪 تسجيل خروج
-                </button>
-            </form>
-        </div>
-
         {{-- ╔═══════════════════════════════════════════════════════╗
              ║  PAYMENT TRANSFER NUMBERS                             ║
-             ║  Moved to the very bottom of the dashboard so admins  ║
-             ║  see schedules / bookings first. The earlier          ║
-             ║  show/hide toggle was removed — values are visible    ║
-             ║  by default to cut friction during real event ops.    ║
+             ║  Positioned right above the admin footer action row   ║
+             ║  (About / Archive / Logout) so admins can update the  ║
+             ║  customer-facing transfer numbers without scrolling   ║
+             ║  past the logout button.                              ║
              ╚═══════════════════════════════════════════════════════╝ --}}
         <section class="mt-4">
             <div class="bg-black/40 border border-emerald-400/40 rounded-2xl p-4 sm:p-5 space-y-3">
@@ -390,6 +359,35 @@
                 </form>
             </div>
         </section>
+
+        <hr class="border-white/10">
+
+        {{-- Footer admin actions. On mobile, lay them out as full
+             pill buttons (44px+ tap targets) so the iPhone user
+             doesn't fat-finger logout when they meant "تعديل
+             About". --}}
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <a href="{{ route('admin.about.edit') }}"
+               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
+                      hover:bg-white/10 active:bg-white/15 text-amber-300 transition">
+                ✏️ تعديل About
+            </a>
+
+            <a href="{{ route('admin.archive.index') }}"
+               class="text-[12px] px-3.5 py-2 rounded-full bg-white/5 border border-white/10
+                      hover:bg-white/10 active:bg-white/15 text-emerald-300 transition">
+                🗂️ تعديل العروض السابقة
+            </a>
+
+            <form action="{{ route('logout') }}" method="POST" class="ms-auto">
+                @csrf
+                <button type="submit"
+                        class="text-[12px] px-3.5 py-2 rounded-full bg-red-500/10 border border-red-500/30
+                               hover:bg-red-500/20 active:bg-red-500/30 text-red-300 transition">
+                    🚪 تسجيل خروج
+                </button>
+            </form>
+        </div>
 
     </section>
 @endsection
