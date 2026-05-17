@@ -56,8 +56,8 @@
             </div>
         </div>
 
-        {{-- صف تاني للإيرادات وحالة الحجوزات + إعدادات التحويل --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 text-sm">
+        {{-- صف تاني: الإيرادات + الحجوزات المعلّقة --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-sm">
 
             {{-- إجمالي الفلوس --}}
             <div class="bg-black/50 border border-amber-400/40 rounded-xl p-4 flex flex-col gap-1 shadow-[0_0_35px_rgba(250,204,21,0.2)]">
@@ -79,75 +79,6 @@
                 <span class="text-[11px] text-gray-500">
                     لسه محتاجة مراجعة Screenshot والتحويل قبل ما تتقبل.
                 </span>
-            </div>
-
-            {{-- كارت إعدادات بيانات التحويل (أرقام مخفية حتى الضغط على "إظهار") --}}
-            <div class="bg-black/40 border border-emerald-400/40 rounded-xl p-4 flex flex-col gap-2"
-                 data-payments-card>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-gray-300">إعدادات بيانات التحويل</span>
-                    <span class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-emerald-200">
-                        يظهر للعميل في صفحة الحجز
-                    </span>
-                </div>
-
-                <p class="text-[10px] text-gray-500">
-                    مخفية لحماية أرقام التحويل — اضغط "إظهار" للعرض أو التعديل.
-                </p>
-
-                <form action="{{ route('admin.settings.payments.update') }}" method="POST" class="space-y-2 text-xs">
-                    @csrf
-
-                    <div class="space-y-1">
-                        <label class="block text-[11px] text-gray-300">رقم المحفظة</label>
-                        <input type="password"
-                               name="transfer_wallet"
-                               value="{{ old('transfer_wallet', $transferWallet) }}"
-                               autocomplete="off"
-                               data-sensitive
-                               class="w-full rounded-lg bg-black/60 border border-white/15 px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-400"
-                               placeholder="مثال: 010xxxxxxxx">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="block text-[11px] text-gray-300">InstaPay</label>
-                        <input type="password"
-                               name="transfer_insta"
-                               value="{{ old('transfer_insta', $transferInsta) }}"
-                               autocomplete="off"
-                               data-sensitive
-                               class="w-full rounded-lg bg-black/60 border border-white/15 px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-400"
-                               placeholder="مثال: name@instapay">
-                    </div>
-
-                    <div class="flex items-center gap-2 pt-1">
-                        <button type="submit"
-                                class="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-emerald-500 text-black text-[11px] font-semibold hover:bg-emerald-400 transition">
-                            حفظ بيانات التحويل
-                        </button>
-
-                        <button type="button"
-                                data-toggle-sensitive
-                                class="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-white/5 border border-white/15 text-gray-200 text-[11px] hover:bg-white/10 transition">
-                            👁️ إظهار
-                        </button>
-                    </div>
-                </form>
-
-                <script>
-                    (function () {
-                        var card = document.querySelector('[data-payments-card]');
-                        if (!card) return;
-                        var btn = card.querySelector('[data-toggle-sensitive]');
-                        var inputs = card.querySelectorAll('[data-sensitive]');
-                        if (!btn) return;
-                        btn.addEventListener('click', function () {
-                            var shown = inputs[0] && inputs[0].type === 'text';
-                            inputs.forEach(function (i) { i.type = shown ? 'password' : 'text'; });
-                            btn.textContent = shown ? '👁️ إظهار' : '🙈 إخفاء';
-                        });
-                    })();
-                </script>
             </div>
         </div>
 
@@ -391,6 +322,74 @@
                 </button>
             </form>
         </div>
+
+        {{-- ╔═══════════════════════════════════════════════════════╗
+             ║  PAYMENT TRANSFER NUMBERS                             ║
+             ║  Moved to the very bottom of the dashboard so admins  ║
+             ║  see schedules / bookings first. The earlier          ║
+             ║  show/hide toggle was removed — values are visible    ║
+             ║  by default to cut friction during real event ops.    ║
+             ╚═══════════════════════════════════════════════════════╝ --}}
+        <section class="mt-4">
+            <div class="bg-black/40 border border-emerald-400/40 rounded-2xl p-4 sm:p-5 space-y-3">
+
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-sm font-semibold text-emerald-200">
+                        💳 بيانات التحويل
+                    </h2>
+                    <span class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-emerald-200">
+                        تظهر للعميل في صفحة الحجز
+                    </span>
+                </div>
+
+                <p class="text-[11px] text-gray-400 leading-relaxed">
+                    الأرقام دي بتتعرض كاملة هنا عشان تعدّلها بسرعة من غير
+                    خطوة إظهار/إخفاء. لو غيّرت قيمة اضغط
+                    <span class="text-emerald-300">«حفظ»</span> عشان تتحدّث في صفحة الحجز.
+                </p>
+
+                <form action="{{ route('admin.settings.payments.update') }}"
+                      method="POST"
+                      class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    @csrf
+
+                    <label class="space-y-1 block">
+                        <span class="block text-[11px] text-gray-300">📱 رقم المحفظة</span>
+                        <input type="text"
+                               name="transfer_wallet"
+                               value="{{ old('transfer_wallet', $transferWallet) }}"
+                               autocomplete="off"
+                               inputmode="tel"
+                               dir="ltr"
+                               class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2.5 text-sm
+                                      focus:outline-none focus:border-emerald-400"
+                               placeholder="010xxxxxxxx">
+                    </label>
+
+                    <label class="space-y-1 block">
+                        <span class="block text-[11px] text-gray-300">⚡ InstaPay</span>
+                        <input type="text"
+                               name="transfer_insta"
+                               value="{{ old('transfer_insta', $transferInsta) }}"
+                               autocomplete="off"
+                               dir="ltr"
+                               class="w-full rounded-xl bg-black/60 border border-white/15 px-3 py-2.5 text-sm
+                                      focus:outline-none focus:border-emerald-400"
+                               placeholder="name@instapay">
+                    </label>
+
+                    <div class="sm:col-span-2 flex">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full
+                                       bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600
+                                       text-black text-xs font-semibold transition
+                                       shadow-[0_8px_24px_rgba(16,185,129,0.25)]">
+                            💾 حفظ بيانات التحويل
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
 
     </section>
 @endsection

@@ -67,6 +67,12 @@ Route::post('/book/{showTime}', [BookingController::class, 'store'])
     ->middleware('throttle:20,1')
     ->name('bookings.store');
 
+// Post-Redirect-Get target for the booking flow. We redirect here
+// from store() instead of rendering the thank-you view inline so a
+// refresh / bfcache / back-nav doesn't replay the POST.
+Route::get('/booking/thanks/{reference}', [BookingController::class, 'thankyou'])
+    ->name('bookings.thankyou');
+
 Route::get('/ticket/{reference}', [App\Http\Controllers\Admin\BookingController::class, 'sendTicketsByReference'])
     ->middleware('throttle:30,1')
     ->name('ticket.status');

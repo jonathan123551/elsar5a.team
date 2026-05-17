@@ -343,7 +343,6 @@ body.has-sticky-action main {
             document.body.appendChild(footer);
 
             var inner = footer.querySelector('.sa-inner');
-            var renderedFor = null;
 
             function wireClone(anchor, clone) {
                 clone.removeAttribute('data-sticky-action');
@@ -363,6 +362,16 @@ body.has-sticky-action main {
                     if (c.tagName === 'BUTTON' || c.tagName === 'INPUT') {
                         c.type = 'button';
                     }
+                    // Mirror disabled state explicitly. cloneNode picks up
+                    // the original's `disabled` attribute, but it does
+                    // NOT pick up `.disabled` set via JS — so a button
+                    // that's been programmatically enabled by the form
+                    // (e.g. the booking submit becoming amber once the
+                    // screenshot is attached) needs us to copy the
+                    // current state at clone time.
+                    if ('disabled' in c) {
+                        c.disabled = !!orig.disabled;
+                    }
                     c.addEventListener('click', function (e) {
                         e.preventDefault();
                         if (orig.disabled || orig.classList.contains('is-loading')) return;
@@ -372,12 +381,13 @@ body.has-sticky-action main {
             }
 
             function render(anchor) {
-                if (renderedFor === anchor) return;
+                // Always re-clone on each show so the floating CTA
+                // reflects the latest state of the original control
+                // (enabled/disabled, label, classes, spinner, etc.).
                 inner.innerHTML = '';
                 var clone = anchor.cloneNode(true);
                 wireClone(anchor, clone);
                 inner.appendChild(clone);
-                renderedFor = anchor;
             }
 
             function update() {
@@ -392,6 +402,7 @@ body.has-sticky-action main {
 
                 if (anyVisible) {
                     footer.classList.remove('is-visible');
+                    inner.innerHTML = '';
                 } else {
                     render(lastAnchor);
                     footer.classList.add('is-visible');
