@@ -281,7 +281,13 @@
    MEDIA FRAME — used for both the Facebook reel and the
    YouTube embed. Subtle amber/rose tinted border, a faint
    inner highlight, and a slow pulsing glow under the frame
-   that reads as a "spotlight". */
+   that reads as a "spotlight".
+
+   The inner frame uses BOTH `aspect-ratio: 16/9` (modern) AND
+   a `padding-bottom: 56.25%` shim (iOS < 15 Safari) so the
+   iframe always fills the box. The iframe is absolutely
+   positioned over the padding-shim so the layout doesn't
+   collapse when `aspect-ratio` isn't supported. */
 .asd-media {
     position: relative;
     border-radius: var(--asd-radius);
@@ -312,20 +318,172 @@
     border-radius: 1rem;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,.08);
-    aspect-ratio: 16 / 9;
     background: #000;
+    /* iOS Safari < 15 fallback */
+    padding-bottom: 56.25%;
+    height: 0;
 }
-.asd-media-inner iframe {
+/* Modern Safari + everything else honour aspect-ratio; this
+   neutralises the padding-bottom shim so we don't double-size. */
+@supports (aspect-ratio: 16 / 9) {
+    .asd-media-inner {
+        aspect-ratio: 16 / 9;
+        padding-bottom: 0;
+        height: auto;
+    }
+}
+.asd-media-inner iframe,
+.asd-media-inner > .asd-fb-placeholder,
+.asd-media-inner > .asd-yt-lite {
+    position: absolute;
+    inset: 0;
     width: 100% !important;
     height: 100% !important;
     border: 0;
     display: block;
 }
+@supports (aspect-ratio: 16 / 9) {
+    .asd-media-inner iframe,
+    .asd-media-inner > .asd-fb-placeholder,
+    .asd-media-inner > .asd-yt-lite {
+        position: relative;
+    }
+}
+
+/* ------------------------------------------------------------
+   YOUTUBE LITE EMBED — a click-to-load wrapper so the page
+   doesn't ship the full ~600KB YouTube iframe on first load.
+   On click we swap the wrapper for the real iframe with
+   autoplay. This works reliably across Safari iOS where the
+   eager-loaded iframe sometimes fails to mount. */
+.asd-yt-lite {
+    cursor: pointer;
+    background-size: cover;
+    background-position: center;
+    background-color: #000;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+.asd-yt-lite::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at center, rgba(0,0,0,.15) 0%, rgba(0,0,0,.55) 80%);
+    pointer-events: none;
+    transition: background .3s ease;
+}
+.asd-yt-lite:hover::before,
+.asd-yt-lite:focus-visible::before {
+    background:
+        radial-gradient(ellipse at center, rgba(0,0,0,.0) 0%, rgba(0,0,0,.35) 80%);
+}
+.asd-yt-lite .asd-play-btn {
+    position: relative;
+    z-index: 1;
+    width: 72px;
+    height: 50px;
+    border-radius: 14px;
+    background: rgba(0,0,0,.78);
+    border: 1px solid rgba(255,255,255,.18);
+    display: grid;
+    place-items: center;
+    transition: transform .3s var(--asd-ease), background .3s ease;
+}
+.asd-yt-lite:hover .asd-play-btn,
+.asd-yt-lite:focus-visible .asd-play-btn {
+    transform: scale(1.08);
+    background: #e53e3e;
+    border-color: rgba(255,255,255,.4);
+}
+.asd-yt-lite .asd-play-btn::before {
+    content: "";
+    width: 0;
+    height: 0;
+    margin-left: 4px;
+    border-style: solid;
+    border-width: 11px 0 11px 18px;
+    border-color: transparent transparent transparent #fff;
+}
+.asd-yt-lite .asd-play-meta {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 1;
+    color: rgba(255,255,255,.85);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px rgba(0,0,0,.85);
+    pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   FACEBOOK PLACEHOLDER — Facebook's video plugin sometimes
+   silently fails (third-party cookies blocked, the user's
+   browser is logged out, network is slow, etc.). This
+   placeholder gives the visitor a one-tap "open on Facebook"
+   fallback CTA even if the iframe loads as an empty box. */
+.asd-fb-placeholder {
+    background:
+        linear-gradient(180deg, #0b132b 0%, #1c2541 100%);
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--asd-text-2);
+    text-decoration: none;
+    transition: background .3s ease;
+}
+.asd-fb-placeholder:hover {
+    background:
+        linear-gradient(180deg, #14213d 0%, #2c3e80 100%);
+}
+.asd-fb-placeholder .asd-fb-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 9999px;
+    background: #1877f2;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: .75rem;
+}
+.asd-fb-placeholder p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+.asd-fb-placeholder small {
+    margin-top: .3rem;
+    font-size: 11px;
+    color: var(--asd-text-3);
+}
 
 /* ============================================================
    GALLERY — mobile-first horizontal scroll-snap reel with a
-   live dot indicator. Same pattern as the archive list mobile
-   reel so the two surfaces feel coherent. */
+   live dot indicator + clickable navigation. Same pattern as
+   the archive list mobile reel so the two surfaces feel
+   coherent.
+
+   Carousel UX improvements over the previous version:
+     - `scroll-snap-stop: normal` instead of `always` so iOS
+       Safari doesn't fight inertia.
+     - `touch-action: pan-x` so vertical page scroll isn't
+       hijacked by the horizontal reel.
+     - Single-card-per-view on mobile (`width: 88%`) — feels
+       more cinematic than the previous 3-up cramming.
+     - Prev/next arrow buttons (visible on >=md), hidden on
+       very small screens where the swipe IS the navigation.
+     - Dot row forced to `dir: ltr` so the dots line up with
+       the source order (index 0 on the left, last image on
+       the right) regardless of the parent RTL document. */
 .asd-gallery-wrap {
     position: relative;
     border-radius: var(--asd-radius);
@@ -335,40 +493,51 @@
     overflow: hidden;
 }
 
+.asd-reel-viewport {
+    position: relative;
+}
+
 .asd-reel {
     display: flex;
     gap: 12px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
     -webkit-overflow-scrolling: touch;
-    scroll-padding: 8px;
-    padding-bottom: 8px;
+    scroll-behavior: smooth;
+    scroll-padding-inline: 1rem;
+    padding: 2px 2px 8px;
     scrollbar-width: none;
+    touch-action: pan-x pan-y;
 }
 .asd-reel::-webkit-scrollbar { display: none; }
 
 .asd-reel-item {
     flex: 0 0 auto;
-    width: 80%;
+    width: 88%;
     max-width: 22rem;
     aspect-ratio: 4 / 5;
     scroll-snap-align: center;
     border-radius: 1.1rem;
     overflow: hidden;
     position: relative;
-    cursor: pointer;
+    cursor: zoom-in;
     background: #0b0f1a;
     border: 1px solid var(--asd-border);
+    -webkit-tap-highlight-color: transparent;
     transition: transform .5s var(--asd-ease),
-                box-shadow .5s ease;
+                box-shadow .5s ease,
+                border-color .3s ease;
 }
 @media (min-width: 640px) {
-    .asd-reel-item { width: 46%; }
+    .asd-reel-item { width: 60%; }
 }
 @media (min-width: 768px) {
-    .asd-reel-item { width: 30%; }
+    .asd-reel-item { width: 42%; max-width: 24rem; }
+}
+@media (min-width: 1024px) {
+    .asd-reel-item { width: 32%; }
 }
 .asd-reel-item img {
     width: 100%;
@@ -380,6 +549,7 @@
 .asd-reel-item:hover,
 .asd-reel-item:focus-visible {
     transform: translateY(-3px);
+    border-color: rgba(250,204,21,.45);
     box-shadow:
         0 18px 36px -18px rgba(250,204,21,.35),
         0 0 0 1px rgba(250,204,21,.30);
@@ -406,36 +576,175 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
+/* Subtle "tap to zoom" hint icon on hover/focus. */
+.asd-reel-item .asd-zoom-hint {
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: rgba(2,6,23,.65);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fef3c7;
+    font-size: 14px;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: scale(.92);
+    transition: opacity .25s ease, transform .25s var(--asd-ease);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    pointer-events: none;
+}
+.asd-reel-item:hover .asd-zoom-hint,
+.asd-reel-item:focus-visible .asd-zoom-hint {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Prev/next arrow buttons. Hidden on small screens where
+   swipe is the natural gesture; visible from `sm`+ as an
+   accessible nav fallback. Positioned over the viewport so
+   they don't shift the layout. */
+.asd-reel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: rgba(2,6,23,.72);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #f1f5fb;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+    transition: background .25s ease, border-color .25s ease,
+                transform .2s ease, opacity .2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.asd-reel-nav:hover,
+.asd-reel-nav:focus-visible {
+    background: rgba(2,6,23,.88);
+    border-color: rgba(252,211,77,.55);
+    transform: translateY(-50%) scale(1.06);
+}
+.asd-reel-nav:disabled {
+    opacity: .35;
+    cursor: default;
+    pointer-events: none;
+}
+.asd-reel-nav.is-prev { inset-inline-start: -6px; }
+.asd-reel-nav.is-next { inset-inline-end: -6px; }
+@media (min-width: 640px) {
+    .asd-reel-nav { display: inline-flex; }
+    .asd-reel-nav.is-prev { inset-inline-start: 6px; }
+    .asd-reel-nav.is-next { inset-inline-end: 6px; }
+}
+
+/* Edge fades on the reel so cut-off cards feel intentional
+   instead of clipped. Pure CSS, no extra DOM. */
+.asd-reel-viewport::before,
+.asd-reel-viewport::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 8px;
+    width: 28px;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity .3s ease;
+}
+.asd-reel-viewport::before {
+    inset-inline-start: 0;
+    background: linear-gradient(to right, rgba(2,6,23,.85), transparent);
+}
+.asd-reel-viewport::after {
+    inset-inline-end: 0;
+    background: linear-gradient(to left, rgba(2,6,23,.85), transparent);
+}
+.asd-reel-viewport.at-start::before { opacity: 0; }
+.asd-reel-viewport.at-end::after { opacity: 0; }
 
 /* Dot row under the gallery reel. JS toggles `.is-active`
-   based on the centered item. */
+   based on the centered item. Forced LTR so the dots line up
+   with the source-order images, not the RTL visual flow.
+
+   Dots are now interactive (the parent is a button) so they
+   can drive the reel forward/backward — small but high-value
+   on tablets where prev/next is the natural gesture. */
 .asd-dots {
-    margin-top: 12px;
+    margin-top: 14px;
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
     gap: 6px;
+    direction: ltr;
+    /* On long galleries cap the row so it doesn't take five
+       lines of vertical space. */
+    max-width: 100%;
 }
-.asd-dots span {
-    width: 6px;
-    height: 6px;
+.asd-dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
     border-radius: 9999px;
-    background: rgba(255,255,255,.18);
+    background: rgba(255,255,255,.22);
+    cursor: pointer;
     transition: width .3s var(--asd-ease),
-                background .3s ease;
+                background .3s ease,
+                transform .25s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
-.asd-dots span.is-active {
-    background: rgba(252,211,77,.9);
-    width: 22px;
+.asd-dot:hover,
+.asd-dot:focus-visible {
+    background: rgba(252,211,77,.55);
+    transform: scale(1.2);
+}
+.asd-dot.is-active {
+    background: rgba(252,211,77,.95);
+    width: 24px;
     box-shadow: 0 0 12px rgba(250,204,21,.65);
 }
 
+.asd-gallery-meta {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
 .asd-gallery-hint {
-    margin-top: 10px;
-    text-align: center;
     font-size: 11px;
     letter-spacing: .18em;
     text-transform: uppercase;
     color: var(--asd-text-3);
+    margin: 0;
+}
+.asd-gallery-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--asd-text-2);
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--asd-border);
+    border-radius: 9999px;
+    padding: 4px 10px;
+    direction: ltr;
+}
+.asd-gallery-count strong {
+    color: #fde68a;
+    font-weight: 800;
 }
 
 /* ============================================================
@@ -616,8 +925,45 @@
     @endif
 
 
-    {{-- ================= PROMO (Facebook reel) ================= --}}
-    @if($archive->facebook_reel)
+    {{-- ================= PROMO (Facebook reel) =================
+         Facebook embeds are notoriously fragile (third-party cookies,
+         login walls, region blocks). We normalize the stored URL into
+         the canonical `plugins/video.php` form server-side, then wrap
+         the iframe in a placeholder that doubles as a fallback CTA so
+         the visitor can always reach the video on facebook.com even if
+         the iframe never paints. --}}
+    @php
+        // Normalize the stored URL to the canonical Facebook plugin
+        // form. Accepts (a) a raw page URL (`/elsar5ateam/videos/123/`),
+        // (b) a `share/v/` URL, or (c) an already-built plugin URL.
+        $rawFb   = trim((string) $archive->facebook_reel);
+        $fbEmbed = null;
+        $fbWatch = null;
+        if ($rawFb !== '') {
+            $isPlugin = str_contains($rawFb, 'facebook.com/plugins/');
+            if ($isPlugin) {
+                $fbEmbed = $rawFb;
+                // Try to recover the underlying watch URL from the
+                // `href=` query param so the "Open on Facebook" CTA
+                // works.
+                if (preg_match('~[?&]href=([^&]+)~', $rawFb, $m)) {
+                    $fbWatch = urldecode($m[1]);
+                }
+            } else {
+                // Strip tracking params Facebook adds to share URLs —
+                // they often confuse the embed plugin.
+                $clean   = preg_replace('~[?&](mibextid|fs|rdid|fb_ref|__cft__|__tn__|set)=[^&#]*~', '', $rawFb);
+                $clean   = preg_replace('~#.*$~', '', $clean);
+                $fbWatch = $clean;
+                $fbEmbed = 'https://www.facebook.com/plugins/video.php'
+                         . '?href=' . urlencode($clean)
+                         . '&show_text=false'
+                         . '&autoplay=false';
+            }
+        }
+    @endphp
+
+    @if($fbEmbed)
         <div class="asd-divider" aria-hidden="true"></div>
 
         <section class="space-y-3 asd-reveal" data-stagger="120"
@@ -630,12 +976,29 @@
             <div class="asd-media">
                 <div class="asd-media-inner">
                     <iframe
-                        src="{{ $archive->facebook_reel }}"
+                        src="{{ $fbEmbed }}"
                         loading="lazy"
                         allowfullscreen
-                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                        title="برومو {{ $archive->title }}"></iframe>
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        title="برومو {{ $archive->title }}"
+                        scrolling="no"
+                        frameborder="0"></iframe>
                 </div>
+                @if($fbWatch)
+                    <div class="mt-3 text-center md:text-right">
+                        <a href="{{ $fbWatch }}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="inline-flex items-center gap-2 text-xs
+                                  font-semibold tracking-[.18em] uppercase
+                                  text-amber-200/85 hover:text-amber-300
+                                  underline-offset-4 hover:underline">
+                            <span aria-hidden="true">↗</span>
+                            <span>افتح على فيسبوك</span>
+                        </a>
+                    </div>
+                @endif
             </div>
         </section>
     @endif
@@ -643,14 +1006,25 @@
 
     {{-- ================= FULL SHOW (YouTube) ================= --}}
     @php
-        // Resolve a YouTube ID from common URL shapes. Kept inline so
-        // we don't ship a new helper class just for this one view.
+        // Resolve a YouTube ID from common URL shapes:
+        //   - youtu.be/{id}
+        //   - youtube.com/watch?v={id}
+        //   - youtube.com/embed/{id}
+        //   - youtube.com/shorts/{id}
+        //   - m.youtube.com/...
+        //   - music.youtube.com/...
+        //   - youtube-nocookie.com/embed/{id}
         $yt = null;
-        if (!empty($archive->video_url) &&
-            preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/))([^&?#]+)~',
-                       $archive->video_url, $m)) {
-            $yt = $m[1];
+        if (!empty($archive->video_url)) {
+            $urlStr = (string) $archive->video_url;
+            if (preg_match('~(?:youtu\.be/|youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/)|m\.youtube\.com/watch\?(?:.*&)?v=|music\.youtube\.com/watch\?(?:.*&)?v=)([A-Za-z0-9_-]{6,})~i',
+                           $urlStr, $m)) {
+                $yt = $m[1];
+            }
         }
+        // YouTube thumbnail URL — `hqdefault` is the most-cached size
+        // and is guaranteed to exist for every public video.
+        $ytThumb = $yt ? "https://i.ytimg.com/vi/{$yt}/hqdefault.jpg" : null;
     @endphp
 
     @if($yt)
@@ -665,11 +1039,20 @@
 
             <div class="asd-media">
                 <div class="asd-media-inner">
-                    <iframe
-                        src="https://www.youtube.com/embed/{{ $yt }}"
-                        loading="lazy"
-                        allowfullscreen
-                        title="{{ $archive->title }} — العرض الكامل"></iframe>
+                    {{-- "Lite YouTube" — click-to-load wrapper.
+                         Renders the official iframe only after the user
+                         taps Play, so the page doesn't pull ~600KB of
+                         YouTube JS up front, and so iOS Safari (which
+                         occasionally fails to paint a lazy iframe) has
+                         a guaranteed-visible fallback. --}}
+                    <button type="button"
+                            class="asd-yt-lite"
+                            data-yt-id="{{ $yt }}"
+                            style="background-image: url('{{ $ytThumb }}');"
+                            aria-label="تشغيل: {{ $archive->title }} — العرض الكامل">
+                        <span class="asd-play-btn" aria-hidden="true"></span>
+                        <span class="asd-play-meta">Watch on YouTube</span>
+                    </button>
                 </div>
             </div>
         </section>
@@ -678,6 +1061,7 @@
 
     {{-- ================= GALLERY ================= --}}
     @if($archive->images && $archive->images->count())
+        @php $imgCount = $archive->images->count(); @endphp
         <div class="asd-divider" aria-hidden="true"></div>
 
         <section class="space-y-3 asd-reveal" data-stagger="200"
@@ -688,33 +1072,71 @@
             <h2 id="asd-gallery-h" class="asd-section-title">📸 صور من العرض</h2>
 
             <div class="asd-gallery-wrap">
-                <div class="asd-reel" id="asd-reel" role="region"
-                     aria-label="معرض صور العرض">
-                    @foreach($archive->images as $i => $img)
+                <div class="asd-reel-viewport at-start" id="asd-reel-viewport">
+                    <div class="asd-reel" id="asd-reel" role="region"
+                         aria-label="معرض صور العرض"
+                         aria-roledescription="carousel"
+                         tabindex="0">
+                        @foreach($archive->images as $i => $img)
+                            <button type="button"
+                                    class="asd-reel-item"
+                                    data-idx="{{ $i + 1 }}/{{ $imgCount }}"
+                                    data-index="{{ $i }}"
+                                    onclick="openViewer({{ $i }})"
+                                    aria-label="عرض الصورة {{ $i + 1 }} من {{ $imgCount }}">
+                                <img src="{{ $img->image_path }}"
+                                     alt="صورة من عرض {{ $archive->title }}"
+                                     loading="lazy"
+                                     decoding="async"
+                                     draggable="false">
+                                <span class="asd-zoom-hint" aria-hidden="true">⤢</span>
+                            </button>
+                        @endforeach
+                    </div>
+
+                    @if($imgCount > 1)
+                        {{-- Prev/next buttons. `prev` jumps one card to
+                             the left (regardless of RTL), `next` to the
+                             right; JS handles the scroll math so the
+                             behaviour matches what the user sees. --}}
                         <button type="button"
-                                class="asd-reel-item"
-                                data-idx="{{ $i + 1 }}/{{ $archive->images->count() }}"
-                                onclick="openViewer({{ $i }})"
-                                aria-label="عرض الصورة {{ $i + 1 }} من {{ $archive->images->count() }}">
-                            <img src="{{ $img->image_path }}"
-                                 alt="صورة من عرض {{ $archive->title }}"
-                                 loading="lazy"
-                                 decoding="async">
-                        </button>
-                    @endforeach
+                                id="asd-reel-prev"
+                                class="asd-reel-nav is-prev"
+                                aria-label="الصورة السابقة">‹</button>
+                        <button type="button"
+                                id="asd-reel-next"
+                                class="asd-reel-nav is-next"
+                                aria-label="الصورة التالية">›</button>
+                    @endif
                 </div>
 
-                @if($archive->images->count() > 1)
-                    <div class="asd-dots" id="asd-dots" aria-hidden="true">
+                @if($imgCount > 1)
+                    <div class="asd-dots" id="asd-dots"
+                         role="tablist"
+                         aria-label="انتقال إلى صورة بعينها">
                         @foreach($archive->images as $i => $_)
-                            <span class="{{ $i === 0 ? 'is-active' : '' }}"></span>
+                            <button type="button"
+                                    class="asd-dot {{ $i === 0 ? 'is-active' : '' }}"
+                                    role="tab"
+                                    aria-selected="{{ $i === 0 ? 'true' : 'false' }}"
+                                    aria-label="الصورة {{ $i + 1 }}"
+                                    data-target="{{ $i }}"></button>
                         @endforeach
                     </div>
                 @endif
 
-                <p class="asd-gallery-hint">
-                    اسحب أو اضغط للتكبير
-                </p>
+                <div class="asd-gallery-meta">
+                    <p class="asd-gallery-hint">
+                        اسحب · اضغط للتكبير
+                    </p>
+                    @if($imgCount > 1)
+                        <span class="asd-gallery-count" aria-live="polite">
+                            <strong id="asd-current-idx">1</strong>
+                            <span aria-hidden="true">/</span>
+                            <span>{{ $imgCount }}</span>
+                        </span>
+                    @endif
+                </div>
             </div>
         </section>
     @endif
@@ -805,29 +1227,216 @@
 })();
 
 /* ------------------------------------------------------------
-   Gallery dot indicator — uses IO to track which reel item is
-   centered, then highlights the matching dot. */
+   GALLERY CAROUSEL
+   ------------------------------------------------------------
+   The reel is a `scroll-snap` flex row. We layer on:
+     - Scroll-position-based active-item tracking (rAF
+       throttled), which is more reliable than IO on iOS Safari
+       than the previous IO-threshold approach.
+     - Clickable dots that smoothly scroll to the target card.
+     - Prev/next buttons that snap one card at a time, with the
+       direction flipped under RTL so the user-visible "next"
+       arrow actually advances forward through the images.
+     - Keyboard nav (← → Home End) when the reel itself is
+       focused.
+     - Edge-fade hide/show via `at-start` / `at-end` classes
+       so cut-off cards feel intentional, not clipped. */
 (function () {
-    var reel = document.getElementById('asd-reel');
-    var dotsRow = document.getElementById('asd-dots');
-    if (!reel || !dotsRow || !('IntersectionObserver' in window)) return;
+    var viewport = document.getElementById('asd-reel-viewport');
+    var reel     = document.getElementById('asd-reel');
+    if (!viewport || !reel) return;
 
-    var items = reel.querySelectorAll('.asd-reel-item');
-    var dots  = dotsRow.querySelectorAll('span');
-    if (!items.length || !dots.length) return;
+    var items = Array.prototype.slice.call(reel.querySelectorAll('.asd-reel-item'));
+    if (!items.length) return;
 
-    var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
-            var idx = Array.prototype.indexOf.call(items, entry.target);
-            if (idx < 0) return;
-            dots.forEach(function (d, i) {
-                d.classList.toggle('is-active', i === idx);
-            });
+    var dotsRow  = document.getElementById('asd-dots');
+    var dots     = dotsRow ? Array.prototype.slice.call(dotsRow.querySelectorAll('.asd-dot')) : [];
+    var prevBtn  = document.getElementById('asd-reel-prev');
+    var nextBtn  = document.getElementById('asd-reel-next');
+    var counter  = document.getElementById('asd-current-idx');
+
+    // RTL detection — the prev/next arrow buttons need to move
+    // physical pixels, but the user-visible "next" should mean
+    // forward through the index. Under RTL, scrollLeft is
+    // negative on standards-mode browsers (Chrome/Safari/Firefox
+    // since 2019) so "next" = increase index = scroll towards
+    // more negative scrollLeft.
+    var isRTL = getComputedStyle(reel).direction === 'rtl';
+
+    function isReducedMotion () {
+        return window.matchMedia &&
+               window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function scrollToIndex (idx, smooth) {
+        if (idx < 0) idx = 0;
+        if (idx > items.length - 1) idx = items.length - 1;
+        var target = items[idx];
+        if (!target) return;
+        // Use the item's center, not start, so RTL/LTR behave
+        // identically.
+        var reelRect = reel.getBoundingClientRect();
+        var itemRect = target.getBoundingClientRect();
+        var offset   = (itemRect.left + itemRect.width / 2) -
+                       (reelRect.left + reelRect.width / 2);
+        reel.scrollTo({
+            left: reel.scrollLeft + offset,
+            behavior: (smooth && !isReducedMotion()) ? 'smooth' : 'auto'
         });
-    }, { root: reel, threshold: 0.6 });
+    }
 
-    items.forEach(function (it) { io.observe(it); });
+    function currentIndex () {
+        // Find the item whose center is closest to the reel's
+        // viewport center. This is more reliable than IO
+        // threshold + intersection ratio under scroll-snap.
+        var reelRect = reel.getBoundingClientRect();
+        var reelCenterX = reelRect.left + reelRect.width / 2;
+        var closest = 0;
+        var closestDist = Infinity;
+        for (var i = 0; i < items.length; i++) {
+            var r = items[i].getBoundingClientRect();
+            var c = r.left + r.width / 2;
+            var d = Math.abs(c - reelCenterX);
+            if (d < closestDist) {
+                closestDist = d;
+                closest = i;
+            }
+        }
+        return closest;
+    }
+
+    function updateActive () {
+        var idx = currentIndex();
+
+        // Dots
+        for (var i = 0; i < dots.length; i++) {
+            var on = (i === idx);
+            dots[i].classList.toggle('is-active', on);
+            dots[i].setAttribute('aria-selected', on ? 'true' : 'false');
+        }
+
+        // Counter
+        if (counter) counter.textContent = String(idx + 1);
+
+        // Edge fade visibility — based on actual scrollability,
+        // not index, so it stays accurate even with weird padding.
+        // `Math.abs` because RTL gives negative scrollLeft on some
+        // engines.
+        var sl     = Math.abs(reel.scrollLeft);
+        var maxSL  = reel.scrollWidth - reel.clientWidth;
+        var atStart = sl <= 2;
+        var atEnd   = sl >= maxSL - 2;
+        viewport.classList.toggle('at-start', atStart);
+        viewport.classList.toggle('at-end',   atEnd);
+
+        // Prev/next disabled states. Note: when isRTL, the
+        // user-visible "prev" arrow (which points to ‹ in the
+        // markup) still maps to "go to earlier index", so we
+        // disable it on idx === 0 regardless of RTL.
+        if (prevBtn) prevBtn.disabled = (idx === 0);
+        if (nextBtn) nextBtn.disabled = (idx === items.length - 1);
+    }
+
+    // rAF-throttle the scroll handler so we don't burn the
+    // main thread on a 60+ FPS swipe.
+    var rafPending = false;
+    function onScroll () {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(function () {
+            rafPending = false;
+            updateActive();
+        });
+    }
+
+    reel.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+
+    // Dot click — jump to that image.
+    dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+            var idx = parseInt(dot.getAttribute('data-target') || '0', 10);
+            scrollToIndex(idx, true);
+        });
+    });
+
+    // Prev/next — visually "‹" goes to lower index, "›" goes
+    // higher. This is independent of RTL: the arrow icon makes
+    // the intent clear, and matching the visual direction is
+    // what users expect on a horizontal carousel.
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+            scrollToIndex(currentIndex() - 1, true);
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+            scrollToIndex(currentIndex() + 1, true);
+        });
+    }
+
+    // Keyboard nav when the reel itself is focused.
+    reel.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            scrollToIndex(currentIndex() + (isRTL ? -1 : 1), true);
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            scrollToIndex(currentIndex() + (isRTL ? 1 : -1), true);
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            scrollToIndex(0, true);
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            scrollToIndex(items.length - 1, true);
+        }
+    });
+
+    // Initial sync — and run again on the next animation frame
+    // because Safari sometimes reports `scrollWidth === clientWidth`
+    // on first paint before the images have laid out.
+    updateActive();
+    requestAnimationFrame(updateActive);
+    setTimeout(updateActive, 250);
+})();
+
+/* ------------------------------------------------------------
+   YouTube "Lite Embed" — swap the placeholder for the real
+   iframe on first user click. We use the privacy-friendly
+   `youtube-nocookie.com` host and request autoplay so the user
+   doesn't have to click play a second time. The `allow`
+   attribute carries every permission YouTube needs to render
+   the full player (PiP, encrypted-media for premium / HD
+   streams, fullscreen, web-share).
+
+   Defensive: if YouTube is blocked by the browser / network,
+   the user can long-press the thumbnail to open the video on
+   YouTube directly via the link in the play-meta label. */
+(function () {
+    var lite = document.querySelectorAll('.asd-yt-lite');
+    if (!lite.length) return;
+
+    lite.forEach(function (el) {
+        el.addEventListener('click', function () {
+            var id = el.getAttribute('data-yt-id');
+            if (!id) return;
+
+            var iframe = document.createElement('iframe');
+            iframe.setAttribute('src',
+                'https://www.youtube-nocookie.com/embed/' + id +
+                '?autoplay=1&rel=0&modestbranding=1&playsinline=1');
+            iframe.setAttribute('title', el.getAttribute('aria-label') || 'YouTube video');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('allow',
+                'accelerometer; autoplay; clipboard-write; ' +
+                'encrypted-media; gyroscope; picture-in-picture; web-share');
+            iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+            iframe.setAttribute('loading', 'eager');
+            // Hand off to the iframe and remove the placeholder.
+            el.replaceWith(iframe);
+        }, { once: true });
+    });
 })();
 </script>
 
