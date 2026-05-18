@@ -39,10 +39,10 @@ class ShowController extends Controller
         $data = $request->validate([
             'title'           => 'required|string|max:255',
             'description'     => 'nullable|string',
-            // Posters & ticket templates allow up to 12 MB so iPhone
+            // Posters & ticket templates allow up to 20 MB so iPhone
             // HEIC/JPG exports from photo apps don't get rejected.
-            'poster'          => 'nullable|image|max:12288',
-            'ticket_template' => 'nullable|image|max:12288',
+            'poster'          => 'nullable|image|max:20480',
+            'ticket_template' => 'nullable|image|max:20480',
             'ticket_qr_x'     => 'nullable|integer|min:0',
             'ticket_qr_y'     => 'nullable|integer|min:0',
             'ticket_qr_size'  => 'nullable|integer|min:10',
@@ -101,9 +101,9 @@ class ShowController extends Controller
         $data = $request->validate([
             'title'           => 'required|string|max:255',
             'description'     => 'nullable|string',
-            // Same 12 MB cap as create() — keeps the two flows in sync.
-            'poster'          => 'nullable|image|max:12288',
-            'ticket_template' => 'nullable|image|max:12288',
+            // Same 20 MB cap as create() — keeps the two flows in sync.
+            'poster'          => 'nullable|image|max:20480',
+            'ticket_template' => 'nullable|image|max:20480',
             'ticket_qr_x'     => 'nullable|integer|min:0',
             'ticket_qr_y'     => 'nullable|integer|min:0',
             'ticket_qr_size'  => 'nullable|integer|min:10',

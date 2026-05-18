@@ -42,8 +42,8 @@ class ArchiveController extends Controller
             'video_url'     => 'nullable|string|max:255',
             'facebook_reel' => 'nullable|string|max:255',
             'year'          => 'nullable|integer|min:1900|max:2100',
-            'poster'        => 'nullable|image|max:4096',
-            'images.*'      => 'nullable|image|max:4096',
+            'poster'        => 'nullable|image|max:20480',
+            'images.*'      => 'nullable|image|max:20480',
         ]);
 
         // 🎬 Facebook Reel → Embed
@@ -105,8 +105,8 @@ class ArchiveController extends Controller
             'video_url'     => 'nullable|string|max:255',
             'facebook_reel' => 'nullable|string|max:255',
             'year'          => 'nullable|integer|min:1900|max:2100',
-            'poster'        => 'nullable|image|max:4096',
-            'images.*'      => 'nullable|image|max:4096',
+            'poster'        => 'nullable|image|max:20480',
+            'images.*'      => 'nullable|image|max:20480',
         ]);
 
         if (!empty($data['facebook_reel']) &&
