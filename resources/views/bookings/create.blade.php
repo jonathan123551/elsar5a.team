@@ -744,7 +744,7 @@ html { scroll-padding-bottom: 140px; }
                         <div id="screenshotEmptyState">
                             <p class="bk-drop-glyph" aria-hidden="true">📎</p>
                             <p class="bk-drop-cta">اضغط لاختيار صورة من معرض الصور</p>
-                            <p class="bk-drop-sub">حجم أقل من 5MB · لقطات iPhone مدعومة</p>
+                            <p class="bk-drop-sub">حجم أقل من 20MB · لقطات iPhone مدعومة</p>
                         </div>
                         <div id="screenshotPreviewWrap" class="hidden">
                             <img id="screenshotPreview" alt="">
@@ -968,8 +968,8 @@ html { scroll-padding-bottom: 140px; }
             recomputeSubmitState();
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            screenshotError.innerText = 'حجم الصورة أكبر من 5MB — جرّب صورة أصغر.';
+        if (file.size > 20 * 1024 * 1024) {
+            screenshotError.innerText = 'حجم الصورة أكبر من 20MB — جرّب صورة أصغر.';
             screenshotError.classList.remove('hidden');
             screenshotInput.value = '';
             previewWrap.classList.add('hidden');

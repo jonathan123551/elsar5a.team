@@ -120,7 +120,7 @@ class BookingController extends Controller
                 'names.*'            => ['required', 'string', 'max:255'],
                 'phones'             => ['required', 'array', 'min:1', 'max:20'],
                 'phones.*'           => ['required', 'string', 'min:8', 'max:20'],
-                'payment_screenshot' => ['required', 'image', 'max:16000'],
+                'payment_screenshot' => ['required', 'image', 'max:20480'],
                 'idempotency_token'  => ['nullable', 'string', 'max:64'],
             ]);
 
@@ -168,7 +168,7 @@ class BookingController extends Controller
             // HTTP call to Cloudinary. We hand Cloudinary the
             // already-validated temp upload path directly instead of
             // re-buffering the file into memory — important for
-            // 8–16 MB iPhone screenshots on a 256 MB worker.
+            // 8–20 MB iPhone screenshots on a 256 MB worker.
             $upload = (new UploadApi())->upload(
                 $request->file('payment_screenshot')->getRealPath(),
                 ['folder' => 'payments/screenshots']

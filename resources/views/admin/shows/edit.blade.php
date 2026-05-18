@@ -70,7 +70,7 @@
                 <div data-upload-empty class="{{ $posterUrl ? 'hidden' : '' }}">
                     <p class="text-[28px] leading-none mb-1">🎭</p>
                     <p class="text-sm text-white font-semibold">اختر بوستر للعرض</p>
-                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 20MB</p>
                 </div>
 
                 <div data-upload-preview class="{{ $posterUrl ? '' : 'hidden' }}">
@@ -89,7 +89,7 @@
                    name="poster"
                    id="posterInput"
                    accept="image/*"
-                   data-max-mb="12"
+                   data-max-mb="20"
                    class="hidden">
 
             <p data-upload-error class="hidden text-[12px] text-red-300 mt-1.5"></p>
@@ -112,7 +112,7 @@
                 <div data-upload-empty class="{{ $show->ticket_template_path ? 'hidden' : '' }}">
                     <p class="text-[24px] leading-none mb-1">🎟️</p>
                     <p class="text-xs text-white font-semibold">اختر تصميم التذكرة</p>
-                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 12MB</p>
+                    <p class="text-[11px] text-gray-400 mt-1">PNG / JPG حتى 20MB</p>
                 </div>
                 <div data-upload-preview class="{{ $show->ticket_template_path ? '' : 'hidden' }}">
                     <p data-upload-filename class="text-[11px] text-gray-300 truncate"></p>
@@ -124,7 +124,7 @@
                    name="ticket_template"
                    id="ticketInput"
                    accept="image/*"
-                   data-max-mb="12"
+                   data-max-mb="20"
                    class="hidden">
 
             <p data-upload-error class="hidden text-[12px] text-red-300"></p>
@@ -219,7 +219,7 @@ document.querySelectorAll('[data-upload-dropzone]').forEach(function (zone) {
     var img     = zone.querySelector('[data-upload-preview-img]');
     var name    = zone.querySelector('[data-upload-filename]');
     var err     = zone.parentElement.querySelector('[data-upload-error]');
-    var maxMb   = parseFloat(input.getAttribute('data-max-mb') || '12');
+    var maxMb   = parseFloat(input.getAttribute('data-max-mb') || '20');
 
     input.addEventListener('change', function () {
         if (err) err.classList.add('hidden');
