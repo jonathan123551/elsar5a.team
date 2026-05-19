@@ -820,6 +820,20 @@
     justify-content: center;
     transition: opacity .3s ease;
 }
+/* The JS toggles a Tailwind `.hidden` utility on/off to open
+   and close the lightbox. That utility resolves to
+   `display: none` at (0,0,1,0) specificity, which loses to the
+   `#viewer { display: flex }` rule above at (0,1,0,0). The end
+   result was that `#viewer` was ALWAYS rendered full-viewport
+   with `pointer-events: auto` and `z-index: 9999`, just at
+   `opacity: 0` — silently swallowing every click on the page
+   (nav links, video play buttons, gallery items, etc.). These
+   two rules give `.hidden` precedence so the dialog actually
+   leaves the layout when closed, and make the 300ms fade-in/
+   fade-out window also non-interactive as defense in depth so
+   the closing animation can't eat a click either. */
+#viewer.hidden    { display: none; }
+#viewer.opacity-0 { pointer-events: none; }
 .asd-viewer-btn {
     position: absolute;
     z-index: 50;
