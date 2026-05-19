@@ -513,6 +513,28 @@
 }
 .asd-reel::-webkit-scrollbar { display: none; }
 
+/* Pointer-drag swipe on desktop (see JS at the bottom of this
+   view). We hint the affordance with a `grab` cursor on devices
+   with a real pointer, swap to `grabbing` while a drag is in
+   progress, and disable smooth-scroll during the drag so the
+   reel tracks the cursor 1:1 instead of easing behind it. */
+@media (hover: hover) and (pointer: fine) {
+    .asd-reel { cursor: grab; }
+}
+.asd-reel.is-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    scroll-snap-type: none;
+    user-select: none;
+}
+.asd-reel.is-dragging .asd-reel-item,
+.asd-reel.is-dragging .asd-reel-item:hover {
+    cursor: grabbing;
+}
+.asd-reel.is-dragging img {
+    pointer-events: none;
+}
+
 .asd-reel-item {
     flex: 0 0 auto;
     width: 88%;
@@ -936,30 +958,45 @@
         // Normalize the stored URL to the canonical Facebook plugin
         // form. Accepts (a) a raw page URL (`/elsar5ateam/videos/123/`),
         // (b) a `share/v/` URL, or (c) an already-built plugin URL.
+        //
+        // We ALWAYS unwrap and re-clean the underlying watch URL —
+        // including when the stored value is already a plugin URL —
+        // because the inner `href=` query param is often copied from
+        // a share link with tracking params (`fs`, `mibextid`,
+        // `rdid`, `__cft__`, …) plus a trailing `#`. The Facebook
+        // video plugin silently fails to play when those params are
+        // present in the underlying watch URL.
         $rawFb   = trim((string) $archive->facebook_reel);
         $fbEmbed = null;
         $fbWatch = null;
         if ($rawFb !== '') {
-            $isPlugin = str_contains($rawFb, 'facebook.com/plugins/');
-            if ($isPlugin) {
-                $fbEmbed = $rawFb;
-                // Try to recover the underlying watch URL from the
-                // `href=` query param so the "Open on Facebook" CTA
-                // works.
-                if (preg_match('~[?&]href=([^&]+)~', $rawFb, $m)) {
-                    $fbWatch = urldecode($m[1]);
-                }
-            } else {
-                // Strip tracking params Facebook adds to share URLs —
-                // they often confuse the embed plugin.
-                $clean   = preg_replace('~[?&](mibextid|fs|rdid|fb_ref|__cft__|__tn__|set)=[^&#]*~', '', $rawFb);
-                $clean   = preg_replace('~#.*$~', '', $clean);
-                $fbWatch = $clean;
-                $fbEmbed = 'https://www.facebook.com/plugins/video.php'
-                         . '?href=' . urlencode($clean)
-                         . '&show_text=false'
-                         . '&autoplay=false';
+            $candidate = $rawFb;
+
+            // 1) If we were handed a plugin URL, unwrap it back to
+            //    the underlying watch URL so we can clean it.
+            if (str_contains($candidate, 'facebook.com/plugins/')
+                && preg_match('~[?&]href=([^&]+)~', $candidate, $m)) {
+                $candidate = urldecode($m[1]);
             }
+
+            // 2) Strip tracking params + trailing fragment. The
+            //    `[?&]` swallows the leading delimiter together with
+            //    the param, which leaves a clean URL when (as is
+            //    typical) every share param is in the strip list.
+            $clean = preg_replace(
+                '~[?&](mibextid|fs|rdid|rdc|fb_ref|fbclid|__cft__|__tn__|set)=[^&#]*~',
+                '', $candidate
+            );
+            $clean = preg_replace('~#.*$~', '', $clean);
+            // If stripping the first param left an orphaned `&`,
+            // turn it back into the URL's `?` separator.
+            $clean = preg_replace('~([^?])&(?=[^=&]+=)~', '$1?', $clean, 1);
+
+            $fbWatch = $clean;
+            $fbEmbed = 'https://www.facebook.com/plugins/video.php'
+                     . '?href=' . urlencode($clean)
+                     . '&show_text=false'
+                     . '&autoplay=false';
         }
     @endphp
 
@@ -1053,6 +1090,25 @@
                         <span class="asd-play-btn" aria-hidden="true"></span>
                         <span class="asd-play-meta">Watch on YouTube</span>
                     </button>
+                </div>
+                {{-- Permanent fallback CTA — YouTube occasionally
+                     shows its anti-bot "Sign in to confirm you're
+                     not a bot" wall inside the embed, especially on
+                     mobile data networks or shared IPs. This link
+                     guarantees the visitor can always open the
+                     video on YouTube directly, exactly like the
+                     Facebook fallback above. --}}
+                <div class="mt-3 text-center md:text-right">
+                    <a href="https://www.youtube.com/watch?v={{ $yt }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 text-xs
+                              font-semibold tracking-[.18em] uppercase
+                              text-amber-200/85 hover:text-amber-300
+                              underline-offset-4 hover:underline">
+                        <span aria-hidden="true">↗</span>
+                        <span>افتح على يوتيوب</span>
+                    </a>
                 </div>
             </div>
         </section>
@@ -1168,7 +1224,9 @@
      aria-modal="true"
      aria-label="معرض الصور">
 
-    <span id="asd-counter" class="asd-viewer-counter">1 / 1</span>
+    {{-- `dir="ltr"` keeps the "3 / 19" counter from being
+         flipped to "19 / 3" by the page-level RTL direction. --}}
+    <span id="asd-counter" class="asd-viewer-counter" dir="ltr">1 / 1</span>
 
     <button type="button"
             onclick="closeViewer()"
@@ -1421,9 +1479,15 @@
             var id = el.getAttribute('data-yt-id');
             if (!id) return;
 
+            // Use `www.youtube.com` (not `youtube-nocookie.com`) on
+            // the swap. The nocookie host has noticeably stricter
+            // anti-bot heuristics and from some IP ranges it shows
+            // the "Sign in to confirm you're not a bot" wall
+            // instead of the player. The standard host is more
+            // tolerant and falls back gracefully.
             var iframe = document.createElement('iframe');
             iframe.setAttribute('src',
-                'https://www.youtube-nocookie.com/embed/' + id +
+                'https://www.youtube.com/embed/' + id +
                 '?autoplay=1&rel=0&modestbranding=1&playsinline=1');
             iframe.setAttribute('title', el.getAttribute('aria-label') || 'YouTube video');
             iframe.setAttribute('frameborder', '0');
@@ -1437,6 +1501,78 @@
             el.replaceWith(iframe);
         }, { once: true });
     });
+})();
+
+/* ------------------------------------------------------------
+   GALLERY POINTER-DRAG SWIPE — desktop only.
+   Touch devices already swipe natively via `overflow-x: auto`
+   + scroll-snap, but mouse/pen input doesn't drag-scroll a
+   scroller by default. We wire up Pointer Events so a user on
+   desktop can click-and-drag the reel exactly like they would
+   swipe on a phone. We skip `pointerType === 'touch'` so we
+   don't fight the browser's native touch-scroll, and we
+   swallow the click that follows a real drag so the gallery
+   item doesn't open the lightbox at the end of a swipe. */
+(function () {
+    var reel = document.getElementById('asd-reel');
+    if (!reel) return;
+
+    var isDown   = false;
+    var startX   = 0;
+    var startSL  = 0;
+    var moved    = false;
+    var DRAG_THR = 6; // px before we count it as a drag
+
+    reel.addEventListener('pointerdown', function (e) {
+        // Native touch-scroll is better than anything we can fake.
+        if (e.pointerType === 'touch') return;
+        // Primary button only.
+        if (e.button !== 0) return;
+        isDown  = true;
+        moved   = false;
+        startX  = e.clientX;
+        startSL = reel.scrollLeft;
+        reel.classList.add('is-dragging');
+        // Capture so we keep receiving move/up even if the
+        // pointer leaves the reel mid-drag.
+        try { reel.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    reel.addEventListener('pointermove', function (e) {
+        if (!isDown) return;
+        var dx = e.clientX - startX;
+        if (!moved && Math.abs(dx) > DRAG_THR) moved = true;
+        if (moved) {
+            reel.scrollLeft = startSL - dx;
+            // Stops text-selection / image-drag from kicking in.
+            e.preventDefault();
+        }
+    });
+
+    function endDrag (e) {
+        if (!isDown) return;
+        isDown = false;
+        reel.classList.remove('is-dragging');
+        if (e && e.pointerId !== undefined) {
+            try { reel.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+        // Scroll-snap re-snaps to the nearest card on its own.
+    }
+
+    reel.addEventListener('pointerup',     endDrag);
+    reel.addEventListener('pointercancel', endDrag);
+
+    // If the user actually dragged, swallow the click so the
+    // gallery item doesn't open the lightbox at the end of a
+    // swipe. We listen in the capture phase so we beat the
+    // inline `onclick="openViewer(...)"` on the buttons.
+    reel.addEventListener('click', function (e) {
+        if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+            moved = false;
+        }
+    }, true);
 })();
 </script>
 
