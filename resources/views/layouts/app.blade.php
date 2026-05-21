@@ -17,50 +17,120 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* =========================================================
+           MOBILE-ZOOM / VIEWPORT STABILITY BASELINE
+           ---------------------------------------------------------
+           Goals (in priority order):
+             1. NEVER auto-zoom on input focus (iOS Safari does this
+                whenever a form control's computed font-size is
+                < 16px).
+             2. NEVER fire the 300ms double-tap zoom delay on
+                interactive elements.
+             3. NEVER let `:hover` styles stick after a tap on
+                touch devices (the "I tapped a card and now it's
+                permanently bigger" bug).
+             4. NEVER bounce the layout when the iOS address bar
+                collapses (use 100dvh, not 100vh).
+             5. Preserve pinch-to-zoom for accessibility. We do NOT
+                set `user-scalable=no` or `maximum-scale=1` in the
+                viewport meta — those break low-vision users for
+                no real product benefit.
+
+           See viewport <meta> above for the meta-tag side of this:
+           `width=device-width, initial-scale=1, viewport-fit=cover`
+           with NO max/min scale, so pinch-zoom remains available.
+           ========================================================= */
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            /* Stage colour anchored on the root element so the iOS
+               overscroll rubber-band doesn't reveal a white strip. */
+            background-color: #020617;
+            /* Use the dynamic viewport so the iOS address-bar
+               collapse doesn't trigger a layout shift. 100vh is the
+               fallback for older browsers. */
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             -webkit-tap-highlight-color: transparent;
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            /* Prevent rubber-band overscroll from propagating to
+               sticky elements (the navbar and sticky-action footer
+               jitter without this on iOS). */
+            overscroll-behavior-y: contain;
         }
 
         /* Mobile-friendly tap targets — every clickable element on
            the public + admin surfaces should be at least 44×44 with
-           a little visual feedback. Scoped to the elements the rest
-           of the design system already uses so we don't surprise
-           desktop UIs. iOS in particular needs an explicit
-           -webkit-tap-highlight-color override to avoid the default
-           grey flash. */
+           a little visual feedback. iOS in particular needs an
+           explicit -webkit-tap-highlight-color override to avoid the
+           default grey flash. */
         button,
         [role="button"],
         input[type="submit"],
         input[type="button"],
-        a {
+        a,
+        label,
+        summary {
             -webkit-tap-highlight-color: transparent;
-        }
-        button,
-        input[type="submit"],
-        input[type="button"] {
-            touch-action: manipulation; /* kill 300ms double-tap zoom delay on iOS */
-        }
-        input,
-        select,
-        textarea {
-            /* iOS Safari auto-zooms into any input under 16px on
-               focus, which yanks the layout. Force a minimum logical
-               font-size on small viewports so the keyboard appears
-               without zooming. */
-            font-size: 16px;
-        }
-        @media (min-width: 640px) {
-            input, select, textarea { font-size: inherit; }
+            /* `touch-action: manipulation` keeps pinch-zoom alive
+               globally but suppresses the 300ms double-tap-zoom
+               delay *on this element*. Exactly the
+               accessibility-preserving behaviour we want. */
+            touch-action: manipulation;
         }
 
-        /* Safari iOS sometimes leaves a phantom rubber-band white
-           strip behind the dark stage background when the user
-           overscrolls. Anchor html/body to the stage color so it
-           never bleeds through. */
-        html { background-color: #020617; }
+        /* iOS Safari auto-zooms into ANY form control whose
+           computed font-size is below 16px on focus, which yanks
+           the layout. `!important` here defeats Tailwind utility
+           classes like `text-sm` / `text-[14px]` applied on parents
+           (Tailwind's Preflight sets `input { font-size: 100% }`,
+           so the input inherits whatever the parent says).
+           Excludes hidden / range / checkbox / radio because their
+           size is unrelated to the zoom heuristic. */
+        @media (max-width: 639.98px) {
+            input:not([type="hidden"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+            select,
+            textarea {
+                font-size: 16px !important;
+                /* `text-size-adjust: 100%` on inputs in particular
+                   keeps Safari from rescaling text inside the input
+                   while typing on landscape orientation. */
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+        }
+
+        /* =========================================================
+           Touch-device :hover lock fix.
+           ---------------------------------------------------------
+           Mobile Safari and Chrome-on-Android treat the FIRST tap
+           on a hover-styled element as a "hover activation" — the
+           :hover state remains matched until the user taps
+           somewhere else. Tailwind utilities like
+           `hover:scale-105` / `group-hover:scale-[1.035]` therefore
+           leave cards visibly enlarged after a tap, which is the
+           "certain sections suddenly become enlarged" symptom in
+           the bug report.
+
+           `@media (hover: none)` matches devices without a real
+           hover capability (i.e. touch devices), and the selector
+           below neutralises transform-based hover effects there
+           while leaving non-hover animations (button spinners,
+           pulse keyframes, etc.) and desktop hover effects intact.
+           ========================================================= */
+        @media (hover: none) {
+            [class*="scale-"]:hover,
+            .group:hover [class*="scale-"],
+            .group:focus-within [class*="scale-"] {
+                transform: none !important;
+            }
+        }
 
         /* خلفية أجواء مسرح */
         .stage-bg {
