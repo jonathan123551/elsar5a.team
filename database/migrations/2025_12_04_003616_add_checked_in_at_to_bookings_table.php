@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->timestamp('checked_in_at')->nullable()->after('status');
+            if (!Schema::hasColumn('bookings', 'checked_in_at')) {
+                $table->timestamp('checked_in_at')->nullable()->after('status');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->dropColumn('checked_in_at');
+            if (Schema::hasColumn('bookings', 'checked_in_at')) {
+                $table->dropColumn('checked_in_at');
+            }
         });
     }
 };

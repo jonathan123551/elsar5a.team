@@ -11,23 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('team_applications', function (Blueprint $table) {
-    $table->id();
-    $table->string('full_name');
-    $table->string('phone');
-    $table->string('email');
-    $table->integer('age');
-    $table->string('education_stage');
-    $table->string('school_or_college')->nullable();
-    $table->string('address');
-    $table->string('confession_father');
-    $table->text('services')->nullable();
-    $table->boolean('preparation_class');
-    $table->string('department');
-    $table->text('why_join');
-    $table->timestamps();
-});
-
+        if (!Schema::hasTable('team_applications')) {
+            Schema::create('team_applications', function (Blueprint $table) {
+                $table->id();
+                $table->string('full_name');
+                $table->string('phone');
+                $table->string('email');
+                $table->integer('age');
+                $table->string('education_stage');
+                $table->string('school_or_college')->nullable();
+                $table->string('address');
+                $table->string('confession_father');
+                $table->text('services')->nullable();
+                $table->boolean('preparation_class');
+                $table->string('department');
+                $table->text('why_join');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

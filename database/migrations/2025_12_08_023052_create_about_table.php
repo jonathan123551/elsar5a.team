@@ -8,19 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('abouts', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('abouts')) {
+            Schema::create('abouts', function (Blueprint $table) {
+                $table->id();
 
-            // وصف عن الفريق
-            $table->text('description');
+                // وصف عن الفريق
+                $table->text('description');
 
-            // لينكات السوشيال (اختياري)
-            $table->string('youtube')->nullable();
-            $table->string('instagram')->nullable();
-            $table->string('facebook')->nullable();
+                // لينكات السوشيال (اختياري)
+                $table->string('youtube')->nullable();
+                $table->string('instagram')->nullable();
+                $table->string('facebook')->nullable();
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

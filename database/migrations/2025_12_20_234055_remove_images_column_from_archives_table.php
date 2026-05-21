@@ -10,17 +10,21 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-{
-    Schema::table('archives', function (Blueprint $table) {
-        $table->dropColumn('images');
-    });
-}
+    {
+        Schema::table('archives', function (Blueprint $table) {
+            if (Schema::hasColumn('archives', 'images')) {
+                $table->dropColumn('images');
+            }
+        });
+    }
 
-public function down()
-{
-    Schema::table('archives', function (Blueprint $table) {
-        $table->text('images')->nullable();
-    });
-}
+    public function down()
+    {
+        Schema::table('archives', function (Blueprint $table) {
+            if (!Schema::hasColumn('archives', 'images')) {
+                $table->text('images')->nullable();
+            }
+        });
+    }
 
 };

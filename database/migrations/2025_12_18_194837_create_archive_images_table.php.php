@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('archive_images', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('archive_images')) {
+            Schema::create('archive_images', function (Blueprint $table) {
+                $table->id();
 
-            // علاقة مع جدول archives
-            $table->foreignId('archive_id')
-                  ->constrained('archives')
-                  ->cascadeOnDelete();
+                // علاقة مع جدول archives
+                $table->foreignId('archive_id')
+                      ->constrained('archives')
+                      ->cascadeOnDelete();
 
-            // مسار الصورة
-            $table->string('image_path');
+                // مسار الصورة
+                $table->string('image_path');
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     /**

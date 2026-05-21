@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
 {
-    Schema::create('tickets', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('booking_id')->constrained()->onDelete('cascade');
-        $table->string('ticket_code')->unique();
-        $table->string('qr_image_path');
-        $table->boolean('is_scanned')->default(false);
-        $table->timestamp('scanned_at')->nullable();
-        $table->unsignedBigInteger('scanned_by_admin_id')->nullable();
-        $table->timestamps();
-    });
+    if (!Schema::hasTable('tickets')) {
+        Schema::create('tickets', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('booking_id')->constrained()->onDelete('cascade');
+            $table->string('ticket_code')->unique();
+            $table->string('qr_image_path');
+            $table->boolean('is_scanned')->default(false);
+            $table->timestamp('scanned_at')->nullable();
+            $table->unsignedBigInteger('scanned_by_admin_id')->nullable();
+            $table->timestamps();
+        });
+    }
 }
 
 
