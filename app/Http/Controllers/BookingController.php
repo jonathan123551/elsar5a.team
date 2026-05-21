@@ -221,8 +221,17 @@ class BookingController extends Controller
                     return ['error' => '❌ المتاح فقط: ' . $remaining . ' تذاكر'];
                 }
 
+                // Allocate the public-facing booking number scoped
+                // per show. Runs inside this transaction, so a
+                // subsequent failure rolls the counter back — no
+                // burned numbers. See Booking::allocatePublicNumber
+                // for the atomicity contract.
+                $publicNumber = Booking::allocatePublicNumber($locked->show_id);
+
                 $b = Booking::create([
                     'show_time_id'                  => $locked->id,
+                    'show_id'                       => $locked->show_id,
+                    'public_number'                 => $publicNumber,
                     'full_name'                     => $names[0],
                     'phone'                         => $normalizedPhones[0],
                     'tickets_count'                 => $ticketsCount,
