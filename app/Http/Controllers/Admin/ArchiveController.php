@@ -8,6 +8,7 @@ use App\Models\ArchiveImage;
 use Illuminate\Http\Request;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
+use App\Support\UploadCompressor;
 
 class ArchiveController extends Controller
 {
@@ -57,12 +58,22 @@ class ArchiveController extends Controller
 
         $uploader = new UploadApi();
 
-        // 🖼️ Poster
+        // 🖼️ Poster — compress server-side first.
         if ($request->hasFile('poster')) {
+            $posterPath = UploadCompressor::compress(
+                $request->file('poster'),
+                maxEdge: 2400,
+                quality: 85,
+            );
+
             $poster = $uploader->upload(
-                $request->file('poster')->getRealPath(),
+                $posterPath,
                 ['folder' => 'archives/posters']
             );
+
+            if ($posterPath !== $request->file('poster')->getRealPath()) {
+                @unlink($posterPath);
+            }
 
             $data['poster_path'] = $poster['secure_url'];
             $data['poster_public_id'] = $poster['public_id'];
@@ -70,13 +81,24 @@ class ArchiveController extends Controller
 
         $archive = Archive::create($data);
 
-        // 📸 Gallery
+        // 📸 Gallery — each image compressed individually so a
+        // batch of 10 phone photos doesn't take 5 minutes to upload.
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
+                $galleryPath = UploadCompressor::compress(
+                    $image,
+                    maxEdge: 2200,
+                    quality: 82,
+                );
+
                 $uploaded = $uploader->upload(
-                    $image->getRealPath(),
+                    $galleryPath,
                     ['folder' => 'archives/gallery']
                 );
+
+                if ($galleryPath !== $image->getRealPath()) {
+                    @unlink($galleryPath);
+                }
 
                 ArchiveImage::create([
                     'archive_id'      => $archive->id,
@@ -119,16 +141,26 @@ class ArchiveController extends Controller
 
         $uploader = new UploadApi();
 
-        // 🔄 Update poster
+        // 🔄 Update poster (same compression policy as store()).
         if ($request->hasFile('poster')) {
             if ($archive->poster_public_id) {
                 $uploader->destroy($archive->poster_public_id);
             }
 
+            $posterPath = UploadCompressor::compress(
+                $request->file('poster'),
+                maxEdge: 2400,
+                quality: 85,
+            );
+
             $poster = $uploader->upload(
-                $request->file('poster')->getRealPath(),
+                $posterPath,
                 ['folder' => 'archives/posters']
             );
+
+            if ($posterPath !== $request->file('poster')->getRealPath()) {
+                @unlink($posterPath);
+            }
 
             $data['poster_path'] = $poster['secure_url'];
             $data['poster_public_id'] = $poster['public_id'];
@@ -136,13 +168,24 @@ class ArchiveController extends Controller
 
         $archive->update($data);
 
-        // ➕ Add new gallery images
+        // ➕ Add new gallery images (same compression policy as
+        // store()).
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
+                $galleryPath = UploadCompressor::compress(
+                    $image,
+                    maxEdge: 2200,
+                    quality: 82,
+                );
+
                 $uploaded = $uploader->upload(
-                    $image->getRealPath(),
+                    $galleryPath,
                     ['folder' => 'archives/gallery']
                 );
+
+                if ($galleryPath !== $image->getRealPath()) {
+                    @unlink($galleryPath);
+                }
 
                 ArchiveImage::create([
                     'archive_id'      => $archive->id,
