@@ -10,17 +10,21 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-{
-    Schema::table('bookings', function ($table) {
-        $table->timestamp('ticket_sent_at')->nullable();
-    });
-}
+    {
+        Schema::table('bookings', function (Blueprint $table) {
+            if (!Schema::hasColumn('bookings', 'ticket_sent_at')) {
+                $table->timestamp('ticket_sent_at')->nullable();
+            }
+        });
+    }
 
-public function down()
-{
-    Schema::table('bookings', function ($table) {
-        $table->dropColumn('ticket_sent_at');
-    });
-}
+    public function down()
+    {
+        Schema::table('bookings', function (Blueprint $table) {
+            if (Schema::hasColumn('bookings', 'ticket_sent_at')) {
+                $table->dropColumn('ticket_sent_at');
+            }
+        });
+    }
 
 };

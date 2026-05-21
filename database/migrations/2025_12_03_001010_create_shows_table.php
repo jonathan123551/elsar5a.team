@@ -11,14 +11,16 @@ return new class extends Migration
      */
    public function up(): void
 {
-    Schema::create('shows', function (Blueprint $table) {
-        $table->id();
-        $table->string('title');
-        $table->text('description')->nullable();
-        $table->string('poster_path')->nullable();
-        $table->boolean('is_active')->default(true);
-        $table->timestamps();
-    });
+    if (!Schema::hasTable('shows')) {
+        Schema::create('shows', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->string('poster_path')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+    }
 }
 
 

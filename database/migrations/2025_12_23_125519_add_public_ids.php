@@ -12,13 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('archives', function (Blueprint $table) {
-    $table->string('poster_public_id')->nullable();
-});
+            if (!Schema::hasColumn('archives', 'poster_public_id')) {
+                $table->string('poster_public_id')->nullable();
+            }
+        });
 
-Schema::table('archive_images', function (Blueprint $table) {
-    $table->string('image_public_id')->nullable();
-});
-
+        Schema::table('archive_images', function (Blueprint $table) {
+            if (!Schema::hasColumn('archive_images', 'image_public_id')) {
+                $table->string('image_public_id')->nullable();
+            }
+        });
     }
 
     /**
@@ -26,6 +29,16 @@ Schema::table('archive_images', function (Blueprint $table) {
      */
     public function down(): void
     {
-        //
+        Schema::table('archives', function (Blueprint $table) {
+            if (Schema::hasColumn('archives', 'poster_public_id')) {
+                $table->dropColumn('poster_public_id');
+            }
+        });
+
+        Schema::table('archive_images', function (Blueprint $table) {
+            if (Schema::hasColumn('archive_images', 'image_public_id')) {
+                $table->dropColumn('image_public_id');
+            }
+        });
     }
 };

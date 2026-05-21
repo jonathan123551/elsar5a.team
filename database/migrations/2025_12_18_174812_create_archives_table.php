@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('archives', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('archives')) {
+            Schema::create('archives', function (Blueprint $table) {
+                $table->id();
 
-            $table->string('title');                   // اسم العرض
-            $table->text('description')->nullable();   // وصف العرض
+                $table->string('title');                   // اسم العرض
+                $table->text('description')->nullable();   // وصف العرض
 
-            $table->string('poster_path')->nullable(); // بوستر العرض (Card image)
-            $table->json('images')->nullable();        // صور من العرض (Gallery)
+                $table->string('poster_path')->nullable(); // بوستر العرض (Card image)
+                $table->json('images')->nullable();        // صور من العرض (Gallery)
 
-            $table->string('video_url')->nullable();   // لينك فيديو
-            $table->integer('year')->nullable();       // سنة العرض
+                $table->string('video_url')->nullable();   // لينك فيديو
+                $table->integer('year')->nullable();       // سنة العرض
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     /**

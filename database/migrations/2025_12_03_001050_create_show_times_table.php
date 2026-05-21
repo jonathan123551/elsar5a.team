@@ -11,28 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('show_times', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('show_times')) {
+            Schema::create('show_times', function (Blueprint $table) {
+                $table->id();
 
-            // كل ميعاد مرتبط بعرض
-            $table->foreignId('show_id')
-                  ->constrained('shows')
-                  ->cascadeOnDelete();
+                // كل ميعاد مرتبط بعرض
+                $table->foreignId('show_id')
+                      ->constrained('shows')
+                      ->cascadeOnDelete();
 
-            // التاريخ و الوقت
-            $table->date('date');        // اليوم
-            $table->time('time');        // الساعة
+                // التاريخ و الوقت
+                $table->date('date');        // اليوم
+                $table->time('time');        // الساعة
 
-            // تفاصيل التذاكر
-            $table->unsignedInteger('ticket_price');       // سعر التذكرة
-            $table->unsignedInteger('total_tickets');      // إجمالي التذاكر
-            $table->unsignedInteger('available_tickets');  // التذاكر المتاحة حالياً
+                // تفاصيل التذاكر
+                $table->unsignedInteger('ticket_price');       // سعر التذكرة
+                $table->unsignedInteger('total_tickets');      // إجمالي التذاكر
+                $table->unsignedInteger('available_tickets');  // التذاكر المتاحة حالياً
 
-            // حالة الميعاد
-            $table->boolean('is_sold_out')->default(false);
+                // حالة الميعاد
+                $table->boolean('is_sold_out')->default(false);
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     /**
