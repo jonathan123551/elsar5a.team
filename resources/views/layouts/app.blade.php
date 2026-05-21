@@ -16,6 +16,110 @@
     {{-- Tailwind CSS CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
 
+    {{--
+        DOUBLE-TAP-ZOOM SUPPRESSOR (JS safety net)
+        ------------------------------------------
+        This is a defensive companion to the CSS rule
+        `html { touch-action: manipulation }`. Real-world iOS Safari
+        has multiple bugs where it ignores `touch-action: manipulation`:
+
+          * <img> elements inside transformed parents
+          * elements with `-webkit-overflow-scrolling: touch` ancestors
+          * arbitrary edge cases that change between iOS releases
+
+        When those bugs fire, Safari triggers its native
+        "smart zoom" anyway. This script catches the rapid-second-
+        tap pattern on `touchend` and `preventDefault()`s it before
+        Safari can act on it.
+
+        Why it's in <head> (before the body parses)
+        -------------------------------------------
+        The listener has to be attached before the user can tap
+        anywhere. A `DOMContentLoaded` listener would miss any tap
+        that happens during initial parse on a slow connection.
+
+        Why `{ passive: false }`
+        ------------------------
+        Modern browsers default touch listeners to `passive: true`,
+        which makes `preventDefault()` a no-op. We need
+        `passive: false` so cancelling the event actually works.
+        `touchend` doesn't affect scroll performance (the scroll
+        blockers are `touchstart` and `touchmove`, which we don't
+        touch), so this is performance-safe.
+
+        Why it preserves pinch-zoom
+        ---------------------------
+        Pinch is a two-finger gesture. While the fingers are on
+        the screen, `touchend` fires with `e.touches.length > 0`
+        (some fingers still down). We bail out in that case AND
+        reset our timestamp so the subsequent single-finger
+        `touchend` from the last lifted finger isn't seen as the
+        "second" of a double-tap.
+
+        Why the thresholds are 280 ms / 25 px
+        -------------------------------------
+        Safari's own double-tap-zoom detection window is ~300 ms.
+        We use a slightly tighter window so that:
+          - accidental double-taps (well under 280 ms) are caught
+          - intentional rapid tapping (typically >= 300 ms between
+            taps) is not suppressed
+        25 px tolerance covers finger imprecision while still
+        allowing two distinct taps on adjacent UI elements (which
+        are usually farther apart) to fire normally.
+    --}}
+    <script>
+    (function () {
+        if (!('ontouchend' in window)) return;
+
+        var lastTouchEnd = 0;
+        var lastX = 0;
+        var lastY = 0;
+
+        document.addEventListener('touchend', function (e) {
+            // Multi-touch (pinch). Reset our state so a follow-up
+            // single tap isn't mistaken for the "second" of a
+            // double-tap.
+            if (e.touches && e.touches.length > 0) {
+                lastTouchEnd = 0;
+                return;
+            }
+
+            var t = e.changedTouches && e.changedTouches[0];
+            if (!t) return;
+
+            var now = Date.now();
+            var dt = now - lastTouchEnd;
+            var dx = Math.abs(t.clientX - lastX);
+            var dy = Math.abs(t.clientY - lastY);
+
+            if (dt > 0 && dt < 280 && dx < 25 && dy < 25) {
+                // Rapid second tap close to the first → cancel
+                // Safari's smart zoom. This also suppresses the
+                // synthesized click event for the SECOND tap (the
+                // first tap's click already fired on its own
+                // touchend), which is the correct trade-off: a
+                // double-tap is one user intent, not two.
+                e.preventDefault();
+            }
+
+            lastTouchEnd = now;
+            lastX = t.clientX;
+            lastY = t.clientY;
+        }, { passive: false });
+
+        // NOTE on iOS `gesturestart`
+        // --------------------------
+        // We deliberately do NOT listen for `gesturestart`. It is
+        // an iOS-specific event that fires when two-or-more fingers
+        // begin a gesture (pinch). `preventDefault`ing it would
+        // disable pinch-to-zoom, which we are required to preserve
+        // for accessibility. The touchend handler above is the
+        // correct layer: it ignores multi-touch entirely (it bails
+        // when `e.touches.length > 0`), so pinch gestures flow
+        // through untouched.
+    })();
+    </script>
+
     <style>
         /* =========================================================
            MOBILE-ZOOM / VIEWPORT STABILITY BASELINE
@@ -51,6 +155,20 @@
                fallback for older browsers. */
             min-height: 100vh;
             min-height: 100dvh;
+            /* CRITICAL ANTI-ZOOM: apply touch-action at the document
+               root so the gesture-determination chain (touched
+               element → ancestors → root) lands on `manipulation`
+               for EVERY touch on the page — including non-
+               interactive areas (cards, posters, gallery images,
+               empty layout space) that previously had no
+               touch-action declaration and therefore fell back to
+               Safari's default smart-zoom-on-double-tap.
+
+               `manipulation` allows panning + pinch-zoom (two-finger
+               gesture) and disables ONLY the 300ms tap delay +
+               double-tap-zoom. Pinch-to-zoom accessibility is
+               preserved. */
+            touch-action: manipulation;
         }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
