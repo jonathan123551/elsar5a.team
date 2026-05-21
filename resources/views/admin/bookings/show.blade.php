@@ -6,32 +6,40 @@
 {{--
     Admin booking detail page — mobile-first redesign.
 
-    Notes for future maintainers:
-    -----------------------------
-    * Door operators land on this page from the bookings list. The
-      page must answer four questions, in this order:
+    Why this exists
+    ---------------
+    Door operators land on this page from the bookings list. The
+    page must answer four questions, in this order:
         1. WHO is this booking for?
         2. WHICH show/time is it for?
         3. Have they paid (screenshot OK)?
         4. What can I DO right now (approve / reject / resend / delete)?
-      The redesign rearranges the page to match that hierarchy.
+    The layout follows that hierarchy.
 
-    * Tap targets are ≥44×44 (see `.adm-tap`). The previous version
-      had View-Ticket / Resend / Open-Screenshot / Back all at 30–36
-      pixels tall, well under the iOS HIG 44pt minimum.
+    Notes for future maintainers
+    ----------------------------
+    * Tap targets are ≥44×44 (see `.adm-tap`).
+    * The destructive "delete" affordance is a two-step inline
+      confirm (tap "حذف" → reveal "تأكيد" + "إلغاء"). Native
+      confirm() is avoided because it's ugly on iOS Safari and the
+      system back-gesture can dismiss it accidentally.
+    * Sticky context bar at the top keeps the booking number and
+      back link visible while the operator scrolls into the
+      screenshot or the long ticket list.
+    * The approve/reject buttons keep the `data-sticky-action`
+      attribute so the existing layout-level JS clones them into
+      the floating footer when they scroll out of view.
 
-    * The destructive "delete" affordance is now a two-step interaction:
-        Tap 1 reveals a confirm pill, with an explicit "Cancel" beside it.
-      The native `confirm()` dialog has been removed — it's ugly on iOS
-      Safari and the system back-gesture can dismiss it accidentally.
-
-    * Sticky context bar at the top keeps the booking number and back
-      link visible while the operator scrolls into the screenshot or
-      the long ticket list.
-
-    * The approve/reject buttons keep the `data-sticky-action` attribute
-      so the existing layout-level JS clones them into the floating
-      footer when they scroll out of view.
+    Processing overlay
+    ------------------
+    Approve / Reject / Delete / Resend each kick off a server
+    pipeline that can take 10–30 seconds (Cloudinary upload,
+    ticket image generation, WhatsApp Cloud API call). The button
+    spinner alone is too subtle — operators were tapping
+    "Approve" and assuming nothing was happening. We pop a
+    full-screen blocking overlay (`#adm-processing`) the instant
+    a form on this page submits, with a contextual headline so
+    the operator knows what's running.
 --}}
 
 <style>
@@ -44,10 +52,9 @@
         justify-content: center;
     }
 
-    /* Sticky context bar — mobile only.
-       Pinned directly under the global navbar so the operator
-       always sees the booking ID + back affordance while scrolling
-       through the screenshot or a long ticket list. */
+    /* Sticky context bar — mobile only. Pinned directly under the
+       global navbar so the operator always sees the booking ID +
+       back affordance while scrolling. */
     .adm-ctx-bar {
         position: sticky;
         top: 56px;
@@ -98,9 +105,36 @@
         50% { opacity: .55; transform: scale(.75); }
     }
 
-    /* Section card. Consistent radius / border / padding makes the
-       page read as a series of clean cards rather than a wall of
-       fields. */
+    /* Hero card — anchors the page with the show title +
+       date/time + a faded poster strip. Visually distinct from
+       the regular `.adm-card`s below so the operator's eye lands
+       here first. */
+    .adm-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        background:
+            linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(0,0,0,0.55) 60%),
+            rgba(0,0,0,0.5);
+        padding: 18px 18px 20px;
+    }
+    .adm-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: var(--adm-hero-img, none);
+        background-size: cover;
+        background-position: center;
+        opacity: .18;
+        filter: blur(2px) saturate(120%);
+        z-index: 0;
+    }
+    .adm-hero > * { position: relative; z-index: 1; }
+
+    /* Section card. Consistent radius / border / padding makes
+       the page read as a series of clean cards rather than a
+       wall of fields. */
     .adm-card {
         background: rgba(0,0,0,0.4);
         border: 1px solid rgba(255,255,255,0.1);
@@ -111,7 +145,7 @@
         .adm-card { padding: 20px; }
     }
 
-    /* Stat tile (number + label).  */
+    /* Stat tile (number + label). */
     .adm-stat {
         background: rgba(0,0,0,0.4);
         border: 1px solid rgba(255,255,255,0.1);
@@ -125,9 +159,21 @@
         margin-top: 6px;
     }
 
-    /* Ticket card — one per attendee. On mobile the actions stack
-       below the name/phone row so each action is full-width and
-       comfortably tappable. */
+    /* Compact timeline row used in the hero (created → approved). */
+    .adm-timeline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin-top: 10px;
+        font-size: 11.5px;
+        color: rgb(156,163,175);
+    }
+    .adm-timeline > span { display: inline-flex; align-items: center; gap: 6px; }
+    .adm-timeline .lbl { color: rgb(107,114,128); }
+
+    /* Ticket card — one per attendee. On mobile the actions
+       stack below the name/phone row so each action is
+       full-width and comfortably tappable. */
     .adm-ticket {
         background: rgba(255,255,255,0.04);
         border: 1px solid rgba(255,255,255,0.1);
@@ -156,17 +202,33 @@
         transition: background .15s, transform .1s, opacity .15s;
     }
     .adm-ticket .actions > *:active { transform: scale(.98); }
+    .adm-ticket-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11px;
+        letter-spacing: .04em;
+        color: rgb(252,211,77);
+        background: rgba(245,158,11,0.08);
+        border: 1px solid rgba(245,158,11,0.2);
+        border-radius: 6px;
+        padding: 2px 6px;
+        display: inline-block;
+        margin-top: 4px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-    /* Action-area sticky padding. The layout-level `has-sticky-action`
-       class already pads the bottom of <main>, but we also pad the
-       innermost section for safe-area visibility. */
+    /* Action-area sticky padding. The layout-level
+       `has-sticky-action` class already pads the bottom of
+       <main>, but we also pad the innermost section for safe-area
+       visibility. */
     .adm-actions-pad { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
 
     /* Two-step destructive confirm. The trigger button has class
-       `.adm-confirm-trigger`; on tap it sets `data-armed="true"` on
-       the parent `[data-confirm]`, which reveals the armed cluster
-       (submit + cancel + helper text) via sibling visibility rules.
-       No JS framework required. */
+       `.adm-confirm-trigger`; on tap it sets `data-armed="true"`
+       on the parent `[data-confirm]`, which reveals the armed
+       cluster (submit + cancel + helper text) via sibling
+       visibility rules. No JS framework required. */
     [data-confirm] .adm-confirm-armed-row,
     [data-confirm] .adm-confirm-armed-text { display: none; }
     [data-confirm][data-armed="true"] .adm-confirm-trigger { display: none; }
@@ -177,10 +239,10 @@
     }
     [data-confirm][data-armed="true"] .adm-confirm-armed-text { display: block; }
 
-    /* Loading state — picks up the layout-level `.is-loading` class
-       added by the single-submit guard. The shared layout already
-       defines `.btn-spinner`, this just opts the destructive button
-       in. */
+    /* Loading state — picks up the layout-level `.is-loading`
+       class added by the single-submit guard. The shared layout
+       already defines `.btn-spinner`; this just opts the
+       destructive button in. */
     .adm-btn-spinner::before {
         content: "";
         display: none;
@@ -194,6 +256,110 @@
         vertical-align: -2px;
     }
     .adm-btn-spinner.is-loading::before { display: inline-block; }
+
+    /* =========================================================
+       PROCESSING OVERLAY
+       ---------------------------------------------------------
+       Full-screen blocking modal shown while an approve/reject/
+       delete/resend request is in flight. The button spinner on
+       its own was too subtle for a 10-30s pipeline (ticket
+       generation, Cloudinary upload, WhatsApp send) — operators
+       were tapping "Approve" and assuming nothing was happening.
+
+       Behaviour
+       ---------
+       * Mounted hidden in the markup. Forms with
+         `data-processing-message="…"` on submit set the message
+         and reveal the overlay (see script at the bottom of the
+         file). The page navigates away when the request returns,
+         which unmounts the overlay naturally.
+       * Pointer-events captured at the overlay level so the
+         operator can't accidentally re-tap the underlying button.
+       * `beforeunload` warns if the operator tries to close the
+         tab while a request is in flight.
+       ========================================================= */
+    .adm-processing {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(2,6,23,0.78);
+        backdrop-filter: blur(8px) saturate(140%);
+        -webkit-backdrop-filter: blur(8px) saturate(140%);
+        animation: admOverlayFade .18s ease-out both;
+    }
+    .adm-processing[data-open="true"] { display: flex; }
+    @keyframes admOverlayFade {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    .adm-processing .panel {
+        width: min(380px, 100%);
+        background:
+            linear-gradient(180deg, rgba(245,158,11,0.06), rgba(0,0,0,0)) ,
+            rgba(15,23,42,0.95);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 1.25rem;
+        padding: 28px 24px 24px;
+        text-align: center;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+        animation: admPanelIn .25s cubic-bezier(.2,.7,.2,1) both;
+    }
+    @keyframes admPanelIn {
+        from { opacity: 0; transform: translateY(8px) scale(.98); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .adm-processing .ring {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        border: 3px solid rgba(245,158,11,0.15);
+        border-top-color: rgb(252,211,77);
+        animation: btnSpin .9s linear infinite;
+    }
+    .adm-processing .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: rgb(254,243,199);
+        margin: 4px 0 4px;
+    }
+    .adm-processing .subtitle {
+        font-size: 12.5px;
+        color: rgb(156,163,175);
+        line-height: 1.6;
+    }
+    .adm-processing .steps {
+        margin-top: 14px;
+        text-align: start;
+        font-size: 12px;
+        color: rgb(203,213,225);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 12px 14px;
+    }
+    .adm-processing .steps li {
+        list-style: none;
+        padding: 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .adm-processing .steps li::before {
+        content: "•";
+        color: rgba(252,211,77,0.8);
+        font-weight: 700;
+    }
+    .adm-processing .hint {
+        margin-top: 12px;
+        font-size: 11px;
+        color: rgb(248,113,113);
+        font-weight: 600;
+    }
 </style>
 
 <section class="space-y-4 sm:space-y-5 max-w-3xl mx-auto adm-actions-pad">
@@ -201,10 +367,10 @@
     {{-- ------------------------------------------------------
          STICKY CONTEXT BAR (mobile)
          ------------------------------------------------------
-         The operator opens this page on a phone, scrolls into the
-         payment screenshot, and the booking ID was previously lost
-         off the top of the screen. This strip keeps the booking
-         number + back link permanently in view. --}}
+         The operator opens this page on a phone, scrolls into
+         the payment screenshot, and the booking ID was
+         previously lost off the top of the screen. This strip
+         keeps the booking number + back link permanently in view. --}}
     <div class="adm-ctx-bar sm:!static
                 bg-black/70 sm:bg-transparent
                 backdrop-blur-md sm:backdrop-blur-0
@@ -243,52 +409,108 @@
     @endif
 
     {{-- ------------------------------------------------------
-         STATUS + SHOW INFO
+         🎭 HERO — show + status + key dates
          ------------------------------------------------------
-         Status pill is the immediate "what's the state?" cue.
-         Below it, a quick show/time line answers "which event?". --}}
-    <div class="flex flex-col items-center gap-3 pt-1">
-        @if($booking->status === 'approved')
-            <span class="adm-status" data-tone="approved">
-                <span class="dot"></span>
-                مقبول
-            </span>
-        @elseif($booking->status === 'rejected')
-            <span class="adm-status" data-tone="rejected">
-                <span class="dot"></span>
-                مرفوض
-            </span>
-        @else
-            <span class="adm-status" data-tone="pending">
-                <span class="dot"></span>
-                قيد المراجعة
-            </span>
-        @endif
-
-        @if($booking->showTime)
-            <div class="text-center text-[13px] text-gray-300 leading-relaxed">
-                <span class="text-amber-300">🎭</span>
-                <span class="text-white font-medium">
-                    {{ $booking->showTime->show->title ?? '—' }}
-                </span>
-                <span class="text-gray-500 mx-1">·</span>
-                <span class="text-gray-400 tabular-nums" dir="ltr">
-                    {{ $booking->showTime->date->format('d/m/Y') }}
-                    · {{ \Carbon\Carbon::parse($booking->showTime->time)->format('g:i A') }}
-                </span>
+         The hero card consolidates the three things the operator
+         needs at-a-glance: which show, what's the booking's
+         current status, and where in the lifecycle (created /
+         approved / rejected) it is. The poster is used as a
+         faded background so the card feels grounded in the
+         specific show, not generic. --}}
+    @php
+        $show     = $booking->showTime?->show;
+        $showTime = $booking->showTime;
+        $posterCss = $show?->poster_path ? "url('" . e($show->poster_path) . "')" : null;
+    @endphp
+    <div class="adm-hero" @if($posterCss) style="--adm-hero-img: {{ $posterCss }};" @endif>
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <p class="text-[11px] uppercase tracking-wider text-amber-300/80 font-semibold">
+                    العرض
+                </p>
+                <p class="text-base sm:text-lg font-bold text-white leading-snug mt-1 line-clamp-2">
+                    {{ $show?->title ?? '—' }}
+                </p>
+                @if($showTime)
+                    <p class="text-[12.5px] text-gray-300 mt-1.5 tabular-nums" dir="ltr">
+                        🗓 {{ $showTime->date->format('d/m/Y') }}
+                        · {{ \Carbon\Carbon::parse($showTime->time)->format('g:i A') }}
+                    </p>
+                @endif
             </div>
-        @endif
 
-        {{-- Guest header — name + phone in a compact line. The
-             ticket list below adds per-attendee detail. --}}
-        <div class="text-center pt-1">
-            <p class="text-[15px] font-semibold text-white">{{ $booking->full_name }}</p>
-            <p class="text-[12.5px] text-gray-400 mt-0.5" dir="ltr">{{ $booking->phone }}</p>
+            <div class="shrink-0">
+                @if($booking->status === 'approved')
+                    <span class="adm-status" data-tone="approved">
+                        <span class="dot"></span>
+                        مقبول
+                    </span>
+                @elseif($booking->status === 'rejected')
+                    <span class="adm-status" data-tone="rejected">
+                        <span class="dot"></span>
+                        مرفوض
+                    </span>
+                @else
+                    <span class="adm-status" data-tone="pending">
+                        <span class="dot"></span>
+                        قيد المراجعة
+                    </span>
+                @endif
+            </div>
+        </div>
+
+        {{-- Booker name + phone, with quick WhatsApp deep link
+             so the operator can ping the customer without
+             leaving the page. --}}
+        <div class="mt-4 pt-4 border-t border-white/10
+                    flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[15px] font-semibold text-white truncate">
+                    {{ $booking->full_name }}
+                </p>
+                <p class="text-[12.5px] text-gray-400 mt-0.5 tabular-nums" dir="ltr">
+                    {{ $booking->phone }}
+                </p>
+            </div>
+            @if($booking->phone)
+                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $booking->phone) }}"
+                   target="_blank" rel="noopener"
+                   class="adm-tap text-[12px] px-3 rounded-full
+                          bg-emerald-500/15 hover:bg-emerald-500/25
+                          border border-emerald-500/40 text-emerald-200
+                          transition shrink-0">
+                    💬 واتساب
+                </a>
+            @endif
+        </div>
+
+        {{-- Lifecycle timeline (created → approved/rejected). --}}
+        <div class="adm-timeline" dir="ltr">
+            @if($booking->created_at)
+                <span><span class="lbl">Created</span>
+                    {{ $booking->created_at->format('d/m g:i A') }}</span>
+            @endif
+            @if($booking->approved_at)
+                <span class="text-emerald-300">
+                    <span class="lbl">Approved</span>
+                    {{ $booking->approved_at->format('d/m g:i A') }}
+                </span>
+            @endif
+            @if($booking->rejected_at ?? null)
+                <span class="text-red-300">
+                    <span class="lbl">Rejected</span>
+                    {{ $booking->rejected_at->format('d/m g:i A') }}
+                </span>
+            @endif
         </div>
     </div>
 
     {{-- Summary stats --}}
-    <div class="grid grid-cols-2 gap-3">
+    @php
+        $sentCount  = $booking->tickets->where('whatsapp_sent', true)->count();
+        $totalCount = $booking->tickets->count();
+    @endphp
+    <div class="grid grid-cols-3 gap-2 sm:gap-3">
         <div class="adm-stat">
             <p class="text-[11px] text-gray-400">عدد التذاكر</p>
             <p class="num text-white tabular-nums">{{ $booking->tickets_count }}</p>
@@ -300,6 +522,12 @@
                 <span class="text-sm text-amber-300/80">جنيه</span>
             </p>
         </div>
+        <div class="adm-stat">
+            <p class="text-[11px] text-gray-400">على واتساب</p>
+            <p class="num tabular-nums {{ $totalCount && $sentCount === $totalCount ? 'text-emerald-300' : 'text-white' }}">
+                {{ $sentCount }}<span class="text-sm text-gray-500">/{{ $totalCount }}</span>
+            </p>
+        </div>
     </div>
 
     {{-- ------------------------------------------------------
@@ -308,10 +536,6 @@
     <div class="adm-card space-y-3">
         <div class="flex items-center justify-between">
             <h2 class="text-[13px] text-amber-300 font-semibold">🎟️ التذاكر</h2>
-            @php
-                $sentCount  = $booking->tickets->where('whatsapp_sent', true)->count();
-                $totalCount = $booking->tickets->count();
-            @endphp
             <span class="text-[11px] text-gray-400 tabular-nums">
                 واتساب: {{ $sentCount }}/{{ $totalCount }}
             </span>
@@ -325,6 +549,9 @@
                         <div class="min-w-0">
                             <p class="text-white font-semibold truncate">{{ $ticket->name }}</p>
                             <p class="text-[12.5px] text-gray-400 truncate" dir="ltr">{{ $ticket->phone }}</p>
+                            @if($ticket->ticket_code)
+                                <span class="adm-ticket-code" dir="ltr">{{ $ticket->ticket_code }}</span>
+                            @endif
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -353,7 +580,10 @@
                             @endif
 
                             <form action="{{ route('admin.resend.ticket', $ticket->id) }}"
-                                  method="POST" class="contents resend-form">
+                                  method="POST"
+                                  class="contents"
+                                  data-processing-message="جاري إعادة إرسال التذكرة على واتساب…"
+                                  data-processing-steps='["الاتصال بـ WhatsApp Cloud API","إرسال صورة التذكرة"]'>
                                 @csrf
                                 <button type="submit"
                                         class="adm-btn-spinner
@@ -409,11 +639,20 @@
          `data-sticky-action` is read by the layout-level JS that
          clones these buttons into a floating bottom action bar
          while they're off-screen, so the operator can decide on
-         the booking without scrolling back to the bottom. --}}
+         the booking without scrolling back to the bottom.
+
+         The `data-processing-message` attribute on each form is
+         read by the page's submit handler (see script below) to
+         show the full-screen overlay. The wording is specific to
+         the action so the operator knows what's happening — an
+         approve takes 10-30s (ticket generation + WhatsApp); a
+         reject is instant but still benefits from the "hands
+         off, processing" cue. --}}
     @if($booking->status === 'pending')
         <div data-sticky-action class="grid grid-cols-2 gap-3 pt-2">
             <form action="{{ route('admin.bookings.reject', $booking) }}" method="POST"
-                  class="approve-form">
+                  data-processing-message="جاري رفض الحجز…"
+                  data-processing-steps='["تحديث حالة الحجز"]'>
                 @csrf
                 <button type="submit"
                         class="adm-btn-spinner w-full px-4 py-3 rounded-2xl
@@ -426,7 +665,9 @@
             </form>
 
             <form action="{{ route('admin.bookings.approve', $booking) }}" method="POST"
-                  class="approve-form">
+                  data-processing-message="جاري اعتماد الحجز وإرسال التذاكر…"
+                  data-processing-steps='["إنشاء صور التذاكر","رفع التذاكر إلى Cloudinary","إرسال إشعار الواتساب"]'
+                  data-processing-hint="قد يستغرق حتى 30 ثانية. من فضلك لا تغلق الصفحة.">
                 @csrf
                 <button type="submit"
                         class="adm-btn-spinner w-full px-4 py-3 rounded-2xl
@@ -461,7 +702,8 @@
 
                 <div class="adm-confirm-armed-row">
                     <form action="{{ route('admin.booking.delete', $booking->id) }}" method="POST"
-                          class="delete-form">
+                          data-processing-message="جاري حذف الحجز وكل التذاكر المرتبطة به…"
+                          data-processing-steps='["حذف التذاكر","حذف الحجز"]'>
                         @csrf
                         @method('DELETE')
                         <button type="submit"
@@ -489,6 +731,28 @@
     @endif
 
 </section>
+
+{{-- ------------------------------------------------------------
+     PROCESSING OVERLAY (full-screen modal)
+     ------------------------------------------------------------
+     Mounted once per page. The submit handler at the bottom of
+     this file populates the title / steps / hint based on the
+     `data-processing-*` attributes on the form that just
+     submitted, then reveals the overlay. The overlay closes
+     naturally when the server's redirect response replaces the
+     page. --}}
+<div id="adm-processing"
+     class="adm-processing"
+     role="dialog" aria-modal="true" aria-live="polite"
+     aria-labelledby="adm-processing-title">
+    <div class="panel">
+        <div class="ring" aria-hidden="true"></div>
+        <h2 id="adm-processing-title" class="title">جاري المعالجة…</h2>
+        <p class="subtitle" data-role="subtitle">برجاء الانتظار حتى يكتمل الطلب.</p>
+        <ul class="steps" data-role="steps" hidden></ul>
+        <p class="hint" data-role="hint" hidden></p>
+    </div>
+</div>
 
 <script>
 /* ----------------------------------------------------------
@@ -526,14 +790,76 @@
     });
 })();
 
-/* Single-submit guard for every form on this page. Same pattern
-   the public booking flow uses. Disabling the button immediately
-   on submit prevents double-tap / double-click from firing the
-   POST twice and accidentally re-running the WhatsApp template
-   send. */
+/* ----------------------------------------------------------
+   Processing overlay + single-submit guard.
+   ----------------------------------------------------------
+   For every form on this page:
+     1. Disable the submit button on submit so a double-tap
+        doesn't fire the POST twice (would re-run ticket
+        generation, double-charge WhatsApp templates, etc.).
+     2. If the form opted into the processing overlay via
+        `data-processing-message`, populate and reveal it.
+     3. Arm a `beforeunload` warning so the operator can't
+        accidentally close the tab mid-request.
+
+   The overlay stays open until the server's response
+   replaces the page (redirect after approve / reject / etc.).
+   ---------------------------------------------------------- */
 (function () {
+    var overlay  = document.getElementById('adm-processing');
+    var titleEl  = overlay && overlay.querySelector('[id="adm-processing-title"]');
+    var subEl    = overlay && overlay.querySelector('[data-role="subtitle"]');
+    var stepsEl  = overlay && overlay.querySelector('[data-role="steps"]');
+    var hintEl   = overlay && overlay.querySelector('[data-role="hint"]');
+
+    var inFlight = false;
+
+    function showOverlay(form) {
+        if (!overlay) return;
+
+        var msg   = form.getAttribute('data-processing-message');
+        var steps = form.getAttribute('data-processing-steps');
+        var hint  = form.getAttribute('data-processing-hint');
+
+        if (msg && titleEl) {
+            titleEl.textContent = msg;
+        }
+        if (subEl) {
+            subEl.textContent = 'برجاء الانتظار حتى يكتمل الطلب.';
+        }
+        if (stepsEl) {
+            stepsEl.innerHTML = '';
+            stepsEl.hidden = true;
+            if (steps) {
+                try {
+                    var list = JSON.parse(steps);
+                    if (Array.isArray(list) && list.length) {
+                        list.forEach(function (s) {
+                            var li = document.createElement('li');
+                            li.textContent = String(s);
+                            stepsEl.appendChild(li);
+                        });
+                        stepsEl.hidden = false;
+                    }
+                } catch (_) { /* ignore malformed JSON */ }
+            }
+        }
+        if (hintEl) {
+            if (hint) {
+                hintEl.textContent = hint;
+                hintEl.hidden = false;
+            } else {
+                hintEl.textContent = '';
+                hintEl.hidden = true;
+            }
+        }
+        overlay.setAttribute('data-open', 'true');
+    }
+
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function () {
+            // single-submit guard: disable buttons immediately so
+            // a fast double-tap doesn't submit twice.
             requestAnimationFrame(function () {
                 form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) {
                     if (b.disabled) return;
@@ -541,7 +867,25 @@
                     b.classList.add('is-loading');
                 });
             });
+
+            if (form.hasAttribute('data-processing-message')) {
+                inFlight = true;
+                showOverlay(form);
+            }
         });
+    });
+
+    // Warn the operator if they try to navigate away while a
+    // request is in flight — closing the tab during ticket
+    // generation can leave the booking in a half-approved state
+    // (some tickets generated, WhatsApp not sent).
+    window.addEventListener('beforeunload', function (e) {
+        if (!inFlight) return;
+        // Modern browsers ignore the message and show their
+        // standard "are you sure?" prompt, but we still need to
+        // set returnValue + preventDefault to trigger it.
+        e.preventDefault();
+        e.returnValue = '';
     });
 })();
 </script>
