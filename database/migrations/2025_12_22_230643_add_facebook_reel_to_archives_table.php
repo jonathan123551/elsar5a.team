@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('archives', function (Blueprint $table) {
-    $table->string('facebook_reel')->nullable();
-});
-
+        if (!Schema::hasColumn('archives', 'facebook_reel')) {
+            Schema::table('archives', function (Blueprint $table) {
+                $table->string('facebook_reel')->nullable();
+            });
+        }
     }
 
     /**
@@ -22,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('archives', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('archives', 'facebook_reel')) {
+            Schema::table('archives', function (Blueprint $table) {
+                $table->dropColumn('facebook_reel');
+            });
+        }
     }
 };
