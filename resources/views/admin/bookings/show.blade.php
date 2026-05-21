@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'تفاصيل الحجز #' . $booking->id)
+@section('title', 'تفاصيل الحجز #' . ($booking->public_number ?? $booking->id))
 
 @section('content')
 {{--
@@ -807,7 +807,7 @@
             @endif
         </div>
 
-        <div class="adm2-bk-num tabular-nums mt-1">#{{ $booking->id }}</div>
+        <div class="adm2-bk-num tabular-nums mt-1">#{{ $booking->public_number ?? $booking->id }}</div>
 
         <div class="mt-3 text-[13.5px] text-gray-300 leading-relaxed">
             <span class="text-amber-300">🎭</span>
@@ -974,7 +974,7 @@
                     <img src="{{ $booking->transfer_screenshot_path }}"
                          loading="lazy" decoding="async"
                          alt="لقطة شاشة التحويل">
-                    <p class="cap">TRANSFER · #{{ $booking->id }}</p>
+                    <p class="cap">TRANSFER · #{{ $booking->public_number ?? $booking->id }}</p>
                 </div>
             </a>
         </div>

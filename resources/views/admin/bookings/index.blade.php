@@ -265,7 +265,7 @@
                        autocomplete="off"
                        enterkeyhint="search"
                        inputmode="search"
-                       placeholder="🔎 بحث بالاسم / الموبايل / الكود"
+                       placeholder="🔎 بحث بالاسم / الموبايل / الكود / رقم الحجز (#3)"
                        class="w-full rounded-xl bg-black/60 border border-white/15 px-3
                               py-3 sm:py-2.5 pe-9 min-h-[44px]
                               focus:outline-none focus:border-amber-400/60 transition">
@@ -336,6 +336,7 @@
             <table class="w-full text-sm text-gray-200">
                 <thead class="bg-white/5 text-xs text-gray-400 uppercase tracking-wider">
                     <tr>
+                        <th class="px-3 py-3 text-right font-medium w-20">#</th>
                         <th class="px-4 py-3 text-right font-medium">الضيف</th>
                         <th class="px-4 py-3 text-right font-medium">العرض / الموعد</th>
                         <th class="px-4 py-3 text-right font-medium">الحالة</th>
@@ -356,8 +357,17 @@
                     @endphp
                     <tr class="border-t border-white/5 booking-row hover:bg-white/[0.03] transition"
                         data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
+                        data-pn="{{ $booking->public_number ?? '' }}"
                         data-status="{{ $booking->status }}"
                         data-datetime="{{ $dt }}">
+
+                        <td class="px-3 py-3 align-top">
+                            <span class="inline-flex items-center justify-center min-w-[44px] h-8 px-2
+                                         rounded-lg font-bold tabular-nums text-[13px]
+                                         bg-amber-400/10 text-amber-200 border border-amber-400/30">
+                                #{{ $booking->public_number ?? $booking->id }}
+                            </span>
+                        </td>
 
                         <td class="px-4 py-3 align-top">
                             <p class="font-bold leading-tight text-white">{{ $booking->full_name }}</p>
@@ -460,6 +470,7 @@
                       ps-5 pe-4 py-4 text-[13.5px]
                       hover:bg-black/55 active:bg-black/65 transition booking-card"
                data-search="{{ strtolower($booking->full_name.' '.$booking->phone.' '.$booking->reference_code) }}"
+               data-pn="{{ $booking->public_number ?? '' }}"
                data-status="{{ $booking->status }}"
                data-datetime="{{ $dt }}">
 
@@ -467,6 +478,13 @@
                      an operator first looks at) --}}
                 <div class="flex items-start justify-between gap-3 mb-2">
                     <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="inline-flex items-center justify-center min-w-[40px] h-6 px-2
+                                         rounded-md font-bold tabular-nums text-[12px]
+                                         bg-amber-400/15 text-amber-200 border border-amber-400/30">
+                                #{{ $booking->public_number ?? $booking->id }}
+                            </span>
+                        </div>
                         <p class="font-bold text-[15px] text-white truncate leading-tight">
                             {{ $booking->full_name }}
                         </p>
@@ -592,23 +610,46 @@ document.addEventListener('DOMContentLoaded', function () {
         var st = status.value;
         var when = dt.value;
 
+        // Booking-number search.
+        // ----------------------
+        // If the operator types `#3`, `# 3`, or bare `3`, we treat it
+        // as an exact match against the booking's public_number
+        // (not a substring) so `#3` doesn't also pull up #30, #33,
+        // #300, #13, etc. Substring match is still fine for names,
+        // phones, and reference_codes — those are handled by
+        // `data-search`.
+        //
+        // Per-show scoping happens for free: when the operator
+        // narrows by date+time (which is a single showtime, and a
+        // showtime always belongs to exactly one show), the only
+        // remaining `#3` row is the one #3 for that show. Without
+        // a date-time filter, `#3` will list `#3` across every
+        // show — which is the right behaviour when the operator
+        // hasn't told us which show they care about yet.
+        var hashMatch = s.match(/^#?\s*(\d+)$/);
+        var pnQuery = hashMatch ? hashMatch[1] : null;
+        var searchQuery = pnQuery ? '' : s;
+
+        function matches(el) {
+            if (pnQuery !== null && el.dataset.pn !== pnQuery) return false;
+            if (searchQuery && !el.dataset.search.includes(searchQuery)) return false;
+            if (st && el.dataset.status !== st) return false;
+            if (when && el.dataset.datetime !== when) return false;
+            return true;
+        }
+
         // We toggle visibility per logical booking (mobile card +
         // matching desktop row may both exist). Result count uses
         // the desktop rows only — they're always present even on
         // small viewports, the CSS just hides them.
         var visibleRows = 0;
         rows.forEach(function (el) {
-            var ok = el.dataset.search.includes(s)
-                && (!st || el.dataset.status === st)
-                && (!when || el.dataset.datetime === when);
+            var ok = matches(el);
             el.style.display = ok ? '' : 'none';
             if (ok) visibleRows++;
         });
         cards.forEach(function (el) {
-            var ok = el.dataset.search.includes(s)
-                && (!st || el.dataset.status === st)
-                && (!when || el.dataset.datetime === when);
-            el.style.display = ok ? '' : 'none';
+            el.style.display = matches(el) ? '' : 'none';
         });
 
         clearBtn.classList.toggle('hidden', !s);
