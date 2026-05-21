@@ -22,6 +22,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('show_booking_counters')) {
+            return;
+        }
+
         Schema::create('show_booking_counters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('show_id')
