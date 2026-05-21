@@ -7,6 +7,7 @@ use App\Models\Show;
 use Illuminate\Http\Request;
 use Cloudinary\Api\Upload\UploadApi;
 use Cloudinary\Configuration\Configuration;
+use App\Support\UploadCompressor;
 
 class ShowController extends Controller
 {
@@ -51,23 +52,48 @@ class ShowController extends Controller
 
         $uploader = new UploadApi();
 
-        // 🎭 Poster
+        // 🎭 Poster — server-side downscale before Cloudinary so a
+        // 15 MB phone export becomes ~500 KB on the wire without
+        // any visible quality hit on the homepage hero.
         if ($request->hasFile('poster')) {
+            $posterPath = UploadCompressor::compress(
+                $request->file('poster'),
+                maxEdge: 2400,
+                quality: 85,
+            );
+
             $poster = $uploader->upload(
-                $request->file('poster')->getRealPath(),
+                $posterPath,
                 ['folder' => 'shows/posters']
             );
+
+            if ($posterPath !== $request->file('poster')->getRealPath()) {
+                @unlink($posterPath);
+            }
 
             $data['poster_path'] = $poster['secure_url'];
             $data['poster_public_id'] = $poster['public_id'];
         }
 
-        // 🎟️ Ticket template
+        // 🎟️ Ticket template — slightly higher quality because the
+        // generated ticket PNG is built ON TOP of this image and we
+        // don't want compression artefacts to leak into every
+        // ticket.
         if ($request->hasFile('ticket_template')) {
+            $templatePath = UploadCompressor::compress(
+                $request->file('ticket_template'),
+                maxEdge: 2000,
+                quality: 90,
+            );
+
             $ticket = $uploader->upload(
-                $request->file('ticket_template')->getRealPath(),
+                $templatePath,
                 ['folder' => 'tickets/templates']
             );
+
+            if ($templatePath !== $request->file('ticket_template')->getRealPath()) {
+                @unlink($templatePath);
+            }
 
             $data['ticket_template_path'] = $ticket['secure_url'];
             $data['ticket_template_public_id'] = $ticket['public_id'];
@@ -112,31 +138,52 @@ class ShowController extends Controller
 
         $uploader = new UploadApi();
 
-        // 🖼️ Update poster
+        // 🖼️ Update poster (same compression policy as store()).
         if ($request->hasFile('poster')) {
             if ($show->poster_public_id) {
                 $uploader->destroy($show->poster_public_id);
             }
 
+            $posterPath = UploadCompressor::compress(
+                $request->file('poster'),
+                maxEdge: 2400,
+                quality: 85,
+            );
+
             $poster = $uploader->upload(
-                $request->file('poster')->getRealPath(),
+                $posterPath,
                 ['folder' => 'shows/posters']
             );
+
+            if ($posterPath !== $request->file('poster')->getRealPath()) {
+                @unlink($posterPath);
+            }
 
             $show->poster_path = $poster['secure_url'];
             $show->poster_public_id = $poster['public_id'];
         }
 
-        // 🎟️ Update ticket template
+        // 🎟️ Update ticket template (same compression policy as
+        // store(); slightly higher quality than posters).
         if ($request->hasFile('ticket_template')) {
             if ($show->ticket_template_public_id) {
                 $uploader->destroy($show->ticket_template_public_id);
             }
 
+            $templatePath = UploadCompressor::compress(
+                $request->file('ticket_template'),
+                maxEdge: 2000,
+                quality: 90,
+            );
+
             $ticket = $uploader->upload(
-                $request->file('ticket_template')->getRealPath(),
+                $templatePath,
                 ['folder' => 'tickets/templates']
             );
+
+            if ($templatePath !== $request->file('ticket_template')->getRealPath()) {
+                @unlink($templatePath);
+            }
 
             $show->ticket_template_path = $ticket['secure_url'];
             $show->ticket_template_public_id = $ticket['public_id'];

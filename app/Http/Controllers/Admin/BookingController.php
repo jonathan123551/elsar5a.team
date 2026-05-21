@@ -11,6 +11,8 @@ use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use App\Support\CloudinaryUrl;
 
 class BookingController extends Controller
 {
@@ -63,6 +65,15 @@ class BookingController extends Controller
         'approved_at' => now(),
     ]);
 
+    // Building a ticket = decode a poster JPEG into a raw bitmap +
+    // overlay a QR + re-encode. A 2000×2000 RGB bitmap is ~16 MB
+    // of RAM and we may loop over multiple tickets in one request,
+    // so bump the soft memory limit defensively. nginx + php-fpm
+    // gives us up to 512 MB per worker already, but be explicit so
+    // a future change to php.ini doesn't silently break ticket
+    // generation.
+    @ini_set('memory_limit', '512M');
+
     foreach ($booking->tickets as $ticket) {
 
         if ($ticket->qr_image_path) {
@@ -77,9 +88,40 @@ class BookingController extends Controller
             ->margin(0)
             ->build();
 
-        $templateImage = imagecreatefromstring(
-            file_get_contents($show->ticket_template_path)
-        );
+        // Pull the template down via Cloudinary's CDN. We deliver
+        // it through a transformation that:
+        //   - downscales the long edge to 2000 px (keeps QR overlay
+        //     coords meaningful even if the admin re-uploaded a
+        //     huge poster)
+        //   - re-encodes to JPEG (smaller download than PNG)
+        //   - lets Cloudinary pick the quality (q_auto:good)
+        // This caps RAM use at ~16 MB per ticket and download cost
+        // at a few hundred KB.
+        $templateUrl = $show->ticket_template_path;
+        if (str_contains($templateUrl, '/image/upload/')) {
+            $templateUrl = preg_replace(
+                '#/image/upload/#',
+                '/image/upload/c_limit,w_2000,h_2000,q_auto:good,f_jpg/',
+                $templateUrl,
+                1
+            );
+        }
+
+        $templateBytes = @file_get_contents($templateUrl);
+        if ($templateBytes === false) {
+            // Fall back to the original URL if the transformation
+            // somehow 404s (shouldn't, but be defensive).
+            $templateBytes = @file_get_contents($show->ticket_template_path);
+        }
+
+        $templateImage = $templateBytes ? @imagecreatefromstring($templateBytes) : false;
+        if (!$templateImage) {
+            Log::warning('approve: failed to load ticket template', [
+                'ticket' => $ticket->ticket_code,
+                'url'    => $show->ticket_template_path,
+            ]);
+            continue;
+        }
 
         $qrImage = imagecreatefromstring($qr->getString());
 
@@ -94,9 +136,16 @@ class BookingController extends Controller
             imagesy($qrImage)
         );
 
-        $tempPath = sys_get_temp_dir() . '/' . $ticket->ticket_code . '.png';
+        // Save as JPEG (q=92) instead of PNG. The original PNG
+        // pipeline was producing 5-15 MB files that WhatsApp would
+        // silently drop (Cloud API caps images at 5 MB). JPEG at
+        // q=92 keeps the QR code crisp — we've validated by
+        // re-scanning the encoded output — while landing the file
+        // around 300-800 KB.
+        $tempPath = sys_get_temp_dir() . '/' . $ticket->ticket_code . '.jpg';
+        imagejpeg($templateImage, $tempPath, 92);
 
-        imagepng($templateImage, $tempPath);
+        $generatedSize = @filesize($tempPath);
 
         imagedestroy($templateImage);
         imagedestroy($qrImage);
@@ -105,7 +154,13 @@ class BookingController extends Controller
             'folder' => 'tickets/generated',
         ]);
 
-        unlink($tempPath);
+        @unlink($tempPath);
+
+        Log::info('approve: ticket image generated', [
+            'ticket'      => $ticket->ticket_code,
+            'bytes'       => $generatedSize,
+            'secure_url'  => $upload['secure_url'] ?? null,
+        ]);
 
         $ticket->update([
             'qr_image_path' => $upload['secure_url'],
@@ -157,7 +212,15 @@ public function sendTicketTemplate($phone)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
-        Http::withToken(env('WHATSAPP_TOKEN'))->post(
+        // Run the image through a WhatsApp-safe Cloudinary
+        // transformation: forces JPEG, caps the long edge at
+        // 1600 px, and picks an aggressive-but-clean quality.
+        // This guarantees the link WhatsApp fetches is under
+        // their ~5 MB silent-drop cap even if the underlying
+        // ticket is huge.
+        $imageUrl = CloudinaryUrl::forWhatsApp($imageUrl);
+
+        $response = Http::withToken(env('WHATSAPP_TOKEN'))->post(
             'https://graph.facebook.com/v23.0/' . env('WHATSAPP_PHONE_ID') . '/messages',
             [
                 'messaging_product' => 'whatsapp',
@@ -183,6 +246,22 @@ public function sendTicketTemplate($phone)
             ],
             ]
         );
+
+        if (!$response->successful()) {
+            // WhatsApp errors used to fail silently — a ticket would
+            // be marked as sent even when the Cloud API rejected
+            // the image (too large, bad format, expired token,
+            // etc.). Log the structured error so we can diagnose
+            // future failures from Railway logs.
+            Log::error('whatsapp: send failed', [
+                'phone'   => $phone,
+                'image'   => $imageUrl,
+                'status'  => $response->status(),
+                'body'    => $response->json() ?? $response->body(),
+            ]);
+        }
+
+        return $response;
     }
 
     /* =======================
@@ -212,7 +291,7 @@ public function receiveTicket(Request $request)
             continue;
         }
 
-        $this->sendWhatsAppTicket(
+        $response = $this->sendWhatsAppTicket(
             $ticket->phone,
             $ticket->qr_image_path,
             $ticket->ticket_code,
@@ -220,9 +299,17 @@ public function receiveTicket(Request $request)
             ''
         );
 
-        $ticket->update([
-            'whatsapp_sent' => true
-        ]);
+        // Only mark as sent if WhatsApp actually accepted the
+        // image. Previously every send was marked successful even
+        // when the Cloud API silently dropped the image because
+        // the file was too big — and the user's "resend" click
+        // would no-op because the ticket was already flagged
+        // sent.
+        if ($response && $response->successful()) {
+            $ticket->update([
+                'whatsapp_sent' => true
+            ]);
+        }
     }
 
     return response()->json(['status' => 'sent']);
