@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * One-shot backfill for existing bookings.
@@ -23,6 +24,20 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (
+            !Schema::hasTable('bookings') ||
+            !Schema::hasTable('show_times') ||
+            !Schema::hasTable('show_booking_counters') ||
+            !Schema::hasColumn('bookings', 'show_id') ||
+            !Schema::hasColumn('bookings', 'public_number')
+        ) {
+            return;
+        }
+
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::transaction(function () {
             // 1) Denormalise show_id onto bookings that don't have it yet.
             DB::statement(<<<'SQL'

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Booking extends Model
 {
@@ -79,6 +80,10 @@ class Booking extends Model
      */
     public static function allocatePublicNumber(int $showId): int
     {
+        if (!self::supportsPublicNumbers()) {
+            return 0;
+        }
+
         $row = DB::selectOne(
             <<<'SQL'
             INSERT INTO show_booking_counters
@@ -93,6 +98,19 @@ class Booking extends Model
         );
 
         return (int) $row->last_number;
+    }
+
+    public static function hasShowIdColumn(): bool
+    {
+        return Schema::hasColumn('bookings', 'show_id');
+    }
+
+    public static function supportsPublicNumbers(): bool
+    {
+        return DB::getDriverName() === 'pgsql'
+            && Schema::hasTable('show_booking_counters')
+            && Schema::hasColumn('bookings', 'show_id')
+            && Schema::hasColumn('bookings', 'public_number');
     }
 
     /**

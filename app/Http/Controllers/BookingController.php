@@ -221,17 +221,11 @@ class BookingController extends Controller
                     return ['error' => '❌ المتاح فقط: ' . $remaining . ' تذاكر'];
                 }
 
-                // Allocate the public-facing booking number scoped
-                // per show. Runs inside this transaction, so a
-                // subsequent failure rolls the counter back — no
-                // burned numbers. See Booking::allocatePublicNumber
-                // for the atomicity contract.
-                $publicNumber = Booking::allocatePublicNumber($locked->show_id);
-
-                $b = Booking::create([
+                // Prepare the row with only columns that exist in the
+                // current database schema. This keeps deploys safe while
+                // Railway applies the additive migrations.
+                $bookingData = [
                     'show_time_id'                  => $locked->id,
-                    'show_id'                       => $locked->show_id,
-                    'public_number'                 => $publicNumber,
                     'full_name'                     => $names[0],
                     'phone'                         => $normalizedPhones[0],
                     'tickets_count'                 => $ticketsCount,
@@ -240,7 +234,18 @@ class BookingController extends Controller
                     'transfer_screenshot_public_id' => $upload['public_id'],
                     'status'                        => 'pending',
                     'reference_code'                => 'SRC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
-                ]);
+                ];
+
+                if (Booking::supportsPublicNumbers()) {
+                    // Allocate the public-facing booking number only
+                    // after the production schema has caught up.
+                    $bookingData['show_id'] = $locked->show_id;
+                    $bookingData['public_number'] = Booking::allocatePublicNumber($locked->show_id);
+                } elseif (Booking::hasShowIdColumn()) {
+                    $bookingData['show_id'] = $locked->show_id;
+                }
+
+                $b = Booking::create($bookingData);
 
                 foreach ($names as $i => $name) {
                     \App\Models\Ticket::create([
