@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateTicketImageJob;
+use App\Jobs\SendWhatsAppTicketImageJob;
+use App\Jobs\SendWhatsAppTicketTemplateJob;
 use App\Models\Booking;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
-use Cloudinary\Api\Upload\UploadApi;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Support\CloudinaryUrl;
@@ -65,117 +65,30 @@ class BookingController extends Controller
         'approved_at' => now(),
     ]);
 
-    // Building a ticket = decode a poster JPEG into a raw bitmap +
-    // overlay a QR + re-encode. A 2000×2000 RGB bitmap is ~16 MB
-    // of RAM and we may loop over multiple tickets in one request,
-    // so bump the soft memory limit defensively. nginx + php-fpm
-    // gives us up to 512 MB per worker already, but be explicit so
-    // a future change to php.ini doesn't silently break ticket
-    // generation.
-    @ini_set('memory_limit', '512M');
-
+    // Build each ticket's QR image ahead of time (idempotent on
+    // qr_image_path) so it's ready in Cloudinary by the time the customer
+    // taps "أستلام التذكرة". The heavy GD + Cloudinary work no longer blocks
+    // the admin's request — it runs in GenerateTicketImageJob.
     foreach ($booking->tickets as $ticket) {
-
-        if ($ticket->qr_image_path) {
-            continue;
-        }
-
-        /* === QR === */
-        $qr = Builder::create()
-            ->writer(new PngWriter())
-            ->data($ticket->ticket_code)
-            ->size($show->ticket_qr_size ?? 220)
-            ->margin(0)
-            ->build();
-
-        // Pull the template down via Cloudinary's CDN. We deliver
-        // it through a transformation that:
-        //   - downscales the long edge to 2000 px (keeps QR overlay
-        //     coords meaningful even if the admin re-uploaded a
-        //     huge poster)
-        //   - re-encodes to JPEG (smaller download than PNG)
-        //   - lets Cloudinary pick the quality (q_auto:good)
-        // This caps RAM use at ~16 MB per ticket and download cost
-        // at a few hundred KB.
-        $templateUrl = $show->ticket_template_path;
-        if (str_contains($templateUrl, '/image/upload/')) {
-            $templateUrl = preg_replace(
-                '#/image/upload/#',
-                '/image/upload/c_limit,w_2000,h_2000,q_auto:good,f_jpg/',
-                $templateUrl,
-                1
-            );
-        }
-
-        $templateBytes = @file_get_contents($templateUrl);
-        if ($templateBytes === false) {
-            // Fall back to the original URL if the transformation
-            // somehow 404s (shouldn't, but be defensive).
-            $templateBytes = @file_get_contents($show->ticket_template_path);
-        }
-
-        $templateImage = $templateBytes ? @imagecreatefromstring($templateBytes) : false;
-        if (!$templateImage) {
-            Log::warning('approve: failed to load ticket template', [
-                'ticket' => $ticket->ticket_code,
-                'url'    => $show->ticket_template_path,
-            ]);
-            continue;
-        }
-
-        $qrImage = imagecreatefromstring($qr->getString());
-
-        imagecopy(
-            $templateImage,
-            $qrImage,
-            $show->ticket_qr_x ?? 0,
-            $show->ticket_qr_y ?? 0,
-            0,
-            0,
-            imagesx($qrImage),
-            imagesy($qrImage)
-        );
-
-        // Save as JPEG (q=92) instead of PNG. The original PNG
-        // pipeline was producing 5-15 MB files that WhatsApp would
-        // silently drop (Cloud API caps images at 5 MB). JPEG at
-        // q=92 keeps the QR code crisp — we've validated by
-        // re-scanning the encoded output — while landing the file
-        // around 300-800 KB.
-        $tempPath = sys_get_temp_dir() . '/' . $ticket->ticket_code . '.jpg';
-        imagejpeg($templateImage, $tempPath, 92);
-
-        $generatedSize = @filesize($tempPath);
-
-        imagedestroy($templateImage);
-        imagedestroy($qrImage);
-
-        $upload = (new UploadApi())->upload($tempPath, [
-            'folder' => 'tickets/generated',
-        ]);
-
-        @unlink($tempPath);
-
-        Log::info('approve: ticket image generated', [
-            'ticket'      => $ticket->ticket_code,
-            'bytes'       => $generatedSize,
-            'secure_url'  => $upload['secure_url'] ?? null,
-        ]);
-
-        $ticket->update([
-            'qr_image_path' => $upload['secure_url'],
-            'whatsapp_sent' => false // مهم جدًا
-        ]);
+        GenerateTicketImageJob::dispatch($ticket->id)->onQueue('high');
     }
 
-  foreach ($booking->tickets as $ticket) {
+    // ONE template per UNIQUE phone — not one per ticket. A 50-ticket
+    // booking on the same number now sends a single "أستلام التذكرة"
+    // template instead of 50 identical ones. The customer's single tap
+    // then drains every remaining ticket for that phone (see
+    // WhatsAppWebhookController::handle).
+    $uniquePhones = $booking->tickets
+        ->pluck('phone')
+        ->map(fn ($phone) => preg_replace('/[^0-9]/', '', (string) $phone))
+        ->filter()
+        ->unique()
+        ->values();
 
-    $this->sendTicketTemplate(
-        $ticket->phone
-    );
+    foreach ($uniquePhones as $phone) {
+        SendWhatsAppTicketTemplateJob::dispatch($phone)->onQueue('high');
+    }
 
-    sleep(1);
-}
     return redirect()
         ->route('admin.bookings.show', $booking->id)
         ->with('status', 'تم اعتماد الحجز وإرسال رسالة الاستلام ✅');
@@ -347,13 +260,11 @@ public function resendTicket($id)
         return back()->with('status', '❌ التذكرة لم يتم إنشاؤها بعد');
     }
 
-    $this->sendWhatsAppTicket(
-        $ticket->phone,
-        $ticket->qr_image_path,
-        $ticket->ticket_code,
-        $ticket->name,
-        ''
-    );
+    // Admin force-resend: reopen the ticket for delivery, then enqueue. The
+    // job's atomic claim still guards against this colliding with a concurrent
+    // webhook tap, so the customer never gets a duplicate.
+    $ticket->update(['whatsapp_sent' => false, 'delivery_status' => 'pending']);
+    SendWhatsAppTicketImageJob::dispatch($ticket->id)->onQueue('high');
 
     return back()->with('status', '✅ تم إعادة إرسال التذكرة');
 }
