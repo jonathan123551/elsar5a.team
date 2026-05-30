@@ -18,6 +18,10 @@ class Ticket extends Model
         'scanned_by_ip',
         'scanned_by_ua',
         'whatsapp_sent',
+        // Concurrency-control state for the WhatsApp send pipeline:
+        // pending | sending | sent | failed. See the 2026_05_30
+        // add_delivery_status migration + SendWhatsAppTicketImageJob.
+        'delivery_status',
     ];
 
     public function booking()
